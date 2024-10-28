@@ -96,30 +96,63 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// * Generate jwt token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub":      user.ID,
-		"username": user.Username,
-		"exp":      time.Now().Add(time.Hour * 24 * 30).Unix(),
+	// * Generate jwt access and refresh pair tokens
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(time.Minute * 15).Unix(),
 	})
 
-	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
-
+	accessTokenString, err := accessToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid email and/or password",
+			"error": "Something went wrong trying to generate access/refresh token",
 		})
 
 		return
 	}
 
-	// * Set authorization cookie
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("Authorization", tokenString, 3600*24*30, "", "", false, true)
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(time.Hour * 24).Unix(),
+	})
+
+	refreshTokenString, err := refreshToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Something went wrong trying to generate access/refresh token",
+		})
+
+		return
+	}
 
 	// * Send a response
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
+		"accessToken":  accessTokenString,
+		"refreshToken": refreshTokenString,
+	})
+}
+
+func Refresh(c *gin.Context) {
+	userId, _ := c.Get("userId")
+
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": userId,
+		"exp": time.Now().Add(time.Hour * 24).Unix(),
+	})
+
+	refreshTokenString, err := refreshToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Something went wrong trying to generate access/refresh token",
+		})
+
+		return
+	}
+
+	// * Send a response
+	c.JSON(http.StatusOK, gin.H{
+		"accessToken": refreshTokenString,
 	})
 }
 

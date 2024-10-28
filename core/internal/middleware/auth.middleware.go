@@ -14,8 +14,9 @@ import (
 )
 
 func Authenticate(c *gin.Context) {
-	tokenString, err := c.Cookie("Authorization")
-	if err != nil {
+	tokenString := c.Request.Header.Get("Authorization")
+
+	if tokenString == "" {
 		c.AbortWithStatus(http.StatusUnauthorized)
 	}
 
@@ -50,10 +51,7 @@ func Authenticate(c *gin.Context) {
 		}
 
 		// * Attach user data to cookie
-		c.Set("user", map[string]string{
-			"username": user.Username,
-			"email":    user.Email,
-		})
+		c.Set("userId", user.ID)
 
 		c.Next()
 	} else {
