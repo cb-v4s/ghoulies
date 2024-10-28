@@ -11,25 +11,47 @@ services:
       watch:
         - action: rebuild
           path: ./core
-
-    # depends_on:
-    #   db:
-    #     condition: service_healthy
-    #     restart: true
+    depends_on:
+      db:
+        condition: service_healthy
+        # restart: true
       # redis:
         # condition: service_started
 
-  # db:
-  #   image: postgres
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-  #     interval: 10s
-  #     retries: 5
-  #     start_period: 30s
-  #     timeout: 10s
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    env_file:
+      - ./database-dev.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mommased -d katroom"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
 
-  #ui:
-    #
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "alice@wonderland.tld"
+      PGADMIN_DEFAULT_PASSWORD: "12345"
+    ports:
+      - "80:80" # TODO: we need to change this port
+    depends_on:
+      - db
+
+  ui:
+    ports:
+      - "5173:5173"
+    build:
+      context: ./ui
+      dockerfile: ./Dockerfile.dev
+    develop:
+      watch:
+        - action: rebuild
+          path: ./ui
   
   # reverse_proxy:
     #
