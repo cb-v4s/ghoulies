@@ -6,6 +6,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { ArrowRight, Eye, EyeOff } from "../lib/icons";
+import { ApiError } from "../types";
+import { apiRoutes } from "../constants";
 
 export const SignUp = () => {
   const [error, setError] = useState<string>("");
@@ -28,16 +30,23 @@ export const SignUp = () => {
     setIsLoading(true);
 
     try {
-      await api.post("/user/signup", {
+      await api.post(apiRoutes.signup, {
         email: data.email,
         username: data.username,
         password: data.password,
       });
 
       navigate("/signin");
-    } catch (error) {
-      console.error(error);
-      setError("Username and/or password incorrect");
+    } catch (error: any) {
+      if (error?.name === "AxiosError") {
+        const apiError: ApiError = error.response?.data;
+
+        if (apiError?.error) {
+          setError(apiError.error);
+        } else {
+          setError("An unexpected error occurred.");
+        }
+      } else setError("Something went wrongdddd.");
     } finally {
       setIsLoading(false);
     }

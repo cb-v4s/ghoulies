@@ -3,8 +3,6 @@ package controllers
 import (
 	"core/internal/db"
 	"core/internal/db/models"
-	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -30,15 +28,37 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-	// * 2. Hash password
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(reqBody.Password), bcrypt.DefaultCost)
-	if err != nil {
-		log.Fatalf("Something went wrong trying to generate a hash for password: %s. Error: %s", reqBody.Password, err)
+	// * 2. Check if Email or Username is already stored
+	var count int64
+	db.DbCtx.Model(&models.User{}).Where("email = ?", reqBody.Email).Count(&count)
+	if count > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Email already exists.",
+		})
+
+		return
 	}
 
-	fmt.Println("Hash:", string(passwordHash))
+	db.DbCtx.Model(&models.User{}).Where("username = ?", reqBody.Username).Count(&count)
+	if count > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Username already exists.",
+		})
 
-	// * 3. Save user
+		return
+	}
+
+	// * 3. Hash password
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(reqBody.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to hash password.",
+		})
+
+		return
+	}
+
+	// * 4. Save user
 	user := models.User{
 		Email:    reqBody.Email,
 		Username: reqBody.Username,
@@ -48,13 +68,13 @@ func Signup(c *gin.Context) {
 	saveResult := db.DbCtx.Create(&user)
 	if saveResult.Error != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Something went wrong trying to save user",
+			"error": "Failed to save user",
 		})
 
 		return
 	}
 
-	// * 4. Send a response
+	// * 5. Send a response
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 	})
@@ -81,7 +101,7 @@ func Login(c *gin.Context) {
 
 	if user.ID == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid email and/or password",
+			"error": "Invalid Email and/or Password",
 		})
 
 		return
@@ -90,7 +110,7 @@ func Login(c *gin.Context) {
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(reqBody.Password))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid email and/or password",
+			"error": "Invalid Email and/or Password",
 		})
 
 		return
@@ -105,7 +125,7 @@ func Login(c *gin.Context) {
 	accessTokenString, err := accessToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Something went wrong trying to generate access/refresh token",
+			"error": "Failed to generate access/refresh token",
 		})
 
 		return
@@ -119,7 +139,7 @@ func Login(c *gin.Context) {
 	refreshTokenString, err := refreshToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Something went wrong trying to generate access/refresh token",
+			"error": "Failed to generate access/refresh token",
 		})
 
 		return
@@ -144,7 +164,7 @@ func Refresh(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Something went wrong trying to generate access/refresh token",
+			"error": "Failed to generate access/refresh token",
 		})
 
 		return

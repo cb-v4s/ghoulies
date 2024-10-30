@@ -2,16 +2,18 @@ package main
 
 import (
 	"core/internal/db"
-	"core/internal/middleware"
-	"core/internal/server/controllers"
+	"core/routes"
 	"fmt"
 	"log"
 	"os"
 
 	cors "github.com/gin-contrib/cors"
 	gin "github.com/gin-gonic/gin"
+	socketio "github.com/googollee/go-socket.io"
 	godotenv "github.com/joho/godotenv"
 )
+
+var wsServer *socketio.Server
 
 func main() {
 	err := godotenv.Load(".env")
@@ -22,20 +24,24 @@ func main() {
 	db.InitDb()
 
 	r := gin.Default()
+	wsServer = socketio.NewServer(nil)
 
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{os.Getenv("UI_ORIGIN")}
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Content-Security-Policy"}
+	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
 	config.AllowCredentials = true
 
 	r.Use(cors.New(config))
 
-	r.POST("/api/user/signup", controllers.Signup)
-	r.POST("/api/user/login", controllers.Login)
-	r.GET("/api/user/refresh", middleware.Authenticate, controllers.Refresh)
-	r.GET("/api/user/protected", middleware.Authenticate, controllers.Protected)
+	routes.SetupRoutes(r)
 
-	port := ":" + os.Getenv("PORT")
+	port := os.Getenv("PORT")
 
-	r.Run(port)
+	if err := r.Run(":" + port); err != nil {
+		log.Fatal("Failed to serve", err)
+		return
+	}
+
 	fmt.Println("Serving on ", port)
 }

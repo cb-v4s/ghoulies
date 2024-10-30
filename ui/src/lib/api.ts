@@ -1,11 +1,10 @@
 import axios from "axios";
 import {
-  coreApiUrl,
+  coreApiUrl as baseURL,
 } from "../constants";
 
-const ctx = axios.create({
-  baseURL: coreApiUrl,
-});
+const cfg = { baseURL };
+const ctx = axios.create(cfg);
 
 export const api = {
   get: <T>(uri: string, params?: object) =>

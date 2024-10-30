@@ -3,8 +3,18 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
+
+// state management
+import { store } from "./store";
+import { Provider } from "react-redux";
+
+import SocketHandler from "./wsHandler";
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <Provider store={store}>
+      <SocketHandler />
+      <App />
+    </Provider>
   </StrictMode>,
 )

@@ -6,7 +6,8 @@ import { loginSchema } from "../validations/auth.schema";
 import { ArrowRight, Eye, EyeOff } from "../lib/icons";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { api } from "../lib/api";
-import { ACCESS_TOKEN_IDENTIFIER_KEY, REFRESH_TOKEN_IDENTIFIER_KEY } from "../constants";
+import { apiRoutes, ACCESS_TOKEN_IDENTIFIER_KEY, REFRESH_TOKEN_IDENTIFIER_KEY } from "../constants";
+import { ApiError } from "../types";
 
 export const SignIn = () => {
   const [error, setError] = useState<string>("");
@@ -26,7 +27,7 @@ export const SignIn = () => {
 
     try {
       const response: any = await api.post(
-        "/user/login",
+        apiRoutes.login,
         data
       );
 
@@ -34,9 +35,16 @@ export const SignIn = () => {
       localStorage.setItem(REFRESH_TOKEN_IDENTIFIER_KEY, response.data.refreshToken);
     
       navigate("/dashboard");
-    } catch (error) {
-      console.error(error);
-      setError("Email and/or password incorrect");
+    } catch (error: any) {
+      if (error?.name === "AxiosError") {
+        const apiError: ApiError = error.response?.data;
+
+        if (apiError?.error) {
+          setError(apiError.error);
+        } else {
+          setError("An unexpected error occurred.");
+        }
+      } else setError("Something went wrongdddd.");
     } finally {
       setIsLoading(false);
     }
