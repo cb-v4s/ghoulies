@@ -2,7 +2,8 @@ package types
 
 import (
 	"core/internal/lib"
-	"net"
+
+	"github.com/gorilla/websocket"
 )
 
 // XAxis type represents the horizontal axis direction
@@ -57,7 +58,8 @@ var DefaultAvatars = Avatars{
 
 type User struct {
 	UserName    string
-	UserID      net.Addr
+	UserID      string
+	Connection  *websocket.Conn
 	RoomID      string
 	Position    lib.Position
 	Avatar      Avatar

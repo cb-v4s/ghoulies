@@ -1,14 +1,11 @@
 package room
 
 import (
-	"core/config"
 	"core/internal/lib"
 	"core/types"
 	"core/util"
 	"fmt"
-	"net"
 	"sync"
-	"time"
 
 	"golang.org/x/exp/rand"
 )
@@ -29,7 +26,7 @@ type Position struct {
 	Col int
 }
 
-type UserID net.Addr
+type UserID string
 type UserIdx int
 
 type RoomData struct {
@@ -57,18 +54,19 @@ func (rh *RoomHandler) GetUserIdx(userID UserID, roomID string) UserIdx {
 }
 
 // Get a random position in the room
-func (rh *RoomHandler) GetRandomPosition(room *RoomData) (int, int) {
+func (rh *RoomHandler) GetRandomEmptyPosition(occPositions []string) (string, lib.Position) {
 	for {
 		row := rand.Intn(GridSize)
 		col := rand.Intn(GridSize)
+		var strPos string = fmt.Sprintf("%d,%d", row, col)
 
 		exists := util.Contains(
-			room.UsersPositions,
-			fmt.Sprintf("%d,%d", row, col),
+			occPositions,
+			strPos,
 		)
 
 		if !exists {
-			return row, col
+			return strPos, lib.Position{Row: row, Col: col}
 		}
 	}
 }
@@ -155,77 +153,77 @@ func PositionToString(p lib.Position) string {
 	return fmt.Sprintf("%d,%d", p.Row, p.Col)
 }
 
-func (rh *RoomHandler) CreateUser(userId, roomId, userName string, avatarId int) {
-	rh.mu.Lock()
-	defer rh.mu.Unlock()
+// func (rh *RoomHandler) CreateUser(userId, roomId, userName string, avatarId int) {
+// 	rh.mu.Lock()
+// 	defer rh.mu.Unlock()
 
-	roomData, exists := rh.Rooms[roomId]
-	newPosition := lib.Position{Row: 0, Col: 0} // Initial position if no players in the room
+// 	roomData, exists := rh.Rooms[roomId]
+// 	newPosition := lib.Position{Row: 0, Col: 0} // Initial position if no players in the room
 
-	newUser := types.User{
-		UserName:    userName,
-		UserID:      userId,
-		RoomID:      roomId,
-		Position:    newPosition,
-		Avatar:      types.DefaultAvatars[avatarId], // Assume avatars is defined
-		AvatarXAxis: types.Right,                    // Replace with the actual value
-	}
+// 	newUser := types.User{
+// 		UserName:    userName,
+// 		UserID:      userId,
+// 		RoomID:      roomId,
+// 		Position:    newPosition,
+// 		Avatar:      types.DefaultAvatars[avatarId], // Assume avatars is defined
+// 		AvatarXAxis: types.Right,                    // Replace with the actual value
+// 	}
 
-	if !exists {
-		// Room doesn't exist, create new RoomData
-		newRoomData := &RoomData{
-			Users:          []types.User{newUser},
-			UsersPositions: []string{},
-			UserIdxMap:     make(map[string]int),
-		}
+// 	if !exists {
+// 		// Room doesn't exist, create new RoomData
+// 		newRoomData := &RoomData{
+// 			Users:          []types.User{newUser},
+// 			UsersPositions: []string{},
+// 			UserIdxMap:     make(map[string]int),
+// 		}
 
-		newRoomData.UserIdxMap[userId] = 0
-		newRoomData.UsersPositions[positionToString(newPosition)] = struct{}{}
+// 		newRoomData.UserIdxMap[userId] = 0
+// 		newRoomData.UsersPositions[positionToString(newPosition)] = struct{}{}
 
-		// Create chatbot on room init
-		row, col := rh.GetRandomPosition(newRoomData)
-		chatBot := types.User{
-			UserName:    config.ChatbotName,
-			UserID:      config.ChatbotName,
-			RoomID:      roomId,
-			Position:    lib.Position{Row: row, Col: col},
-			Avatar:      types.DefaultAvatars[avatarId], // Ensure you have a chatbot avatar
-			AvatarXAxis: types.Right,
-		}
+// 		// Create chatbot on room init
+// 		row, col := rh.GetRandomPosition(newRoomData)
+// 		chatBot := types.User{
+// 			UserName:    config.ChatbotName,
+// 			UserID:      config.ChatbotName,
+// 			RoomID:      roomId,
+// 			Position:    lib.Position{Row: row, Col: col},
+// 			Avatar:      types.DefaultAvatars[avatarId], // Ensure you have a chatbot avatar
+// 			AvatarXAxis: types.Right,
+// 		}
 
-		newRoomData.Users = append(newRoomData.Users, chatBot)
-		newRoomData.UserIdxMap[config.ChatbotName] = 1
+// 		newRoomData.Users = append(newRoomData.Users, chatBot)
+// 		newRoomData.UserIdxMap[config.ChatbotName] = 1
 
-		// TODO: watch this
-		// newRoomData.UsersPositions[] = struct{}{}
+// 		// TODO: watch this
+// 		// newRoomData.UsersPositions[] = struct{}{}
 
-		// Store the new room data
-		rh.Rooms[roomId] = newRoomData
+// 		// Store the new room data
+// 		rh.Rooms[roomId] = newRoomData
 
-		// Schedule a task for the chatbot
-		go func() {
-			ticker := time.NewTicker(time.Duration(rand.Intn(11)+10) * time.Second)
-			defer ticker.Stop()
+// 		// Schedule a task for the chatbot
+// 		go func() {
+// 			ticker := time.NewTicker(time.Duration(rand.Intn(11)+10) * time.Second)
+// 			defer ticker.Stop()
 
-			for range ticker.C {
-				row, col := rh.GetRandomPosition(newRoomData)
-				rh.UpdatePosition(lib.Position{Row: row, Col: col}, roomId, config.ChatbotName)
-			}
-		}()
-		return
-	}
+// 			for range ticker.C {
+// 				row, col := rh.GetRandomPosition(newRoomData)
+// 				rh.UpdatePosition(lib.Position{Row: row, Col: col}, roomId, config.ChatbotName)
+// 			}
+// 		}()
+// 		return
+// 	}
 
-	// Room exists, add the new user
-	row, col := rh.GetRandomPosition(roomData)
-	newUser.Position = lib.Position{
-		Row: row,
-		Col: col,
-	}
+// 	// Room exists, add the new user
+// 	row, col := rh.GetRandomPosition(roomData)
+// 	newUser.Position = lib.Position{
+// 		Row: row,
+// 		Col: col,
+// 	}
 
-	roomData.Users = append(roomData.Users, newUser)
-	roomData.UserIdxMap[userId] = len(roomData.Users) - 1
-	roomData.UsersPositions[fmt.Sprintf("%d,%d", newPosition.Row, newPosition.Col)] = struct{}{}
+// 	roomData.Users = append(roomData.Users, newUser)
+// 	roomData.UserIdxMap[userId] = len(roomData.Users) - 1
+// 	roomData.UsersPositions[fmt.Sprintf("%d,%d", newPosition.Row, newPosition.Col)] = struct{}{}
 
-	// Update the room data in the map
-	rh.Rooms[roomId] = roomData
-}
+// 	// Update the room data in the map
+// 	rh.Rooms[roomId] = roomData
+// }
