@@ -7,7 +7,7 @@ import { api } from "../lib/api";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { ArrowRight, Eye, EyeOff } from "../lib/icons";
 import { ApiError } from "../types";
-import { apiRoutes } from "../constants";
+import { apiRoutes } from "../siteConfig";
 
 export const SignUp = () => {
   const [error, setError] = useState<string>("");

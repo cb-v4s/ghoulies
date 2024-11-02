@@ -6,7 +6,7 @@ import { loginSchema } from "../validations/auth.schema";
 import { ArrowRight, Eye, EyeOff } from "../lib/icons";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { api } from "../lib/api";
-import { apiRoutes, ACCESS_TOKEN_IDENTIFIER_KEY, REFRESH_TOKEN_IDENTIFIER_KEY } from "../constants";
+import { apiRoutes, ACCESS_TOKEN_IDENTIFIER_KEY, REFRESH_TOKEN_IDENTIFIER_KEY } from "../siteConfig";
 import { ApiError } from "../types";
 
 export const SignIn = () => {

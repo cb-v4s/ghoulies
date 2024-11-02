@@ -1,5 +1,5 @@
 import React, { createRef, useState } from "react";
-import { sendMessageTo } from "../wsHandler";
+import { sendMessageTo } from "./wsHandler";
 import { useDispatch, useSelector } from "react-redux";
 import {
   selectTarget,

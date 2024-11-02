@@ -3,7 +3,7 @@ import io from "socket.io-client";
 import { useDispatch, useSelector } from "react-redux";
 
 // types
-import { MessageT, CoordinatesT } from "./types";
+import { MessageT, CoordinatesT } from "../types";
 
 import {
   setGridSize,
@@ -11,15 +11,12 @@ import {
   removeUserById,
   addMessage,
   selectUserId,
-} from "./state/room.reducer";
+} from "../state/room.reducer";
 import { useEffect } from "react";
-import { wsApiUrl } from "./constants";
+import { wsApiUrl } from "../siteConfig";
 
 export const socket = io(wsApiUrl, {
   transports: ["websocket"],
-  extraHeaders: {
-    "Content-Security-Policy": `default-src 'self' ${wsApiUrl}`,
-  },
 });
 
 export const updatePlayerDirection = (dest: CoordinatesT) => {
@@ -31,6 +28,7 @@ export const createUser = (data: {
   userName: string;
   avatarId: number;
 }) => {
+  console.log("userCreation", data);
   socket.emit("userCreation", data);
 };
 

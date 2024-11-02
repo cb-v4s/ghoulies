@@ -7,7 +7,7 @@ import {
   setRooms,
   setRoomId,
 } from "../state/room.reducer";
-import { createUser } from "../wsHandler";
+import { createUser } from "../components/wsHandler";
 import { fetchRooms } from "../apiHooks";
 
 const Lobby = ({ isOpen, onClose }: { isOpen: boolean; onClose: any }) => {
@@ -40,8 +40,9 @@ const Lobby = ({ isOpen, onClose }: { isOpen: boolean; onClose: any }) => {
   // step 2
   const handleSelectName = (e: any) => {
     e.preventDefault();
-    createUser({ roomName, userName, avatarId });
-    onClose();
+
+    createUser({ roomName, userName, avatarId })
+    onClose()
   };
 
   useEffect(() => {

@@ -10,6 +10,5 @@ Golang, Typescript, React, Postgresql
 
 Make sure you have installed the lastest version of docker desktop on your machine and on your path
 
-#### development
-
-Watch mode `docker compose -f docker-compose-dev.yml up --watch`
+Watch mode `make watch`.
+Release `make run ENV=prod`

@@ -2,6 +2,7 @@ package types
 
 import (
 	"core/internal/lib"
+	"net"
 )
 
 // XAxis type represents the horizontal axis direction
@@ -56,7 +57,7 @@ var DefaultAvatars = Avatars{
 
 type User struct {
 	UserName    string
-	UserID      string
+	UserID      net.Addr
 	RoomID      string
 	Position    lib.Position
 	Avatar      Avatar

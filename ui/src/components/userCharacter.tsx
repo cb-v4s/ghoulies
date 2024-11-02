@@ -9,7 +9,7 @@ import {
   selectUserById,
 } from "../state/room.reducer";
 import { useClickAway } from "../common/hooks";
-import { socket, updatePlayerDirection } from "../wsHandler";
+import { socket, updatePlayerDirection } from "../components/wsHandler";
 
 import { inputChatMessage } from "./chat";
 

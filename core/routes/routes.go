@@ -3,6 +3,7 @@ package routes
 import (
 	"core/internal/middleware"
 	"core/internal/server/controllers"
+
 	"core/internal/ws"
 
 	"github.com/gin-gonic/gin"

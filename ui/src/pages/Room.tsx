@@ -5,7 +5,7 @@ import Chat from "../components/chat";
 import UserCharacter from "../components/userCharacter";
 import Lobby from "./Lobby";
 
-import { updatePlayerPosition } from "../wsHandler";
+import { updatePlayerPosition } from "../components/wsHandler";
 
 // state management
 import { useSelector } from "react-redux";
@@ -53,7 +53,7 @@ export const Room: React.FC<any> = () => {
           <div
             key={`${row}-${col}`}
             onClick={() => handleCharacterMovement(row, col)}
-            className=" hover:border-isabella"
+            className="border-2 border-sky-400 hover:border-isabella"
           >
             {player && (
               <UserCharacter
@@ -72,14 +72,13 @@ export const Room: React.FC<any> = () => {
 
   return (
     <React.Fragment>
+      <h1>Room Component</h1>
       <div className="h-70v">
-        {players.length ? (
-          <div className="border-solid border border-white rounded-t-lg flex flex-col items-center bg-aldebaran">
-            <div className="grid grid-cols-10 grid-rows-10 w-80v h-70v">
-              {renderCells()}
-            </div>
+        <div className="border-solid border border-white rounded-t-lg flex flex-col items-center bg-aldebaran">
+          <div className="grid grid-cols-10 grid-rows-10 w-80v h-70v">
+            {renderCells()}
           </div>
-        ) : null}
+        </div>
       </div>
 
       {/* <button
@@ -89,7 +88,7 @@ export const Room: React.FC<any> = () => {
         Open Modal
       </button> */}
       <Lobby isOpen={modalOpen} onClose={closeModal} />
-      {players.length ? <Chat /> : null}
+      <Chat />
     </React.Fragment>
   );
 };

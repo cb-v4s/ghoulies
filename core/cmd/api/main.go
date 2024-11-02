@@ -7,13 +7,16 @@ import (
 	"log"
 	"os"
 
-	cors "github.com/gin-contrib/cors"
+	"github.com/gin-contrib/cors"
 	gin "github.com/gin-gonic/gin"
-	socketio "github.com/googollee/go-socket.io"
 	godotenv "github.com/joho/godotenv"
 )
 
-var wsServer *socketio.Server
+type UserData struct {
+	RoomName string `json:"roomName"`
+	UserName string `json:"userName"`
+	AvatarId int    `json:"avatarId"`
+}
 
 func main() {
 	err := godotenv.Load(".env")
@@ -22,13 +25,14 @@ func main() {
 	}
 
 	db.InitDb()
-
-	r := gin.Default()
-	wsServer = socketio.NewServer(nil)
+	gin.SetMode(os.Getenv("GIN_MODE"))
+	r := gin.New()
 
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{os.Getenv("UI_ORIGIN")}
-	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Content-Security-Policy"}
+	config.AllowOrigins = []string{"*"}
+
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Content-Security-Policy", "Access-Control-Allow-Origin"}
 	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
 	config.AllowCredentials = true
 

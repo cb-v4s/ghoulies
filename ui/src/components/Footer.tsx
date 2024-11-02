@@ -1,5 +1,5 @@
 import React from "react";
-// import { siteConfig } from "../../config";
+import { links } from "../siteConfig";
 
 export const Footer: React.FC<any> = () => {
   return (
@@ -7,8 +7,7 @@ export const Footer: React.FC<any> = () => {
       <p className="text-center text-sm leading-loose">
         Built by{" "}
         <a
-        //   href={siteConfig.links.githubProfile}
-          href=""
+          href={links.githubProfile}
           target="_blank"
           rel="noreferrer"
           className="font-sm underline underline-offset-4"
@@ -17,8 +16,7 @@ export const Footer: React.FC<any> = () => {
         </a>
         . Source code available on{" "}
         <a
-        //   href={siteConfig.links.sourceCode}
-          href=""
+          href={links.sourceCode}
           target="_blank"
           rel="noreferrer"
           className="font-sm underline underline-offset-4"

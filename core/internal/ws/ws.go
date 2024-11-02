@@ -1,12 +1,15 @@
 package ws
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"sync"
 
 	"core/config"
+	"core/internal/lib"
 	"core/internal/ws/room"
 	"core/types"
 
@@ -23,10 +26,15 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+type Client struct {
+	ID   *net.Addr
+	Conn *websocket.Conn
+}
+
 // Global variables for managing rooms and clients
 var (
-	clients   = make(map[*websocket.Conn]bool) // Connected clients
-	clientsMu sync.Mutex                       // Mutex to protect access to clients
+	clients   = make(map[net.Addr]*Client) // Connected clients
+	clientsMu sync.Mutex                   // Mutex to protect access to clients
 )
 
 func NewRoomHandler() *room.RoomHandler {
@@ -36,8 +44,8 @@ func NewRoomHandler() *room.RoomHandler {
 
 	newRoom.Rooms[config.DefaultRoom] = &room.RoomData{
 		Users:          []types.User{},
-		UsersPositions: make(map[string]struct{}), // Initialize as empty map for set behavior
-		UserIdxMap:     make(map[string]int),      // Initialize as empty map for user indices
+		UsersPositions: []string{},                         // Initialize as empty map for set behavior
+		UserIdxMap:     make(map[room.UserID]room.UserIdx), // Initialize as empty map for user indices
 	}
 
 	return newRoom
@@ -52,9 +60,17 @@ func HandleWebSocket(c *gin.Context) {
 	}
 	defer socket.Close()
 
+	clientID := socket.RemoteAddr()
+
+	// Create a new client
+	client := &Client{
+		ID:   &clientID,
+		Conn: socket,
+	}
+
 	// Register the new client
 	clientsMu.Lock()
-	clients[socket] = true
+	clients[clientID] = client
 	clientsMu.Unlock()
 
 	log.Println("A user connected:", socket.RemoteAddr())
@@ -62,7 +78,7 @@ func HandleWebSocket(c *gin.Context) {
 	// Main loop to listen for messages
 	defer func() {
 		clientsMu.Lock()
-		delete(clients, socket) // Unregister client on disconnect
+		delete(clients, clientID) // Unregister client on disconnect
 		clientsMu.Unlock()
 	}()
 
@@ -80,8 +96,24 @@ func HandleWebSocket(c *gin.Context) {
 
 		switch msg.Event {
 		case "userCreation":
-			fmt.Println(socket, msg.Data)
-			handleUserCreation(socket, msg.Data)
+			var userData AddUser
+
+			// JSON encode msg.Data
+			jsonData, err := json.Marshal(msg.Data)
+			if err != nil {
+				log.Printf("Error marshaling data: %v", err)
+				return
+			}
+
+			// convert dataBytes (JSON data) into the AddUser struct
+			err = json.Unmarshal(jsonData, &userData)
+			if err != nil {
+				log.Printf("Error unmarshaling data: %v", err)
+				continue
+			}
+
+			fmt.Println("msg.Event =>", userData)
+			addUser(socket, userData)
 		case "updatePlayerDirection":
 			// handleUpdatePlayerDirection(socket, msg.Data)
 		case "updatePlayerPosition":
@@ -96,33 +128,127 @@ func HandleWebSocket(c *gin.Context) {
 	}
 }
 
+// Broadcast function to send a message to all connected clients
+// func broadcast(event string, data interface{}) {
+// 	clientsMu.Lock()
+// 	defer clientsMu.Unlock()
+
+// 	for client := range clients {
+// 		err := client.WriteJSON(struct {
+// 			Event string      `json:"event"`
+// 			Data  interface{} `json:"data"`
+// 		}{
+// 			Event: event,
+// 			Data:  data,
+// 		})
+// 		if err != nil {
+// 			log.Printf("Error sending message to %v: %v", client.RemoteAddr(), err)
+// 			client.Close()          // Close the connection if there's an error
+// 			delete(clients, client) // Remove the client from the list
+// 		}
+// 	}
+// }
+
+type AddUser struct {
+	UserName string `json:"userName"`
+	RoomName string `json:"roomName"`
+	AvatarId int    `json:"avatarId"`
+}
+
 // handleUserCreation processes user creation events.
-func handleUserCreation(socket *websocket.Conn, data interface{}) {
-	roomInfo := data.(map[string]interface{})
-	roomName := roomInfo["roomName"].(string)
-
-	// TODO: Uncomment
-	// userName := roomInfo["userName"].(string)
-	// avatarID := int(roomInfo["avatarId"].(float64))
-
-	log.Println("Emitting user creation.")
-
+func addUser(socket *websocket.Conn, data AddUser) {
 	// Check if the room is full (you'll need to implement this function)
-	if RoomHandler.IsRoomFull(roomName) {
+	if RoomHandler.IsRoomFull(data.RoomName) {
 		socket.WriteJSON(map[string]string{"event": "error_room_full"})
 		return
 	}
 
-	// TODO: Uncomment
-	// // Create the user (you'll need to implement this function)
+	userID := socket.RemoteAddr()
+
+	// Check if the room already exists
+	roomData, exists := RoomHandler.Rooms[data.RoomName]
+	fmt.Println("exists =>", exists)
+	fmt.Println("roomData =>", roomData)
+
+	if !exists {
+		fmt.Println("Room does not exist. Creating a new one...")
+		roomData = &room.RoomData{
+			Users:          []types.User{},
+			UsersPositions: []string{},                         // Initialize as empty map for set behavior
+			UserIdxMap:     make(map[room.UserID]room.UserIdx), // Initialize as empty map for user indices
+		}
+
+		RoomHandler.Rooms[data.RoomName] = roomData
+
+		// Set initial position
+		newPosition := lib.Position{Row: 0, Col: 0} // Initial position
+
+		// Create new user
+		newUser := types.User{
+			UserName:    data.UserName,
+			UserID:      userID,
+			RoomID:      data.RoomName,
+			Position:    newPosition,
+			Avatar:      types.DefaultAvatars[data.AvatarId],
+			AvatarXAxis: types.Right,
+		}
+
+		// Add user to the room
+		roomData.Users = append(roomData.Users, newUser)
+		roomData.UsersPositions = append(roomData.UsersPositions, room.PositionToString(newPosition))
+
+		roomData.UserIdxMap[room.UserID(userID)] = room.UserIdx(len(roomData.Users) - 1)
+	}
+
+	log.Printf("Emitting user creation for user: %v\n", data)
+
+	for roomId := range RoomHandler.Rooms {
+		fmt.Printf("roomId: %v\n", roomId)
+	}
+
+	socket.WriteJSON(map[string]string{"test": "naananan"})
+
+	// Create user
 	// RoomHandler.CreateUser(socket.RemoteAddr().String(), roomName, userName, avatarID)
 
-	// // Join the user to the room (you'll need to implement this function)
-	// RoomHandler.JoinRoom(roomName, socket)
+	// for sck := range RoomHandler.Rooms {
+	// 	fmt.Printf(sck)
+	// }
 
-	// // Emit initial map and user created event (you'll need to implement this)
-	// RoomHandler.EmitInitMap(roomName)
-	// RoomHandler.EmitUserCreated(roomName)
+	// sendToRoom("initMap", map[string]int{"gridSize": room.GridSize}, roomName)
+	// io.to(roomName).emit("userCreated", roomHdl.rooms.get(roomName).users);
+}
+
+func sendToRoom(event string, data interface{}, roomName string) {
+	clientsMu.Lock()
+	defer clientsMu.Unlock()
+
+	// for _, client := range RoomHandler.Rooms {
+	// 	fmt.Printf("client ------> %v", client)
+	// 	client.Close()
+	// }
+
+	for client := range clients {
+		fmt.Printf("Client => %v", client)
+	}
+
+	// for _, client := range RoomHandler.Rooms {
+	// 	message := struct {
+	// 		Event string      `json:"event"`
+	// 		Data  interface{} `json:"data"`
+	// 	}{
+	// 		Event: event,
+	// 		Data:  data,
+	// 	}
+
+	// 	err := client.WriteJSON(message)
+	// 	if err != nil {
+	// 		log.Printf("Error sending message to %v: %v", client.RemoteAddr(), err)
+	// 		client.Close() // Close the connection if there's an error
+	// 		// Remove client from room if necessary
+	// 		removeClientFromRoom(client, roomName)
+	// 	}
+	// }
 }
 
 // // handleUpdatePlayerDirection processes player direction updates.

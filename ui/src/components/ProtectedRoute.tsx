@@ -5,7 +5,7 @@ import { api } from "../lib/api";
 import {
   REFRESH_TOKEN_IDENTIFIER_KEY,
   ACCESS_TOKEN_IDENTIFIER_KEY,
-} from "../constants";
+} from "../siteConfig";
 
 export const ProtectedRoute = ({ children }: { children: any }) => {
   const [isAuthorized, setIsAuthorized] = useState<boolean|null>(null);

@@ -8,6 +8,7 @@ import { Room } from "./pages/Room";
 
 // components
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import MainLayout from "./layouts/Main";
 
 const Logout = () => {
   localStorage.clear();
@@ -31,7 +32,11 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/" element={<Room />} />
+        <Route path="/" element={
+          <MainLayout>
+            <Room />
+          </MainLayout>
+        } />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/logout" element={<Logout />} />
         <Route path="/signup" element={<RegisterAndLogout />} />
