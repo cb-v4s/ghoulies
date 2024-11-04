@@ -1,63 +1,36 @@
 package ws
 
 import (
+	"core/internal/lib"
+	"core/internal/room"
+	"core/types"
+	"core/util"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"sync"
-
-	"core/config"
-	"core/internal/lib"
-	"core/internal/ws/room"
-	"core/types"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
-var RoomHandler *room.RoomHandler
-
 // Upgrader is used to upgrade an HTTP connection to a WebSocket connection.
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return true // Allow all origins for simplicity
+		// ! Allow all origins for simplicity
+		// TODO: allow only "origin"
+		return true
 	},
-}
-
-type Client struct {
-	ID   *string
-	Conn *websocket.Conn
-}
-
-// TODO: poner un lock aqui
-type Room struct {
-	Name    string
-	Clients map[string]*Client
-	mu      sync.Mutex
 }
 
 // Global variables for managing rooms and clients
 var (
-	clients   = make(map[string]*Client) // Connected clients
-	clientsMu sync.Mutex                 // Mutex to protect access to clients
+	clients   = make(map[string]*types.Client) // Connected clients
+	clientsMu sync.Mutex                       // Mutex to protect access to clients
 )
-
-func NewRoomHandler() *room.RoomHandler {
-	newRoom := &room.RoomHandler{
-		Rooms: make(map[string]*room.RoomData), // Initialize the Rooms map
-	}
-
-	// Create a default room that will always exist
-	newRoom.Rooms[config.DefaultRoom] = &room.RoomData{
-		Users:          []types.User{},
-		UsersPositions: []string{},                         // Initialize as empty map for set behavior
-		UserIdxMap:     make(map[room.UserID]room.UserIdx), // Initialize as empty map for user indices
-	}
-
-	return newRoom
-}
 
 // HandleWebSocket handles incoming WebSocket connections.
 func HandleWebSocket(c *gin.Context) {
@@ -71,9 +44,10 @@ func HandleWebSocket(c *gin.Context) {
 	clientID := uuid.Must(uuid.NewRandom()).String()
 
 	// Create a new client
-	client := &Client{
-		ID:   &clientID,
-		Conn: socket,
+	client := &types.Client{
+		ID:     &clientID,
+		Conn:   socket,
+		RoomId: "",
 	}
 
 	// Register the new client
@@ -91,218 +65,175 @@ func HandleWebSocket(c *gin.Context) {
 	}()
 
 	for {
-		var msg struct {
-			Event string      `json:"event"`
-			Data  interface{} `json:"data"`
-		}
+		var payload types.WsPayload
 
-		err := socket.ReadJSON(&msg)
+		err := socket.ReadJSON(&payload)
 		if err != nil {
 			log.Printf("Error reading JSON: %v", err)
 			break
 		}
 
-		switch msg.Event {
-		case "userCreation":
-			var userData AddUser
-
-			// JSON encode msg.Data
-			jsonData, err := json.Marshal(msg.Data)
+		switch payload.Event {
+		// ! 1.
+		/* Este evento se encarga de crear una sala (si no existe) e integrar un usuario a una sala,
+		y va a emitir un evento con el tamaño de la sala y datos de los usuarios en ella */
+		case "createUser":
+			var reqData types.CreateUserData
+			err := parsePayload(payload.Data, &reqData)
 			if err != nil {
-				log.Printf("Error marshaling data: %v", err)
+				fmt.Printf("Error: %s", err)
 				return
 			}
 
-			// convert dataBytes (JSON data) into the AddUser struct
-			err = json.Unmarshal(jsonData, &userData)
+			fmt.Println("payload.Event =>", reqData)
+
+			err, eventName, resData := room.CreateUser(socket, types.UserID(clientID), reqData)
 			if err != nil {
-				log.Printf("Error unmarshaling data: %v", err)
-				continue
+				clients[clientID].RoomId = reqData.RoomName
 			}
 
-			fmt.Println("msg.Event =>", userData)
-			addUser(socket, clientID, userData)
-		case "updatePlayerDirection":
-			// handleUpdatePlayerDirection(socket, msg.Data)
-		case "updatePlayerPosition":
-			// handleUpdatePlayerPosition(socket, msg.Data)
-		case "message":
-			// handleMessage(socket, msg.Data)
-		case "disconnect":
-			// handleDisconnect(socket)
-		default:
-			log.Println("Unknown event:", msg.Event)
-		}
-	}
-}
+			broadcastRoom(eventName, resData, reqData.RoomName)
 
-// Broadcast function to send a message to all connected clients
-// func broadcast(event string, data interface{}) {
-// 	clientsMu.Lock()
-// 	defer clientsMu.Unlock()
+		// ! 2.
+		/* Este evento se encarga de actualizar datos de un usuario (posicion, nombre o direccion)
+		de un usuario en una sala para todos los usuarios en ella */
+		case "updateUserPosition":
+			var reqData types.UpdatePlayerPosition
+			err := parsePayload(payload.Data, &reqData)
+			if err != nil {
+				fmt.Printf("Error: %s", err)
+				return
+			}
 
-// 	for client := range clients {
-// 		err := client.WriteJSON(struct {
-// 			Event string      `json:"event"`
-// 			Data  interface{} `json:"data"`
-// 		}{
-// 			Event: event,
-// 			Data:  data,
-// 		})
-// 		if err != nil {
-// 			log.Printf("Error sending message to %v: %v", client.RemoteAddr(), err)
-// 			client.Close()          // Close the connection if there's an error
-// 			delete(clients, client) // Remove the client from the list
-// 		}
-// 	}
-// }
+			fmt.Println("payload.Event =>", reqData)
 
-type AddUser struct {
-	UserName string `json:"userName"`
-	RoomName string `json:"roomName"`
-	AvatarId int    `json:"avatarId"`
-}
+			var row, col int
+			fmt.Sscanf(reqData.Dest, "%d,%d", &row, &col)
 
-func (r *Room) Send(message interface{}) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	for _, client := range r.Clients {
-		if err := client.Conn.WriteJSON(message); err != nil {
-			log.Printf("Error sending message to client %v: %v", client.ID, err)
-		}
-	}
-}
+			room.RoomHdl.Mu.Lock()
+			roomData, exists := room.RoomHdl.Rooms[reqData.RoomName]
+			room.RoomHdl.Mu.Unlock()
 
-// handleUserCreation processes user creation events.
-func addUser(socket *websocket.Conn, userID string, data AddUser) {
-	// TODO mover toda la logica de joinUser al modulo room
+			if !exists {
+				fmt.Printf("room not found")
+				return
+			}
 
-	// Check if the room is full
-	if RoomHandler.IsRoomFull(data.RoomName) {
-		socket.WriteJSON(map[string]string{"event": "error_room_full"})
-		return
-	}
+			idx := room.GetUserIdx(room.RoomHdl, types.UserID(clientID), reqData.RoomName)
+			if idx == -1 {
+				fmt.Printf("user not found")
+				return
+			}
 
-	// Check if the room already exists
-	roomData, exists := RoomHandler.Rooms[data.RoomName]
+			currentPos := roomData.Users[idx].Position
+			posKey := fmt.Sprintf("%d,%d", currentPos.Row, currentPos.Col)
 
-	// Set initial position
-	newPosition := lib.Position{Row: 0, Col: 0} // Initial position
+			invalidPositions := roomData.UsersPositions
 
-	// Create new user
-	newUser := types.User{
-		UserName:    data.UserName,
-		UserID:      userID,
-		Connection:  socket,
-		RoomID:      data.RoomName,
-		Position:    newPosition,
-		Avatar:      types.DefaultAvatars[data.AvatarId],
-		AvatarXAxis: types.Right,
-	}
-
-	if !exists {
-		newRoomData := &room.RoomData{
-			Users:          []types.User{},
-			UsersPositions: []string{},                         // Initialize as empty map for set behavior
-			UserIdxMap:     make(map[room.UserID]room.UserIdx), // Initialize as empty map for user indices
-		}
-
-		// Add user to the room
-		newRoomData.Users = append(newRoomData.Users, newUser)
-		newRoomData.UsersPositions = append(newRoomData.UsersPositions, room.PositionToString(newPosition))
-
-		newRoomData.UserIdxMap[room.UserID(userID)] = 0
-
-		RoomHandler.Rooms[data.RoomName] = newRoomData
-
-	} else {
-		newPositionStr, newPosition := RoomHandler.GetRandomEmptyPosition(roomData.UsersPositions)
-		newUser.Position = newPosition
-
-		// ? do i have to modify rooms like this or could i just modify roomData?
-		RoomHandler.Rooms[data.RoomName].Users = append(roomData.Users, newUser)
-		RoomHandler.Rooms[data.RoomName].UsersPositions = append(roomData.UsersPositions, newPositionStr)
-		RoomHandler.Rooms[data.RoomName].UserIdxMap[room.UserID(userID)] = room.UserIdx(len(roomData.Users) - 1)
-	}
-
-	sendToRoom("initMap", map[string]interface{}{"gridSize": room.GridSize}, data.RoomName)
-	sendToRoom("userCreated", map[string]interface{}{"users": RoomHandler.Rooms[data.RoomName].Users}, data.RoomName)
-}
-
-func sendToRoom(event string, data map[string]interface{}, roomName string) {
-	// ! TODO: lock rooms here instead
-	clientsMu.Lock()
-	defer clientsMu.Unlock()
-
-	message := make(map[string]interface{})
-	message["Event"] = event
-	message["Data"] = data
-
-	for _, user := range RoomHandler.Rooms[roomName].Users {
-		err := user.Connection.WriteJSON(message)
-
-		// Close the connection if there's an error
-		if err != nil {
-			log.Printf("Error sending message to %v: %v", user.Connection.RemoteAddr(), err)
-			user.Connection.Close()
+			// Find path to the destination (implement findPath)
+			path := lib.FindPath(currentPos.Row, currentPos.Col, row, col, room.GridSize, invalidPositions)
+			if len(path) == 0 {
+				fmt.Printf("no valid path")
+				return
+			}
 
 			// TODO:
-			// LeaveRoom()
+			// ! move to background (a go routine) ?
+			for _, newPosition := range path {
+				fmt.Printf("newPosition: %v\n", newPosition)
+
+				roomData.Users[idx].Position = newPosition
+				newPosKey := fmt.Sprintf("%d,%d", newPosition.Row, newPosition.Col)
+				roomData.UsersPositions = append(roomData.UsersPositions, newPosKey)
+				util.Delete(roomData.UsersPositions, posKey)
+
+				data := map[string]interface{}{
+					"users": roomData.Users,
+				}
+
+				broadcastRoom("updateMap", data, reqData.RoomName)
+				time.Sleep(time.Duration(room.SpeedUserMov) * time.Millisecond) // Simulate movement delay
+			}
+
+		case "updateUserDirection":
+			// TODO:
+		case "directMessage":
+			var reqData types.DirectMsg
+			err := parsePayload(payload.Data, &reqData)
+			if err != nil {
+				fmt.Printf("Error: %s", err)
+				return
+			}
+
+			sendDirect("directMsg", reqData.UserId, map[string]interface{}{
+				"From": clientID,
+				"Msg":  reqData.Msg,
+			})
+		case "roomBroadcast":
+			var reqData types.Msg
+			err := parsePayload(payload.Data, &reqData)
+			if err != nil {
+				fmt.Printf("Error: %s", err)
+				return
+			}
+
+			// * Obten el id de la sala de clients
+			roomId := clients[clientID].RoomId
+			fmt.Printf("roomId: %s\n", roomId)
+
+			// sendBroadcastMessage()
+		case "disconnect":
+			// TODO:
+		default:
+			log.Println("Unknown event:", payload.Event)
 		}
 	}
 }
 
-// // handleUpdatePlayerDirection processes player direction updates.
-// func handleUpdatePlayerDirection(socket *websocket.Conn, data interface{}) {
-// 	dest := data.(map[string]interface{}) // Assuming it has direction info
-// 	roomId := getRoomID(socket)           // Implement to get room ID from socket
+func parsePayload(data interface{}, dest interface{}) error {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("failed marshaling data: %w", err)
+	}
 
-// 	if roomId == "" {
-// 		log.Println("Error: invalid room at updatePlayerDirection")
-// 		return
-// 	}
+	err = json.Unmarshal(jsonData, dest)
+	if err != nil {
+		return fmt.Errorf("failed unmarshaling data: %w", err)
+	}
 
-// 	// Update player direction (implement your logic here)
-// 	updatePlayerDirection(roomId, dest, socket.RemoteAddr().String())
-// }
+	return nil
+}
 
-// // handleUpdatePlayerPosition processes player position updates.
-// func handleUpdatePlayerPosition(socket *websocket.Conn, data interface{}) {
-// 	dest := data.(map[string]interface{}) // Assuming this has position info
-// 	roomId := getRoomID(socket)           // Implement to get room ID from socket
+func broadcastRoom(eventName string, data map[string]interface{}, roomId string) {
+	// ! TODO: use lock/unlock rooms
 
-// 	if roomId == "" {
-// 		log.Println("Error: invalid room at updatePlayerPosition")
-// 		return
-// 	}
+	payload := make(map[string]interface{})
+	payload["Event"] = eventName
+	payload["Data"] = data
 
-// 	// Update player position (implement your logic here)
-// 	updatePlayerPosition(roomId, dest, socket.RemoteAddr().String())
-// }
+	for _, user := range room.RoomHdl.Rooms[roomId].Users {
+		userConn := user.Connection
 
-// // handleMessage processes incoming chat messages.
-// func handleMessage(socket *websocket.Conn, data interface{}) {
-// 	msgData := data.(map[string]interface{})
-// 	message := msgData["message"].(string)
-// 	socketId := msgData["socketId"].(string)
+		sendPayload(userConn, payload)
+	}
+}
 
-// 	if socketId == "chatbotName" { // Replace with your chatbot identifier
-// 		respondToChatbot(socket, message)
-// 		return
-// 	}
+func sendDirect(eventName string, targetUid string, data map[string]interface{}) {
+	userConn := clients[targetUid].Conn
 
-// 	// Broadcast the message to both users
-// 	broadcastMessage(socket.RemoteAddr().String(), socketId, message)
-// }
+	sendPayload(userConn, map[string]interface{}{
+		"Event": eventName,
+		"Data":  data,
+	})
+}
 
-// // handleDisconnect processes user disconnect events.
-// func handleDisconnect(socket *websocket.Conn) {
-// 	log.Println("A user disconnected:", socket.RemoteAddr())
+func sendPayload(userConn *websocket.Conn, payload map[string]interface{}) {
+	err := userConn.WriteJSON(payload)
+	if err != nil {
+		log.Printf("Error sending payload to %v: %v", userConn.RemoteAddr(), err)
+		userConn.Close()
 
-// 	roomId := getRoomID(socket) // Implement to get room ID from socket
-// 	if roomId != "" {
-// 		// Notify others in the room (implement your logic)
-// 		emitUserDisconnected(socket.RemoteAddr().String(), roomId)
-// 		removeUser(socket.RemoteAddr().String(), roomId) // Implement this function
-// 	}
-// }
+		// TODO:
+		// LeaveRoom()
+	}
+}

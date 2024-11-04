@@ -2,6 +2,7 @@ package types
 
 import (
 	"core/internal/lib"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
@@ -58,10 +59,66 @@ var DefaultAvatars = Avatars{
 
 type User struct {
 	UserName    string
-	UserID      string
+	UserID      UserID
 	Connection  *websocket.Conn
 	RoomID      string
 	Position    lib.Position
 	Avatar      Avatar
 	AvatarXAxis XAxis
+}
+
+type Client struct {
+	ID     *string
+	Conn   *websocket.Conn
+	RoomId string
+}
+
+type Room struct {
+	Name    string
+	Clients map[string]*Client
+	Mu      sync.Mutex
+}
+
+type RoomHandler struct {
+	Rooms map[string]*RoomData
+	Mu    sync.Mutex // Mutex to protect access to Rooms
+}
+
+type Position struct {
+	Row int
+	Col int
+}
+
+type UserID string
+type UserIdx int
+
+type RoomData struct {
+	Users          []User
+	UsersPositions []string // * e.g. "Row, Col" => "1,2", "3,4", ...
+	UserIdxMap     map[UserID]UserIdx
+}
+
+type UpdatePlayerPosition struct {
+	Dest     string `json:"dest"` // "row,col" => e.g. "3,4", "1,3", ...
+	RoomName string `json:"roomName"`
+}
+
+type CreateUserData struct {
+	UserName string `json:"userName"`
+	RoomName string `json:"roomName"`
+	AvatarId int    `json:"avatarId"`
+}
+
+type WsPayload struct {
+	Event string      `json:"event"`
+	Data  interface{} `json:"data"`
+}
+
+type Msg struct {
+	Msg string `json:"msg"`
+}
+
+type DirectMsg struct {
+	Msg
+	UserId string `json:"userId"`
 }

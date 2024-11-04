@@ -2,6 +2,7 @@ package routes
 
 import (
 	"core/internal/middleware"
+	"core/internal/room"
 	"core/internal/server/controllers"
 
 	"core/internal/ws"
@@ -27,7 +28,7 @@ func SetupRoutes(r *gin.Engine) {
 	}
 
 	// Initialize RoomHandler
-	ws.RoomHandler = ws.NewRoomHandler()
+	room.RoomHdl = room.NewRoomHandler()
 
 	r.GET("/ws", ws.HandleWebSocket)
 	r.POST("/ws", ws.HandleWebSocket)

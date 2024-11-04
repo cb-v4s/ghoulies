@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"fmt"
 	"math"
 	"sort"
 )
@@ -20,8 +21,8 @@ type Cell struct {
 	Visited bool
 }
 
-func calculateManhattanDistance(row1, col1, row2, col2 int) int {
-	return int(math.Abs(float64(row1-row2))) + int(math.Abs(float64(col1-col2)))
+func calculateManhattanDistance(rowA, colA, rowB, colB int) int {
+	return int(math.Abs(float64(rowA-rowB))) + int(math.Abs(float64(colA-colB)))
 }
 
 func isValidCell(row, col, numRows, numCols int, invalidPositions map[Position]struct{}) bool {
@@ -71,7 +72,7 @@ func calculatePath(endCell *Cell) []Position {
 	return path
 }
 
-func FindPath(startRow, startCol, endRow, endCol, gridSize int, invalidPositions []Position) []Position {
+func FindPath(startRow, startCol, endRow, endCol, gridSize int, invalidPositions []string) []Position {
 	numRows := gridSize
 	numCols := gridSize
 
@@ -95,7 +96,12 @@ func FindPath(startRow, startCol, endRow, endCol, gridSize int, invalidPositions
 	// Create a map for invalid positions
 	invalidPosMap := make(map[Position]struct{})
 	for _, pos := range invalidPositions {
-		invalidPosMap[pos] = struct{}{}
+		var row, col int
+		fmt.Sscanf(pos, "%d,%d", &row, &col)
+		invalidPosMap[Position{
+			Row: row,
+			Col: col,
+		}] = struct{}{}
 	}
 
 	// Perform A* search

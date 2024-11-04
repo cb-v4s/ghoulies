@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"core/internal/ws"
+	"core/internal/room"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -16,7 +16,7 @@ func GetRooms(c *gin.Context) {
 	rooms := []RoomsInfo{}
 	var roomsLimit int = 10
 
-	for roomId, roomData := range ws.RoomHandler.Rooms {
+	for roomId, roomData := range room.RoomHdl.Rooms {
 		if len(rooms) >= roomsLimit {
 			break
 		}
