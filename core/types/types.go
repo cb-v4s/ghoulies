@@ -98,9 +98,13 @@ type RoomData struct {
 	UserIdxMap     map[UserID]UserIdx
 }
 
-type UpdatePlayerPosition struct {
-	Dest     string `json:"dest"` // "row,col" => e.g. "3,4", "1,3", ...
-	RoomName string `json:"roomName"`
+type UpdateUserPos struct {
+	Dest     string `json:"dest"`     // "row,col" => e.g. "3,4", "1,3", ...
+	RoomName string `json:"roomName"` // ! TODO: remove this RoomName for security
+}
+
+type UpdateUserFacingDir struct {
+	Dest string `json:"dest"` // "row,col" => e.g. "3,4", "1,3", ...
 }
 
 type CreateUserData struct {
@@ -119,6 +123,6 @@ type Msg struct {
 }
 
 type DirectMsg struct {
-	Msg
+	Msg    string `json:"msg"`
 	UserId string `json:"userId"`
 }

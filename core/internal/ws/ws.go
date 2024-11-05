@@ -20,8 +20,7 @@ import (
 // Upgrader is used to upgrade an HTTP connection to a WebSocket connection.
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		// ! Allow all origins for simplicity
-		// TODO: allow only "origin"
+		// ! allow all origins for simplicity
 		return true
 	},
 }
@@ -89,16 +88,18 @@ func HandleWebSocket(c *gin.Context) {
 
 			err, eventName, resData := room.CreateUser(socket, types.UserID(clientID), reqData)
 			if err != nil {
-				clients[clientID].RoomId = reqData.RoomName
+				fmt.Printf("Error: %v", err)
+				return
 			}
 
+			clients[clientID].RoomId = reqData.RoomName
 			broadcastRoom(eventName, resData, reqData.RoomName)
 
 		// ! 2.
 		/* Este evento se encarga de actualizar datos de un usuario (posicion, nombre o direccion)
 		de un usuario en una sala para todos los usuarios en ella */
-		case "updateUserPosition":
-			var reqData types.UpdatePlayerPosition
+		case "updateUserPos":
+			var reqData types.UpdateUserPos
 			err := parsePayload(payload.Data, &reqData)
 			if err != nil {
 				fmt.Printf("Error: %s", err)
@@ -155,8 +156,45 @@ func HandleWebSocket(c *gin.Context) {
 				time.Sleep(time.Duration(room.SpeedUserMov) * time.Millisecond) // Simulate movement delay
 			}
 
-		case "updateUserDirection":
-			// TODO:
+		// TODO: check if working
+		case "updateUserFacingDir":
+			var reqData types.UpdateUserFacingDir
+			err := parsePayload(payload, &reqData)
+			if err != nil {
+				fmt.Printf("Error: %s", err)
+				return
+			}
+
+			client, exists := clients[clientID]
+			if !exists {
+				fmt.Printf("client does not exist")
+				return
+			}
+
+			roomData, exists := room.RoomHdl.Rooms[client.RoomId]
+			if !exists {
+				fmt.Printf("room not found")
+				return
+			}
+
+			userIdx, exists := roomData.UserIdxMap[types.UserID(clientID)]
+			if !exists {
+				fmt.Printf("user not found")
+				return
+			}
+
+			var row, col int
+			fmt.Sscanf(reqData.Dest, "%d,%d", &row, &col)
+
+			destPos := lib.Position{Row: row, Col: col}
+			currPos := roomData.Users[userIdx].Position
+			roomData.Users[userIdx].AvatarXAxis = room.GetUserFacingDir(currPos, destPos)
+
+			data := map[string]interface{}{
+				"users": roomData.Users,
+			}
+
+			broadcastRoom("updateMap", data, client.RoomId)
 		case "directMessage":
 			var reqData types.DirectMsg
 			err := parsePayload(payload.Data, &reqData)
@@ -165,9 +203,13 @@ func HandleWebSocket(c *gin.Context) {
 				return
 			}
 
+			filter := lib.TextFilter()
+			var filteredText string = filter.CleanText(reqData.Msg)
+			fmt.Printf("filteredText: %s", filteredText)
+
 			sendDirect("directMsg", reqData.UserId, map[string]interface{}{
 				"From": clientID,
-				"Msg":  reqData.Msg,
+				"Msg":  filteredText,
 			})
 		case "roomBroadcast":
 			var reqData types.Msg
@@ -177,11 +219,15 @@ func HandleWebSocket(c *gin.Context) {
 				return
 			}
 
-			// * Obten el id de la sala de clients
-			roomId := clients[clientID].RoomId
-			fmt.Printf("roomId: %s\n", roomId)
+			filter := lib.TextFilter()
+			var filteredText string = filter.CleanText(reqData.Msg)
+			fmt.Printf("filteredText: %s", filteredText)
 
-			// sendBroadcastMessage()
+			roomId := clients[clientID].RoomId
+
+			broadcastRoom("broadcastRoom", map[string]interface{}{
+				"Msg": filteredText,
+			}, roomId)
 		case "disconnect":
 			// TODO:
 		default:
@@ -211,17 +257,27 @@ func broadcastRoom(eventName string, data map[string]interface{}, roomId string)
 	payload["Event"] = eventName
 	payload["Data"] = data
 
-	for _, user := range room.RoomHdl.Rooms[roomId].Users {
+	targetRoom, exists := room.RoomHdl.Rooms[roomId]
+	if !exists {
+		fmt.Printf("room does not exist")
+		return
+	}
+
+	for _, user := range targetRoom.Users {
 		userConn := user.Connection
 
 		sendPayload(userConn, payload)
 	}
 }
 
-func sendDirect(eventName string, targetUid string, data map[string]interface{}) {
-	userConn := clients[targetUid].Conn
+func sendDirect(eventName string, uid string, data map[string]interface{}) {
+	user, exists := clients[uid]
+	if !exists {
+		fmt.Printf("client is not connected")
+		return
+	}
 
-	sendPayload(userConn, map[string]interface{}{
+	sendPayload(user.Conn, map[string]interface{}{
 		"Event": eventName,
 		"Data":  data,
 	})
@@ -232,8 +288,16 @@ func sendPayload(userConn *websocket.Conn, payload map[string]interface{}) {
 	if err != nil {
 		log.Printf("Error sending payload to %v: %v", userConn.RemoteAddr(), err)
 		userConn.Close()
-
-		// TODO:
-		// LeaveRoom()
 	}
+}
+
+func LeaveRoom(uid string) error {
+	user, exists := clients[uid]
+	if !exists {
+		return fmt.Errorf("user not found")
+	}
+
+	user.Conn.Close()
+
+	return nil
 }
