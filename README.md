@@ -1,20 +1,36 @@
-### overview
+# GOsties
 
-Videoconferencing web platform.
+![gosty](./ui/public/gosty.png)
 
-#### Stack
+### Overview
 
-Golang, Typescript, React, Postgresql
+This is web-based platform that enables users to host and join virtual meetups in a game-like environment allowing them to interact with others through text chat. Built with security and scalability in mind, this project aims to handle millions of concurrent users (with some tweaks) while providing a seamless and engaging experience.
 
-### setup
+### Tech stack
 
-Make sure you have installed the lastest version of docker desktop on your machine and on your path
+<!-- - **Apache Kafka** A cluster of brokers to handle XXXX
+- **Zookeper** For the kafka brokers to coordinate with each other. -->
 
-Development
+- **Typescript** Javascript but better.
+- **Golang** For high performance and efficient handling of concurrent connections.
+- **Postgres** SQL database.
+- **Redis** Memory-based data storage (gamer speed pro max) used mainly for keeping track of active Websocket sessions, rooms info and caching.
+- **React** SPA for dynamic and interactive UI components.
 
-Using docker containers
+### Setup
 
-Watch mode `make watch`.
-Release `make run ENV=prod`
+Make sure you have installed the lastest version of docker desktop on your machine and on your path.
 
-cd ui && npm i && npm run dev
+###### Development
+
+Create `.env` files accordingly for each `.env-template`
+
+```sh
+make watch
+```
+
+###### Release
+
+```sh
+make run ENV=release
+```
