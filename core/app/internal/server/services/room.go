@@ -1,4 +1,4 @@
-package room
+package services
 
 import (
 	"core/internal/lib"
@@ -17,14 +17,6 @@ const (
 	GridSize     = 10
 	RoomLimit    = 10
 )
-
-// * info
-// TODO: add to create a new room
-// newRoom.Rooms[config.WelcomeRoomName] = &types.RoomData{
-// 	Users:          []types.User{},
-// 	UsersPositions: []string{},                           // Initialize as empty map for set behavior
-// 	UserIdxMap:     make(map[types.UserID]types.UserIdx), // Initialize as empty map for user indices
-// }
 
 // Check if the room is full
 func IsRoomFull(roomId string) bool {

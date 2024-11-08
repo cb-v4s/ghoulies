@@ -4,7 +4,7 @@ import (
 	"core/config"
 	"core/internal/lib"
 	"core/internal/memory"
-	"core/internal/room"
+	"core/internal/server/services"
 	"core/types"
 	"core/util"
 	"encoding/json"
@@ -25,6 +25,13 @@ import (
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		origin := r.Header.Get("origin")
+
+		if config.GinMode == gin.DebugMode {
+			if origin == "" {
+				return true
+			}
+		}
+
 		allowedOrigins := strings.Split(config.AllowOrigins, ",")
 		for _, allowed := range allowedOrigins {
 			if origin == allowed {
@@ -119,7 +126,7 @@ func HandleWebSocket(c *gin.Context) {
 
 			fmt.Println("payload.Event =>", reqData)
 
-			err, eventName, resData := room.CreateUser(userConn, types.UserID(clientID), reqData)
+			err, eventName, resData := services.CreateUser(userConn, types.UserID(clientID), reqData)
 			if err != nil {
 				fmt.Printf("Error: %v", err)
 				return
@@ -151,7 +158,7 @@ func HandleWebSocket(c *gin.Context) {
 				return
 			}
 
-			userIdx := room.GetUserIdx(types.UserID(clientID), reqData.RoomId)
+			userIdx := services.GetUserIdx(types.UserID(clientID), reqData.RoomId)
 			if userIdx == -1 {
 				fmt.Printf("user not found")
 				return
@@ -163,7 +170,7 @@ func HandleWebSocket(c *gin.Context) {
 			invalidPositions := roomData.UsersPositions
 
 			// Find path to the destination (implement findPath)
-			path := lib.FindPath(currentPos.Row, currentPos.Col, row, col, room.GridSize, invalidPositions)
+			path := lib.FindPath(currentPos.Row, currentPos.Col, row, col, services.GridSize, invalidPositions)
 			if len(path) == 0 {
 				fmt.Printf("no valid path")
 				return
@@ -184,7 +191,7 @@ func HandleWebSocket(c *gin.Context) {
 				}
 
 				broadcastRoom("updateMap", data, reqData.RoomId)
-				time.Sleep(time.Duration(room.SpeedUserMov) * time.Millisecond) // Simulate movement delay
+				time.Sleep(time.Duration(services.SpeedUserMov) * time.Millisecond) // Simulate movement delay
 			}
 
 		// TODO: check if working
@@ -219,7 +226,7 @@ func HandleWebSocket(c *gin.Context) {
 
 			destPos := lib.Position{Row: row, Col: col}
 			currPos := roomData.Users[userIdx].Position
-			roomData.Users[userIdx].AvatarXAxis = room.GetUserFacingDir(currPos, destPos)
+			roomData.Users[userIdx].AvatarXAxis = services.GetUserFacingDir(currPos, destPos)
 
 			data := map[string]interface{}{
 				"users": roomData.Users,

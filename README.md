@@ -29,6 +29,8 @@ Create `.env` files accordingly for each `.env-template`
 make watch
 ```
 
+Go visit `http://localhost`
+
 ###### Release
 
 ```sh

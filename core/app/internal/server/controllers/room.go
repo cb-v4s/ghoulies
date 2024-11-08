@@ -17,6 +17,7 @@ type PopularRoomList struct {
 func GetRooms(c *gin.Context) {
 	rooms, err := memory.GetPopularRooms()
 	if err != nil {
+		fmt.Printf("error from GetRooms service: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}

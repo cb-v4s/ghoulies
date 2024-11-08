@@ -3,6 +3,7 @@ package main
 import (
 	"core/config"
 	db "core/internal/database"
+	"core/internal/memory"
 	"core/routes"
 	"fmt"
 	"log"
@@ -28,8 +29,8 @@ func main() {
 
 	fmt.Printf("App mode: %s\n", config.GinMode)
 
-	db.Start()
-	// memory.Start()
+	db.New()
+	memory.New()
 
 	gin.SetMode(config.GinMode)
 	r := gin.New()

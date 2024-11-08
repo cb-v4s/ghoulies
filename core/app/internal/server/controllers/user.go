@@ -12,6 +12,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	BcryptCharacterLimit = 72
+)
+
 func Signup(c *gin.Context) {
 	// * 1. Get email, username and password from request body
 	var reqBody struct {
@@ -23,6 +27,14 @@ func Signup(c *gin.Context) {
 	if c.Bind(&reqBody) != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid/missing parameters",
+		})
+
+		return
+	}
+
+	if len(reqBody.Password) > BcryptCharacterLimit {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Password must be no longer than 72 characters.",
 		})
 
 		return
