@@ -1,6 +1,6 @@
 # GOsties
 
-![gosty](./ui/public/gosty.png)
+![gosty](./ui/public/gosties.png)
 
 ### Overview
 
