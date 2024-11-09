@@ -5,7 +5,6 @@ import (
 	db "core/internal/database"
 	"core/internal/database/models"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -29,12 +28,12 @@ func Authenticate(c *gin.Context) {
 	})
 
 	if err != nil {
-		log.Fatal(err)
+		c.AbortWithStatus(http.StatusUnauthorized)
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
 		// * Validate token expiration
-		var userID = claims["sub"].(float64)
+		var userData = claims["sub"].(float64)
 		var currentTime = float64(time.Now().Unix())
 		var expDate = claims["exp"].(float64)
 
@@ -44,14 +43,23 @@ func Authenticate(c *gin.Context) {
 
 		// * Find user
 		var user models.User
-		db.DbCtx.First(&user, userID)
-
-		if user.ID == 0 {
+		result := db.DbCtx.Select("id, username, email").First(&user, userData)
+		if result.Error != nil {
+			fmt.Printf("Failed to get user from database")
 			c.AbortWithStatus(http.StatusUnauthorized)
 		}
 
+		if user.ID == 0 {
+			fmt.Printf("Failed to get user from database")
+			c.Status(http.StatusUnauthorized)
+		}
+
 		// * Attach user data to cookie
-		c.Set("userId", user.ID)
+		c.Set("user", map[string]any{
+			"ID":       user.ID,
+			"Username": user.Username,
+			"Email":    user.Email,
+		})
 
 		c.Next()
 	} else {

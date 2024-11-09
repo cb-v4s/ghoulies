@@ -14,8 +14,17 @@ type PopularRoomList struct {
 	TotalConns int    `json:"totalConns"`
 }
 
-// TODO: mover logica a room service
+// GetRooms
+// @Summary      Retrieve popular websocket rooms
+//
+//	@Description  Get popular rooms
+//	@Tags         rooms
+//
+// @Success      200  {object}  []types.PopularRoomList
+// @Failure      500  {object}  map[string]any
+// @Router /api/v1/rooms [get]
 func GetRooms(c *gin.Context) {
+	// TODO: mover logica a room service
 	rooms, err := memory.GetPopularRooms()
 	if err != nil {
 		fmt.Printf("error from GetRooms service: %v\n", err)

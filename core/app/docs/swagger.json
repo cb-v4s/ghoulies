@@ -1,0 +1,271 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/api/v1/rooms": {
+            "get": {
+                "description": "Get popular rooms",
+                "tags": [
+                    "rooms"
+                ],
+                "summary": "Retrieve popular websocket rooms",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.PopularRoomList"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/user/login": {
+            "post": {
+                "description": "Retrieves access and refresh tokens",
+                "tags": [
+                    "user"
+                ],
+                "summary": "Login with credentials",
+                "parameters": [
+                    {
+                        "description": "User login information",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.LoginRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success response",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.LoginSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Failed response",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.LoginErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/user/protected": {
+            "get": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "Example protected route",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"",
+                        "description": "Access token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success response",
+                        "schema": {}
+                    },
+                    "400": {
+                        "description": "Failed response",
+                        "schema": {}
+                    }
+                }
+            }
+        },
+        "/api/v1/user/refresh": {
+            "get": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "Get a new access token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"",
+                        "description": "Access token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success response",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.RefreshTokenSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Failed response",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.RefreshTokenErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/user/signup": {
+            "post": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "Create a user account",
+                "parameters": [
+                    {
+                        "description": "User signup information",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.SignupRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Success response",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.SignupSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Failed response",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.SignupErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "controllers.LoginErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Invalid Email and/or Password"
+                }
+            }
+        },
+        "controllers.LoginRequestBody": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "alice@wonderland.tld"
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 72,
+                    "example": "+5tRonG_P455w0rd_"
+                }
+            }
+        },
+        "controllers.LoginSuccessResponse": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "refreshToken": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                }
+            }
+        },
+        "controllers.RefreshTokenErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "something went wrong"
+                }
+            }
+        },
+        "controllers.RefreshTokenSuccessResponse": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp915J9..."
+                }
+            }
+        },
+        "controllers.SignupErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Invalid/missing parameters"
+                }
+            }
+        },
+        "controllers.SignupRequestBody": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "alice@wonderland.tld"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "+5tRonG_P455w0rd_"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "Alice"
+                }
+            }
+        },
+        "controllers.SignupSuccessResponse": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "types.PopularRoomList": {
+            "type": "object",
+            "properties": {
+                "roomId": {
+                    "type": "string"
+                },
+                "roomName": {
+                    "type": "string"
+                },
+                "totalConns": {
+                    "type": "integer"
+                }
+            }
+        }
+    }
+}

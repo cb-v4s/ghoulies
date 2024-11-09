@@ -1,0 +1,179 @@
+definitions:
+  controllers.LoginErrorResponse:
+    properties:
+      error:
+        example: Invalid Email and/or Password
+        type: string
+    type: object
+  controllers.LoginRequestBody:
+    properties:
+      email:
+        example: alice@wonderland.tld
+        type: string
+      password:
+        example: +5tRonG_P455w0rd_
+        maxLength: 72
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  controllers.LoginSuccessResponse:
+    properties:
+      accessToken:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      refreshToken:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  controllers.RefreshTokenErrorResponse:
+    properties:
+      error:
+        example: something went wrong
+        type: string
+    type: object
+  controllers.RefreshTokenSuccessResponse:
+    properties:
+      accessToken:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp915J9...
+        type: string
+    type: object
+  controllers.SignupErrorResponse:
+    properties:
+      error:
+        example: Invalid/missing parameters
+        type: string
+    type: object
+  controllers.SignupRequestBody:
+    properties:
+      email:
+        example: alice@wonderland.tld
+        type: string
+      password:
+        example: +5tRonG_P455w0rd_
+        type: string
+      username:
+        example: Alice
+        type: string
+    type: object
+  controllers.SignupSuccessResponse:
+    properties:
+      success:
+        example: true
+        type: boolean
+    type: object
+  types.PopularRoomList:
+    properties:
+      roomId:
+        type: string
+      roomName:
+        type: string
+      totalConns:
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1/rooms:
+    get:
+      description: Get popular rooms
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.PopularRoomList'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Retrieve popular websocket rooms
+      tags:
+      - rooms
+  /api/v1/user/login:
+    post:
+      description: Retrieves access and refresh tokens
+      parameters:
+      - description: User login information
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.LoginRequestBody'
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/controllers.LoginSuccessResponse'
+        "400":
+          description: Failed response
+          schema:
+            $ref: '#/definitions/controllers.LoginErrorResponse'
+      summary: Login with credentials
+      tags:
+      - user
+  /api/v1/user/protected:
+    get:
+      parameters:
+      - description: Access token
+        example: '"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Success response
+          schema: {}
+        "400":
+          description: Failed response
+          schema: {}
+      summary: Example protected route
+      tags:
+      - user
+  /api/v1/user/refresh:
+    get:
+      parameters:
+      - description: Access token
+        example: '"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/controllers.RefreshTokenSuccessResponse'
+        "400":
+          description: Failed response
+          schema:
+            $ref: '#/definitions/controllers.RefreshTokenErrorResponse'
+      summary: Get a new access token
+      tags:
+      - user
+  /api/v1/user/signup:
+    post:
+      parameters:
+      - description: User signup information
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.SignupRequestBody'
+      responses:
+        "201":
+          description: Success response
+          schema:
+            $ref: '#/definitions/controllers.SignupSuccessResponse'
+        "400":
+          description: Failed response
+          schema:
+            $ref: '#/definitions/controllers.SignupErrorResponse'
+      summary: Create a user account
+      tags:
+      - user
+swagger: "2.0"

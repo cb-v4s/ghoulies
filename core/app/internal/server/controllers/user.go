@@ -4,6 +4,7 @@ import (
 	"core/config"
 	db "core/internal/database"
 	"core/internal/database/models"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -16,6 +17,51 @@ const (
 	BcryptCharacterLimit = 72
 )
 
+type SignupSuccessResponse struct {
+	Success bool `json:"success" example:"true"`
+}
+
+type SignupErrorResponse struct {
+	Error string `json:"error" example:"Invalid/missing parameters"`
+}
+
+type SignupRequestBody struct {
+	Email    string `json:"email" example:"alice@wonderland.tld"`
+	Username string `json:"username" example:"Alice"`
+	Password string `json:"password" example:"+5tRonG_P455w0rd_"`
+}
+
+type LoginRequestBody struct {
+	Email    string `json:"email" binding:"required,email" example:"alice@wonderland.tld"`
+	Password string `json:"password" binding:"required,max=72" example:"+5tRonG_P455w0rd_"`
+}
+
+type LoginSuccessResponse struct {
+	AccessToken  string `json:"accessToken" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	RefreshToken string `json:"refreshToken" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+}
+
+type LoginErrorResponse struct {
+	Error string `json:"error" example:"Invalid Email and/or Password"`
+}
+
+type RefreshTokenSuccessResponse struct {
+	AccessToken string `json:"accessToken" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp915J9..."`
+}
+
+type RefreshTokenErrorResponse struct {
+	Error string `json:"error" example:"something went wrong"`
+}
+
+// User Signup
+// @Summary      Create a user account
+//
+//	@Tags         user
+//
+// @Param        body  body  SignupRequestBody  true  "User signup information"
+// @Success      201  {object}  SignupSuccessResponse "Success response"
+// @Failure      400  {object}  SignupErrorResponse "Failed response"
+// @Router /api/v1/user/signup [post]
 func Signup(c *gin.Context) {
 	// * 1. Get email, username and password from request body
 	var reqBody struct {
@@ -92,6 +138,16 @@ func Signup(c *gin.Context) {
 	})
 }
 
+// User Login
+// @Summary    Login with credentials
+//
+//	@Description  Retrieves access and refresh tokens
+//	@Tags         user
+//
+// @Param        body  body  LoginRequestBody  true  "User login information"
+// @Success      200  {object}  LoginSuccessResponse "Success response"
+// @Failure      400  {object}  LoginErrorResponse "Failed response"
+// @Router /api/v1/user/login [post]
 func Login(c *gin.Context) {
 	// * Get email and password from req
 	var reqBody struct {
@@ -158,17 +214,29 @@ func Login(c *gin.Context) {
 	}
 
 	// * Send a response
-	c.JSON(http.StatusOK, gin.H{
-		"accessToken":  accessTokenString,
-		"refreshToken": refreshTokenString,
+	c.JSON(http.StatusOK, LoginSuccessResponse{
+		AccessToken:  accessTokenString,
+		RefreshToken: refreshTokenString,
 	})
 }
 
+// Refresh Token
+// @Summary Get a new access token
+//
+//	@Tags         user
+//
+// @Param        Authorization header  string  true  "Access token"  example("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+// @Success      200  {object}  RefreshTokenSuccessResponse "Success response"
+// @Failure      400  {object}  RefreshTokenErrorResponse "Failed response"
+// @Router /api/v1/user/refresh  [get]
 func Refresh(c *gin.Context) {
-	userId, _ := c.Get("userId")
+	user, _ := c.Get("user") // * esto va a venir del middleware
+	var userData models.User = user.(models.User)
+
+	fmt.Printf("User: %v. Abajo deberia dar error\n", user)
 
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": userId,
+		"sub": userData.ID,
 		"exp": time.Now().Add(time.Hour * 24).Unix(),
 	})
 
@@ -182,16 +250,28 @@ func Refresh(c *gin.Context) {
 		return
 	}
 
-	// * Send a response
-	c.JSON(http.StatusOK, gin.H{
-		"accessToken": refreshTokenString,
+	c.JSON(http.StatusOK, RefreshTokenSuccessResponse{
+		AccessToken: refreshTokenString,
 	})
 }
 
+// Protected Route
+// @Summary Example protected route
+//
+//	@Tags         user
+//
+// @Param        Authorization header  string  true  "Access token"  example("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+// @Success      200  {object}  any "Success response"
+// @Failure      400  {object}  any "Failed response"
+// @Router /api/v1/user/protected  [get]
 func Protected(c *gin.Context) {
-	user, _ := c.Get("user")
-
-	c.JSON(http.StatusOK, gin.H{
-		"user": user,
-	})
+	// * esto se va a setear desde authentication middleware
+	user, exists := c.Get("user")
+	if exists {
+		c.JSON(http.StatusOK, gin.H{
+			"user": user,
+		})
+	} else {
+		c.Status(http.StatusUnauthorized)
+	}
 }

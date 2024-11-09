@@ -6,10 +6,18 @@ import (
 
 	"core/internal/ws"
 
+	docs "core/docs"
+
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func SetupRoutes(r *gin.Engine) {
+	docs.SwaggerInfo.Title = "my api title"
+	docs.SwaggerInfo.Description = "my description"
+	docs.SwaggerInfo.Version = "1.0"
+
 	apiv1 := r.Group("/api/v1")
 	{
 		userGroup := apiv1.Group("/user")
@@ -24,8 +32,10 @@ func SetupRoutes(r *gin.Engine) {
 		{
 			roomGroup.GET("", controllers.GetRooms)
 		}
+
 	}
 
 	r.GET("/ws", ws.HandleWebSocket)
 	r.POST("/ws", ws.HandleWebSocket)
+	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
