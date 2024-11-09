@@ -2,6 +2,7 @@ package util
 
 import (
 	"core/internal/lib"
+	"core/types"
 	"fmt"
 	"math/big"
 
@@ -41,11 +42,23 @@ func ConvertMapToSlice(usersPositions []string) []lib.Position {
 	return positions
 }
 
-func RandomId() (string, error) {
+func GetRandomId() (string, error) {
 	rId, err := rand.Int(rand.Reader, big.NewInt(1000000))
 	if err != nil {
 		return "", fmt.Errorf("error generating random id: %v", err)
 	}
 
 	return rId.String(), nil
+}
+
+func NewRoomId(roomName string) (*types.RoomId, error) {
+	randomId, err := GetRandomId()
+	if err != nil {
+		return nil, fmt.Errorf("error generating random id: %v", err)
+	}
+
+	id := fmt.Sprintf(types.RoomIdFormat, roomName, randomId)
+	roomId := types.RoomId(id)
+
+	return &roomId, nil
 }

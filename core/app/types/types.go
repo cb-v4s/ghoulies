@@ -11,8 +11,9 @@ type XAxis string
 
 // Constants for XAxis
 const (
-	Right XAxis = "right"
-	Left  XAxis = "left"
+	Right        XAxis  = "right"
+	Left         XAxis  = "left"
+	RoomIdFormat string = "%s#%s" // e.g. "my room#334288"
 )
 
 // Avatar struct using XAxis as keys
@@ -20,8 +21,8 @@ type Avatar struct {
 	Direction map[XAxis]string
 }
 
-// Avatars map with integer keys
 type Avatars map[int]Avatar
+type RoomId string
 
 var DefaultAvatars = Avatars{
 	1: {
@@ -67,9 +68,9 @@ type User struct {
 }
 
 type Client struct {
-	ID     string
+	ID     UserID
 	Conn   *websocket.Conn // ! esto probablemente haya que almacenarlo en memoria?
-	RoomId string
+	RoomId RoomId
 }
 
 type Room struct {
@@ -94,16 +95,22 @@ type RoomData struct {
 
 type UpdateUserPos struct {
 	Dest   string `json:"dest"`   // "row,col" => e.g. "3,4", "1,3", ...
-	RoomId string `json:"roomId"` // ! TODO: remove this RoomName for security
+	RoomId RoomId `json:"roomId"` // ! TODO: remove this RoomName for security
 }
 
 type UpdateUserFacingDir struct {
 	Dest string `json:"dest"` // "row,col" => e.g. "3,4", "1,3", ...
 }
 
-type CreateUserData struct {
+type NewRoom struct {
 	UserName string `json:"userName"`
-	RoomId   string `json:"roomId"`
+	RoomName string `json:"roomName"`
+	AvatarId int    `json:"avatarId"`
+}
+
+type JoinRoom struct {
+	RoomId   RoomId `json:"roomId"`
+	UserName string `json:"userName"`
 	RoomName string `json:"roomName"`
 	AvatarId int    `json:"avatarId"`
 }
@@ -119,11 +126,11 @@ type Msg struct {
 
 type DirectMsg struct {
 	Msg    string `json:"msg"`
-	UserId string `json:"userId"`
+	UserId UserID `json:"userId"`
 }
 
 type PopularRoomList struct {
-	RoomId     string `json:"roomId"`
+	RoomId     RoomId `json:"roomId"`
 	RoomName   string `json:"roomName"`
 	TotalConns int    `json:"totalConns"`
 }

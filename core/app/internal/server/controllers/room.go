@@ -14,6 +14,7 @@ type PopularRoomList struct {
 	TotalConns int    `json:"totalConns"`
 }
 
+// TODO: mover logica a room service
 func GetRooms(c *gin.Context) {
 	rooms, err := memory.GetPopularRooms()
 	if err != nil {

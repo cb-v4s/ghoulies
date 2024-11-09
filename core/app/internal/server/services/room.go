@@ -19,13 +19,13 @@ const (
 )
 
 // Check if the room is full
-func IsRoomFull(roomId string) bool {
+func IsRoomFull(roomId types.RoomId) bool {
 	roomData, exists := memory.GetRoom(roomId)
 	return exists && len(roomData.Users) >= RoomLimit
 }
 
 // Get the user index in the specified room
-func GetUserIdx(userId types.UserID, roomId string) types.UserIdx {
+func GetUserIdx(userId types.UserID, roomId types.RoomId) types.UserIdx {
 
 	room, exists := memory.GetRoom(roomId)
 	if !exists {
@@ -59,8 +59,8 @@ func GetRandomEmptyPosition(occupiedPositions []string) (string, lib.Position) {
 }
 
 // TODO check if this is working
-func RemoveUser(userId types.UserID, roomId string) {
-	room, exists := memory.GetRoom(string(roomId))
+func RemoveUser(userId types.UserID, roomId types.RoomId) {
+	room, exists := memory.GetRoom(roomId)
 	if !exists {
 		return
 	}
@@ -91,31 +91,24 @@ func RemoveUser(userId types.UserID, roomId string) {
 	if len(room.Users) == 0 {
 		memory.DeleteRoom(roomId)
 	}
+
+	// TODO: revisar esto
+	memory.UpdateRoom(roomId, room)
 }
 
 func PositionToString(p lib.Position) string {
 	return fmt.Sprintf("%d,%d", p.Row, p.Col)
 }
 
-func CreateUser(socket *websocket.Conn, userId types.UserID, data types.CreateUserData) (error, string, map[string]interface{}) {
+type NewRoomResponse struct {
+	RoomId   types.RoomId
+	GridSize int
+	Users    []types.User
+}
 
-	if len(data.RoomId) > 0 {
-		// Check if the room is full
-		if IsRoomFull(data.RoomId) {
-			response := map[string]interface{}{}
-
-			// ! TODO: do not mix logic, a wsEvent should only be handle by wsHandler
-			return nil, "error_room_full", response
-		}
-	}
-
-	// Existing room
-
-	// Check if the room already exists
-	roomData, exists := memory.GetRoom(data.RoomId)
-
+func NewRoom(socket *websocket.Conn, userId types.UserID, data types.NewRoom) (*NewRoomResponse, error) {
 	// Set initial position
-	newPosition := lib.Position{Row: 0, Col: 0} // Initial position
+	newPosition := lib.Position{Row: 0, Col: 0}
 
 	// Create new user
 	newUser := types.User{
@@ -128,39 +121,88 @@ func CreateUser(socket *websocket.Conn, userId types.UserID, data types.CreateUs
 		AvatarXAxis: types.Right,
 	}
 
-	if !exists {
-		roomData := &types.RoomData{
-			Users:          []types.User{},
-			UsersPositions: []string{},                           // Initialize as empty map for set behavior
-			UserIdxMap:     make(map[types.UserID]types.UserIdx), // Initialize as empty map for user indices
+	fmt.Printf("Creating room: %s\n", data.RoomName)
+
+	roomData := types.RoomData{
+		Name:           data.RoomName,
+		Users:          []types.User{},
+		UsersPositions: []string{},
+		UserIdxMap:     make(map[types.UserID]types.UserIdx),
+	}
+
+	// Add user to the room
+	roomData.Users = append(roomData.Users, newUser)
+	roomData.UsersPositions = append(roomData.UsersPositions, PositionToString(newPosition))
+
+	roomData.UserIdxMap[userId] = 0
+
+	for {
+		roomId, err := util.NewRoomId(data.RoomName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate randomId")
 		}
 
-		// Add user to the room
-		roomData.Users = append(roomData.Users, newUser)
-		roomData.UsersPositions = append(roomData.UsersPositions, PositionToString(newPosition))
+		_, exists := memory.GetRoom(*roomId)
+		if !exists {
+			response := &NewRoomResponse{
+				RoomId:   *roomId,
+				GridSize: GridSize,
+				Users:    roomData.Users,
+			}
 
-		roomData.UserIdxMap[userId] = 0
-
-		memory.CreateRoom(data.RoomName)
-	} else {
-		newPositionStr, newPosition := GetRandomEmptyPosition(roomData.UsersPositions)
-		newUser.Position = newPosition
-
-		// ? do i have to modify rooms like this or could i just modify roomData?
-		roomData.Users = append(roomData.Users, newUser)
-		roomData.UsersPositions = append(roomData.UsersPositions, newPositionStr)
-		roomData.UserIdxMap[userId] = types.UserIdx(len(roomData.Users) - 1)
-
-		memory.UpdateRoom(data.RoomId, roomData)
+			memory.CreateRoom(data.RoomName, *roomId, roomData)
+			return response, nil
+		}
 	}
 
-	response := map[string]interface{}{
-		"gridSize": GridSize,
-		"users":    roomData.Users,
+}
+
+type JoinRoomResponse struct {
+	GridSize int
+	Users    []types.User
+}
+
+func JoinRoom(socket *websocket.Conn, userId types.UserID, data types.JoinRoom) (*JoinRoomResponse, error) {
+	if IsRoomFull(data.RoomId) {
+		return nil, fmt.Errorf("error_room_full")
 	}
 
-	// return initMap
-	return nil, "NewUser", response
+	// Check if the room already exists
+	roomData, exists := memory.GetRoom(data.RoomId)
+
+	fmt.Printf("roomData: %v, exists: %v\n", roomData, exists)
+
+	// Set initial position
+	newPosition := lib.Position{Row: 0, Col: 0}
+
+	// Create new user
+	newUser := types.User{
+		UserName:    data.UserName,
+		UserID:      userId,
+		Connection:  socket,
+		RoomID:      data.RoomName,
+		Position:    newPosition,
+		Avatar:      types.DefaultAvatars[data.AvatarId],
+		AvatarXAxis: types.Right,
+	}
+
+	fmt.Printf("Updating room: %s\n", data.RoomId)
+	newPositionStr, newPosition := GetRandomEmptyPosition(roomData.UsersPositions)
+	newUser.Position = newPosition
+
+	roomData.Users = append(roomData.Users, newUser)
+	roomData.UsersPositions = append(roomData.UsersPositions, newPositionStr)
+	roomData.UserIdxMap[userId] = types.UserIdx(len(roomData.Users) - 1)
+
+	fmt.Printf("roomData: %v\n", roomData)
+
+	response := &JoinRoomResponse{
+		GridSize: GridSize,
+		Users:    roomData.Users,
+	}
+
+	memory.UpdateRoom(data.RoomId, roomData)
+	return response, nil
 }
 
 func GetUserFacingDir(origin lib.Position, target lib.Position) types.XAxis {

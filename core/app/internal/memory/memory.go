@@ -4,7 +4,6 @@ import (
 	"context"
 	"core/config"
 	"core/types"
-	"core/util"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -14,16 +13,16 @@ import (
 )
 
 var (
-	RedisClient *redis.Client // TODO: no exponer
+	redisClient *redis.Client
 )
 
 const (
-	roomIdFormat      string = "%s#%s" // e.g. "my room#334288"
 	popularRoomsLimit int    = 10
 	clientsKey        string = "clients"
 	roomsKey          string = "rooms"
 )
 
+// ! call `defer cancel()` on each func call to avoid resource leaks
 func NewContextWithTimeout(timeout time.Duration) (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 
@@ -39,15 +38,15 @@ func NewContextWithTimeout(timeout time.Duration) (context.Context, context.Canc
 
 func New() {
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
-	defer cancelCtx() // ! cancel ctx to avoid resource leaks
+	defer cancelCtx()
 
-	RedisClient = redis.NewClient(&redis.Options{
+	redisClient = redis.NewClient(&redis.Options{
 		Addr:     config.RedisServer,
 		Password: config.RedisPassword,
 	})
 
 	// Test Redis connection
-	if err := RedisClient.Ping(ctx).Err(); err != nil {
+	if err := redisClient.Ping(ctx).Err(); err != nil {
 		log.Fatalf("failed to connect to redis: %s", err)
 		return
 	}
@@ -65,15 +64,15 @@ func New() {
 		UserIdxMap:     make(map[types.UserID]types.UserIdx),
 	}
 
-	welcomeRoomJSON, err := json.Marshal(welcomeRoom) // ! roomJSON, err := ...
+	welcomeRoomJSON, err := json.Marshal(welcomeRoom)
 	if err != nil {
 		fmt.Printf("Error marshalling client data: %v", err)
 	}
 
-	welcomeRoomId := fmt.Sprintf(roomIdFormat, welcomeRoom.Name, "0")
+	welcomeRoomId := fmt.Sprintf(types.RoomIdFormat, welcomeRoom.Name, "0")
 
-	if roomData, err := RedisClient.HGet(ctx, roomsKey, welcomeRoomId).Result(); err != redis.Nil || len(roomData) == 0 {
-		err = RedisClient.HSet(ctx, roomsKey, welcomeRoomId, welcomeRoomJSON).Err()
+	if roomData, err := redisClient.HGet(ctx, roomsKey, welcomeRoomId).Result(); err != redis.Nil || len(roomData) == 0 {
+		err = redisClient.HSet(ctx, roomsKey, welcomeRoomId, welcomeRoomJSON).Err()
 		if err != nil {
 			log.Fatalf("Error saving room data to Redis: %s", err)
 		}
@@ -85,24 +84,24 @@ func New() {
 
 func AddClient(data *types.Client) {
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
-	defer cancelCtx() // ! cancel ctx to avoid resource leaks
+	defer cancelCtx()
 
 	clientJSON, err := json.Marshal(data)
 	if err != nil {
 		log.Fatalf("Error marshalling client data: %s", err)
 	}
 
-	err = RedisClient.HSet(ctx, clientsKey, data.ID, clientJSON).Err()
+	err = redisClient.HSet(ctx, clientsKey, data.ID, clientJSON).Err()
 	if err != nil {
 		log.Fatalf("Error saving client data to Redis: %s", err)
 	}
 }
 
-func GetClient(clientID string) (*types.Client, error) {
+func GetClient(clientID types.UserID) (*types.Client, error) {
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
-	defer cancelCtx() // ! cancel ctx to avoid resource leaks
+	defer cancelCtx()
 
-	clientJSON, err := RedisClient.HGet(ctx, clientsKey, clientID).Result()
+	clientJSON, err := redisClient.HGet(ctx, clientsKey, string(clientID)).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -115,24 +114,24 @@ func GetClient(clientID string) (*types.Client, error) {
 	return &client, nil
 }
 
-func DeleteClient(clientID string) error {
+func DeleteClient(clientID types.UserID) error {
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
-	defer cancelCtx() // ! cancel ctx to avoid resource leaks
+	defer cancelCtx()
 
 	// Use HDEL to remove the client entry from the hash
-	err := RedisClient.HDel(ctx, clientsKey, clientID).Err()
+	err := redisClient.HDel(ctx, clientsKey, string(clientID)).Err()
 	if err != nil {
 		return fmt.Errorf("could not delete client: %w", err)
 	}
 	return nil
 }
 
-func UpdateClientRoom(clientID string, roomId string) error {
+func UpdateUserRoom(clientID types.UserID, roomId types.RoomId) error {
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
-	defer cancelCtx() // ! cancel ctx to avoid resource leaks
+	defer cancelCtx()
 
 	// Retrieve the existing client data
-	clientJSON, err := RedisClient.HGet(ctx, clientsKey, clientID).Result()
+	clientJSON, err := redisClient.HGet(ctx, clientsKey, string(clientID)).Result()
 	if err != nil {
 		return fmt.Errorf("could not get client: %w", err)
 	}
@@ -152,7 +151,7 @@ func UpdateClientRoom(clientID string, roomId string) error {
 	}
 
 	// Use HSET to update the client entry in Redis
-	err = RedisClient.HSet(ctx, clientsKey, clientID, updatedClientJSON).Err()
+	err = redisClient.HSet(ctx, clientsKey, clientID, updatedClientJSON).Err()
 	if err != nil {
 		return fmt.Errorf("could not update client in Redis: %w", err)
 	}
@@ -160,37 +159,26 @@ func UpdateClientRoom(clientID string, roomId string) error {
 	return nil
 }
 
-func CreateRoom(roomName string) {
-	roomData := types.RoomData{
-		Users:          []types.User{},
-		UsersPositions: []string{},
-		UserIdxMap:     make(map[types.UserID]types.UserIdx),
-	}
-
+func CreateRoom(roomName string, roomId types.RoomId, roomData types.RoomData) {
 	roomJson, err := json.Marshal(roomData)
 	if err != nil {
 		log.Fatalf("Error marshalling room data: %s", err)
 	}
 
-	roomId, err := util.RandomId()
-	if err != nil {
-		return
-	}
-
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
-	defer cancelCtx() // ! cancel ctx to avoid resource leaks
+	defer cancelCtx()
 
-	err = RedisClient.HSet(ctx, roomsKey, fmt.Sprintf(roomIdFormat, roomName, roomId), roomJson).Err()
+	err = redisClient.HSet(ctx, roomsKey, roomId, roomJson).Err()
 	if err != nil {
 		log.Fatalf("Error saving room data to Redis: %s", err)
 	}
 }
 
-func GetRoom(roomId string) (*types.RoomData, bool) {
+func GetRoom(roomId types.RoomId) (*types.RoomData, bool) {
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
-	defer cancelCtx() // ! cancel ctx to avoid resource leaks
+	defer cancelCtx()
 
-	roomJSON, err := RedisClient.HGet(ctx, roomsKey, roomId).Result()
+	roomJSON, err := redisClient.HGet(ctx, roomsKey, string(roomId)).Result()
 	if err != nil {
 		return nil, false
 	}
@@ -205,28 +193,28 @@ func GetRoom(roomId string) (*types.RoomData, bool) {
 
 func GetPopularRooms() ([]types.PopularRoomList, error) {
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
-	defer cancelCtx() // ! cancel ctx to avoid resource leaks
+	defer cancelCtx()
 
 	rooms := []types.PopularRoomList{}
-	roomKeys, err := RedisClient.HKeys(ctx, roomsKey).Result()
+	roomIds, err := redisClient.HKeys(ctx, roomsKey).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get room keys: %v", err)
 	}
 
-	totalRooms := len(roomKeys)
+	totalRooms := len(roomIds)
 	if totalRooms == 0 {
 		return rooms, nil
 	}
 
 	if totalRooms > popularRoomsLimit {
-		roomKeys = roomKeys[:popularRoomsLimit]
+		roomIds = roomIds[:popularRoomsLimit]
 	}
 
-	for _, roomKey := range roomKeys {
-		roomJSON, err := RedisClient.HGet(ctx, roomsKey, roomKey).Result()
+	for _, roomId := range roomIds {
+		roomJSON, err := redisClient.HGet(ctx, roomsKey, roomId).Result()
 		if err != nil {
 			if err == redis.Nil {
-				log.Printf("no data found for room key %s", roomKey)
+				log.Printf("no data found for room key %s", roomId)
 				continue
 			}
 
@@ -234,18 +222,18 @@ func GetPopularRooms() ([]types.PopularRoomList, error) {
 		}
 
 		if roomJSON == "" {
-			log.Printf("room JSON is empty for key %s", roomKey)
+			log.Printf("room JSON is empty for key %s", roomId)
 			continue
 		}
 
 		var roomData types.RoomData
 		if err := json.Unmarshal([]byte(roomJSON), &roomData); err != nil {
-			fmt.Printf("failed to unmarshal room JSON for key %s: %v", roomKey, err)
+			fmt.Printf("failed to unmarshal room JSON for key %s: %v", roomId, err)
 			continue
 		}
 
 		rooms = append(rooms, types.PopularRoomList{
-			RoomId:     roomKey,
+			RoomId:     types.RoomId(roomId),
 			RoomName:   roomData.Name,
 			TotalConns: len(roomData.Users),
 		})
@@ -254,26 +242,26 @@ func GetPopularRooms() ([]types.PopularRoomList, error) {
 	return rooms, nil
 }
 
-func UpdateRoom(roomId string, newRoomData *types.RoomData) {
+func UpdateRoom(roomId types.RoomId, newRoomData *types.RoomData) {
 	roomJson, err := json.Marshal(newRoomData)
 	if err != nil {
 		log.Fatalf("Error marshalling room data: %s", err)
 	}
 
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
-	defer cancelCtx() // ! cancel ctx to avoid resource leaks
+	defer cancelCtx()
 
-	err = RedisClient.HSet(ctx, roomsKey, roomId, roomJson).Err()
+	err = redisClient.HSet(ctx, roomsKey, roomId, roomJson).Err()
 	if err != nil {
 		log.Fatalf("Error saving room data to Redis: %s", err)
 	}
 }
 
-func DeleteRoom(roomID string) error {
+func DeleteRoom(roomId types.RoomId) error {
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
-	defer cancelCtx() // ! cancel ctx to avoid resource leaks
+	defer cancelCtx()
 
-	err := RedisClient.HDel(ctx, roomsKey, roomID).Err()
+	err := redisClient.HDel(ctx, roomsKey, string(roomId)).Err()
 	if err != nil {
 		return fmt.Errorf("could not delete room: %w", err)
 	}
@@ -284,13 +272,13 @@ func DeleteAllRooms(ctx context.Context, pattern string) error {
 	cursor := uint64(0)
 
 	for {
-		keys, newCursor, err := RedisClient.Scan(ctx, cursor, "*", 0).Result()
+		keys, newCursor, err := redisClient.Scan(ctx, cursor, "*", 0).Result()
 		if err != nil {
 			return fmt.Errorf("could not scan keys: %v", err)
 		}
 
 		if len(keys) > 0 {
-			_, err = RedisClient.Del(ctx, keys...).Result()
+			_, err = redisClient.Del(ctx, keys...).Result()
 			if err != nil {
 				return fmt.Errorf("could not delete keys: %v", err)
 			}

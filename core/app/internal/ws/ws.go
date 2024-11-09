@@ -76,14 +76,16 @@ func HandleWebSocket(c *gin.Context) {
 	activeIPAddresses[ipAddr]++
 	activeIPAddressesMu.Unlock()
 
-	clientID, err := util.RandomId()
+	id, err := util.GetRandomId()
+	userId := types.UserID(id)
+
 	if err != nil {
 		fmt.Printf("Error getting random id: %v", err)
 	}
 
 	// Create a new client
 	client := &types.Client{
-		ID:     clientID,
+		ID:     userId,
 		Conn:   userConn,
 		RoomId: "",
 	}
@@ -93,8 +95,9 @@ func HandleWebSocket(c *gin.Context) {
 	log.Println("A user connected:", userConn.RemoteAddr())
 
 	defer func() {
-		userConn.Close()
-		memory.DeleteClient(clientID)
+		// userConn.Close() // ya se hace en LeaveRoom
+		LeaveRoom(userId)
+		memory.DeleteClient(userId)
 
 		activeIPAddressesMu.Lock()
 		activeIPAddresses[ipAddr]--
@@ -116,24 +119,39 @@ func HandleWebSocket(c *gin.Context) {
 		// ! 1.
 		/* Este evento se encarga de crear una sala (si no existe) e integrar un usuario a una sala,
 		y va a emitir un evento con el tamaño de la sala y datos de los usuarios en ella */
-		case "createUser":
-			var reqData types.CreateUserData
+		case "newRoom":
+			var reqData types.NewRoom
 			err := parsePayload(payload.Data, &reqData)
 			if err != nil {
-				fmt.Printf("Error: %s", err)
+				fmt.Printf("Error: %s\n", err)
 				return
 			}
 
 			fmt.Println("payload.Event =>", reqData)
 
-			err, eventName, resData := services.CreateUser(userConn, types.UserID(clientID), reqData)
+			resData, err := services.NewRoom(userConn, types.UserID(userId), reqData)
 			if err != nil {
-				fmt.Printf("Error: %v", err)
+				// TODO: sendDirect the error
+				fmt.Printf("something went wrong: %v\n", err)
 				return
 			}
 
-			memory.UpdateClientRoom(clientID, reqData.RoomName)
-			broadcastRoom(eventName, resData, reqData.RoomName)
+			fmt.Printf("resData: %v\n", resData)
+
+			if err := memory.UpdateUserRoom(userId, resData.RoomId); err != nil {
+				fmt.Printf("failed to update client room: %v", err)
+				return
+			}
+
+			fmt.Printf("Client room update to roomId: ")
+
+			// if err := broadcastRoom(eventName, resData, reqData.RoomName); err != nil {
+			// 	fmt.Printf("failed to broadcast to room: %s", reqData.RoomName)
+			// 	return
+			// }
+
+		case "joinRoom":
+			return
 
 		// ! 2.
 		/* Este evento se encarga de actualizar datos de un usuario (posicion, nombre o direccion)
@@ -158,7 +176,7 @@ func HandleWebSocket(c *gin.Context) {
 				return
 			}
 
-			userIdx := services.GetUserIdx(types.UserID(clientID), reqData.RoomId)
+			userIdx := services.GetUserIdx(types.UserID(userId), reqData.RoomId)
 			if userIdx == -1 {
 				fmt.Printf("user not found")
 				return
@@ -203,7 +221,7 @@ func HandleWebSocket(c *gin.Context) {
 				return
 			}
 
-			client, err := memory.GetClient(clientID)
+			client, err := memory.GetClient(types.UserID(userId))
 			if err != nil {
 				fmt.Printf("client does not exist")
 				return
@@ -215,7 +233,7 @@ func HandleWebSocket(c *gin.Context) {
 				return
 			}
 
-			userIdx, exists := roomData.UserIdxMap[types.UserID(clientID)]
+			userIdx, exists := roomData.UserIdxMap[types.UserID(userId)]
 			if !exists {
 				fmt.Printf("user not found")
 				return
@@ -246,7 +264,7 @@ func HandleWebSocket(c *gin.Context) {
 			fmt.Printf("filteredText: %s", filteredText)
 
 			sendDirect("directMsg", reqData.UserId, map[string]interface{}{
-				"From": clientID,
+				"From": userId,
 				"Msg":  filteredText,
 			})
 		case "roomBroadcast":
@@ -261,7 +279,7 @@ func HandleWebSocket(c *gin.Context) {
 			var filteredText string = filter.CleanText(reqData.Msg)
 			fmt.Printf("filteredText: %s", filteredText)
 
-			client, err := memory.GetClient(clientID)
+			client, err := memory.GetClient(userId)
 			if err != nil {
 				fmt.Printf("client does not exist")
 				return
@@ -292,54 +310,59 @@ func parsePayload(data interface{}, dest interface{}) error {
 	return nil
 }
 
-func broadcastRoom(eventName string, data map[string]interface{}, roomId string) {
-	// ! TODO: use lock/unlock rooms
-
+func broadcastRoom(eventName string, data map[string]interface{}, roomId types.RoomId) error {
 	payload := make(map[string]interface{})
 	payload["Event"] = eventName
 	payload["Data"] = data
 
 	room, exists := memory.GetRoom(roomId)
 	if !exists {
-		fmt.Printf("room does not exist")
-		return
+		return fmt.Errorf("room does not exist")
 	}
 
 	for _, user := range room.Users {
 		userConn := user.Connection
 
-		sendPayload(userConn, payload)
+		if err := sendPayload(userConn, payload); err != nil {
+			return fmt.Errorf("failed to send payload to %v. %v", userConn.RemoteAddr(), err)
+		}
 	}
+
+	return nil
 }
 
-func sendDirect(eventName string, uid string, data map[string]interface{}) {
-	user, err := memory.GetClient(uid)
+func sendDirect(eventName string, userId types.UserID, data map[string]interface{}) error {
+	user, err := memory.GetClient(userId)
 	if err != nil {
-		fmt.Printf("client is not connected")
-		return
+		return fmt.Errorf("client is not connected")
 	}
 
-	sendPayload(user.Conn, map[string]interface{}{
+	if err := sendPayload(user.Conn, map[string]interface{}{
 		"Event": eventName,
 		"Data":  data,
-	})
-}
-
-func sendPayload(userConn *websocket.Conn, payload map[string]interface{}) {
-	err := userConn.WriteJSON(payload)
-	if err != nil {
-		log.Printf("Error sending payload to %v: %v", userConn.RemoteAddr(), err)
-		userConn.Close()
+	}); err != nil {
+		return fmt.Errorf("failed to send payload to %v. %v", user.Conn.RemoteAddr(), err)
 	}
+
+	return nil
 }
 
-func LeaveRoom(uid string) error {
-	user, err := memory.GetClient(uid)
+func sendPayload(userConn *websocket.Conn, payload map[string]interface{}) error {
+	if err := userConn.WriteJSON(payload); err != nil {
+		userConn.Close()
+		return fmt.Errorf("error: %v", err)
+	}
+
+	return nil
+}
+
+func LeaveRoom(userId types.UserID) error {
+	userData, err := memory.GetClient(userId)
 	if err != nil {
 		return fmt.Errorf("user not found")
 	}
 
-	user.Conn.Close()
-
+	services.RemoveUser(types.UserID(userId), userData.RoomId)
+	userData.Conn.Close()
 	return nil
 }
