@@ -1,0 +1,56 @@
+services:
+  app:
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../../core/app/.env
+    build:
+      context: ../../core/app
+      dockerfile: ./Dockerfile.dev
+    develop:
+      watch:
+        - action: rebuild
+          path: ../../core/app
+    # depends_on:
+      # redis:
+      #   condition: service_healthy
+      #   restart: true
+
+      # db:
+      #   condition: service_healthy
+      #   restart: true
+
+  ui:
+    ports:
+      - "3000:3000"
+    build:
+      context: ../../ui
+      dockerfile: ./Dockerfile.dev
+    develop:
+      watch:
+        - action: rebuild
+          path: ../../ui
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - ui
+      - app
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    restart: always
+    environment:
+      - REDIS_PASSWORD=12345
+    command: ["redis-server", "--requirepass 12345"]
+    # healthcheck:
+    #   test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep pong"]
+    #   interval: 5s
+    #   timeout: 2s
+    #   retries: 5
