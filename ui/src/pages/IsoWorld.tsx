@@ -204,7 +204,6 @@ const IsoWorld: React.FC<IsoWorldProps> = ({
   const draw = (context: CanvasRenderingContext2D) => {
     for (let x = renderStartX; x <= renderFinishX; x++) {
       for (let y = renderStartY; y <= renderFinishY; y++) {
-        // asdsadasd
         const drawTile = tileMap[x][y].type;
         const srcX =
           (drawTile % spriteColumns) * (blockWidth + 2 * spritePadding) +
