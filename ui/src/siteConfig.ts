@@ -1,3 +1,4 @@
+export const themeColor = "#769EC1";
 export const coreApiUrl = "http://localhost:8000/api/v1";
 export const wsApiUrl = "http://localhost:8000";
 export const apiRoutes = {

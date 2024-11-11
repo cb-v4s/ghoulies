@@ -33,17 +33,31 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/" element={
-          <MainLayout>
-            <Room />
-          </MainLayout>
-        } />
+        <Route
+          path="/"
+          element={
+            <MainLayout>
+              <Room />
+            </MainLayout>
+          }
+        />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/logout" element={<Logout />} />
         <Route path="/signup" element={<RegisterAndLogout />} />
         <Route path="*" element={<Logout />} />
 
-        <Route path="/isoworld" element={<IsoWorld viewportWidth={640} viewportHeight={480} tileSheetURI={"https://assets.codepen.io/6201207/codepen-iso-tilesheet.png"}  />} />
+        <Route
+          path="/isoworld"
+          element={
+            <IsoWorld
+              viewportWidth={640}
+              viewportHeight={480}
+              tileSheetURI={
+                "https://assets.codepen.io/6201207/codepen-iso-tilesheet.png"
+              }
+            />
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
