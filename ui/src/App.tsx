@@ -4,12 +4,12 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SignIn } from "./pages/SignIn";
 import { SignUp } from "./pages/SignUp";
 import { Dashboard } from "./pages/Dashboard";
-import { Room } from "./pages/Room";
+// import { Room } from "./pages/Room";
 
 // components
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import MainLayout from "./layouts/Main";
-import IsoWorld from "./pages/IsoWorld";
+// import MainLayout from "./layouts/Main";
+import Lobby from "./pages/Lobby";
 
 const Logout = () => {
   localStorage.clear();
@@ -33,31 +33,20 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
+        {/* <Route
           path="/"
           element={
             <MainLayout>
               <Room />
             </MainLayout>
           }
-        />
+        /> */}
         <Route path="/signin" element={<SignIn />} />
         <Route path="/logout" element={<Logout />} />
         <Route path="/signup" element={<RegisterAndLogout />} />
         <Route path="*" element={<Logout />} />
 
-        <Route
-          path="/isoworld"
-          element={
-            <IsoWorld
-              viewportWidth={640}
-              viewportHeight={480}
-              tileSheetURI={
-                "https://assets.codepen.io/6201207/codepen-iso-tilesheet.png"
-              }
-            />
-          }
-        />
+        <Route path="/lobby" element={<Lobby />} />
       </Routes>
     </BrowserRouter>
   );

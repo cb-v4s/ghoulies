@@ -1,7 +1,63 @@
-import React, { useEffect, useRef } from "react";
-import { themeColor } from "../siteConfig";
+import { useEffect, useRef } from "react";
+import { themeColor } from "../../siteConfig";
+import { resources } from "./resources";
 
-export const Nana = () => {
+export const Room = () => {
+  // TODO: mover esto a otro lado
+  class GameLoop {
+    lastFrameTime: number;
+    accumulatedTime: number;
+    timeStep: number;
+    update: any; // TODO: describe this
+    render: any; // TODO: describe this
+    rafId: number | null; // stands for RequestAnimationFrame Id
+    isRunning: boolean;
+
+    constructor(update: any, render: any) {
+      this.lastFrameTime = 0;
+      this.accumulatedTime = 0;
+      this.timeStep = 1000 / 60; // 60 frames per second
+
+      this.update = update;
+      this.render = render;
+
+      this.rafId = null;
+      this.isRunning = false;
+    }
+
+    mainLoop = (timestamp: number) => {
+      if (!this.isRunning) return;
+
+      clearViewport(themeColor);
+
+      let deltaTime = timestamp - this.lastFrameTime;
+      this.lastFrameTime = timestamp;
+      this.accumulatedTime += deltaTime;
+
+      while (this.accumulatedTime >= this.timeStep) {
+        this.update(this.timeStep);
+        this.accumulatedTime -= this.timeStep;
+      }
+
+      this.render();
+      this.rafId = requestAnimationFrame(this.mainLoop);
+    };
+
+    start() {
+      if (!this.isRunning) {
+        this.isRunning = true;
+        this.rafId = requestAnimationFrame(this.mainLoop);
+      }
+    }
+
+    stop() {
+      if (this.rafId) {
+        cancelAnimationFrame(this.rafId);
+      }
+      this.isRunning = false;
+    }
+  }
+
   let tileMap = [
     [3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
     [3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
@@ -14,6 +70,11 @@ export const Nana = () => {
     [3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
     [3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
   ];
+
+  let currentRow = 0;
+  let currentCol = 0;
+
+  let context: CanvasRenderingContext2D | null = null;
   const canvasWidth = 1240;
   const canvasHeight = 710;
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -30,17 +91,17 @@ export const Nana = () => {
   let mouseTileX = 0;
   let mouseTileY = 0;
 
+  let characterImg: HTMLImageElement | null = null;
+
   //let tileSheetWidth = 390;
   //let tileSheetHeight = 500;
 
-  // The range of tiles to render based on visibility.
-  // Will be updated as map is dragged around.
   let renderStartX = 0;
   let renderStartY = 0;
   let renderFinishX = 0;
   let renderFinishY = 0;
 
-  // How many tile sprites are on each row of the sprite sheet?
+  // How many tile sprites are on each row of the sprite sheet
   let spriteColumns = 5;
 
   // How much spacing/padding is around each tile sprite.
@@ -61,7 +122,9 @@ export const Nana = () => {
   let projectedTileWidth = tileWidth - overlapWidth - overlapHeight;
   let projectedTileHeight = tileHeight - overlapWidth - overlapHeight;
 
-  const clearViewport = (context: CanvasRenderingContext2D, color: string) => {
+  const clearViewport = (color: string) => {
+    if (!context) return;
+
     context.fillStyle = color;
     context.fillRect(0, 0, canvasWidth, canvasHeight);
   };
@@ -87,15 +150,6 @@ export const Nana = () => {
     var textY = canvasHeight / 2;
 
     context.fillText("The end...", textX, textY);
-  };
-
-  const loadImage = (url: string) => {
-    return new Promise((res, rej) => {
-      const img = new Image();
-      img.onload = () => res(img);
-      img.onerror = rej;
-      img.src = url;
-    });
   };
 
   const limit = (value: number, min: number, max: number) => {
@@ -144,17 +198,17 @@ export const Nana = () => {
     );
   };
 
-  const mainLoop = (
-    context: CanvasRenderingContext2D,
-    img: HTMLImageElement
-  ) => {
-    clearViewport(context, themeColor);
-    draw(context, img);
+  // const mainLoop = (
+  //   context: CanvasRenderingContext2D,
+  //   img: HTMLImageElement
+  // ) => {
+  //   clearViewport(context, themeColor);
+  //   draw(context);
 
-    window.requestAnimationFrame(() => {
-      mainLoop(context, img);
-    });
-  };
+  //   window.requestAnimationFrame(() => {
+  //     mainLoop(context, img);
+  //   });
+  // };
 
   const convertTileToScreen = (tileX: number, tileY: number) => {
     const isoX = tileX - tileY;
@@ -166,7 +220,39 @@ export const Nana = () => {
     return { x: screenX, y: screenY };
   };
 
-  const draw = (context: CanvasRenderingContext2D, img: HTMLImageElement) => {
+  const drawCharacterAt = (img: HTMLImageElement, x: number, y: number) => {
+    if (!context) return;
+
+    const characterX = x;
+    const characterY = y;
+
+    // Calculate destination coordinates on the canvas
+    const destPos = convertTileToScreen(characterX, characterY);
+    const destX = destPos.x;
+    const destY = destPos.y;
+
+    // Assuming the character image is a single sprite
+    const srcX = 0;
+    const srcY = 0;
+    const srcWidth = img.width;
+    const srcHeight = img.height;
+
+    context.drawImage(
+      img,
+      srcX,
+      srcY,
+      srcWidth,
+      srcHeight,
+      destX,
+      destY,
+      blockWidth,
+      blockHeight
+    );
+  };
+
+  const draw = async () => {
+    if (!context) return;
+
     for (var x = renderStartX; x <= renderFinishX; x++) {
       for (var y = renderStartY; y <= renderFinishY; y++) {
         var drawTile = tileMap[x][y];
@@ -184,8 +270,14 @@ export const Nana = () => {
         var destWidth = blockWidth;
         var destHeight = blockHeight;
 
+        drawCharacterAt(
+          resources.images.ghostie.imgElem as HTMLImageElement,
+          currentRow - 1,
+          currentCol - 1
+        );
+
         context.drawImage(
-          img,
+          resources.images.tileMap.imgElem,
           srcX,
           srcY,
           blockWidth,
@@ -198,13 +290,10 @@ export const Nana = () => {
       }
     }
 
-    drawCursor(context, img);
+    drawCursor(context);
   };
 
-  const drawCursor = (
-    context: CanvasRenderingContext2D,
-    img: HTMLImageElement
-  ) => {
+  const drawCursor = async (context: CanvasRenderingContext2D) => {
     let screenPos = convertTileToScreen(mouseTileX, mouseTileY);
     let screenX = screenPos.x;
     let screenY = screenPos.y;
@@ -220,7 +309,7 @@ export const Nana = () => {
       Math.floor(drawTile / spriteColumns) * spriteHeight + spritePadding;
 
     context.drawImage(
-      img,
+      resources.images.tileMap.imgElem,
       srcX,
       srcY,
       blockWidth,
@@ -265,7 +354,7 @@ export const Nana = () => {
     mouseTileX = mouseTilePos.x;
     mouseTileY = mouseTilePos.y;
 
-    alert(`Destination: ${mouseTileX},${mouseTileY}`);
+    // console.log(`Destination: ${mouseTileX},${mouseTileY}`);
   };
 
   const onMouseMove = (canvas: HTMLCanvasElement, e: any) => {
@@ -305,28 +394,39 @@ export const Nana = () => {
     canvas.height = canvasHeight;
     canvas.width = canvasWidth;
 
-    const context = canvas.getContext("2d");
+    context = canvas.getContext("2d");
 
     if (!context) return;
 
-    clearViewport(context, "#060814");
+    clearViewport("#060814");
     displayLoading(context);
-
-    const tileSheetURL = "/tilemap.png";
-    const tileSheetImg = await loadImage(tileSheetURL);
-
-    console.log("init ~ tileSheetImg:", tileSheetImg);
-
-    if (!tileSheetImg) {
-      console.log("couldn't load tilesheet");
-      return;
-    }
 
     canvas.onmousedown = (e) => {
       if (e.button === 0) {
         // * left mouse button is pressed
         mouseDown = true;
         isDragging = false;
+
+        let rect = canvas.getBoundingClientRect();
+
+        let newX = e.clientX - rect.left;
+        let newY = e.clientY - rect.top;
+
+        mouseScreenX = newX;
+        mouseScreenY = newY;
+
+        let mouseTilePos = convertScreenToTile(
+          mouseScreenX - mapOffsetX,
+          mouseScreenY - mapOffsetY
+        );
+
+        mouseTileX = mouseTilePos.x;
+        mouseTileY = mouseTilePos.y;
+
+        currentRow = mouseTileX;
+        currentCol = mouseTileY;
+
+        console.log(`Destination: ${currentRow},${currentCol}`);
       }
 
       return false;
@@ -348,7 +448,7 @@ export const Nana = () => {
 
     canvas.onmouseup = (e) => {
       if (mouseDown && !isDragging && e.button === 0) {
-        getDestination(canvas, e); // * only if its a click ignoring a drag
+        getDestination(canvas, e); // * only if its a click, thus ignoring a drag
       }
 
       mouseDown = false; // Reset mouseDown state
@@ -356,14 +456,22 @@ export const Nana = () => {
       return false;
     };
 
-    updateMapOffset(550, 80);
-    mainLoop(context, tileSheetImg as HTMLImageElement);
-    displayFinished(context);
+    updateMapOffset(580, 180);
+
+    const gameLoop = new GameLoop(
+      () => {},
+      () => draw()
+    );
+
+    gameLoop.start();
+
+    // mainLoop(context, resources.images.tileMap.imgElem);
+    // displayFinished(context);
   };
 
   useEffect(() => {
     init();
-  });
+  }, []);
 
   return (
     <div>

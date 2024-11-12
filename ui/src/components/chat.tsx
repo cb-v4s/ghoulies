@@ -37,9 +37,9 @@ const Chat: React.FC<any> = () => {
   };
 
   return (
-    <React.Fragment>
-      <form className="mt-1" onSubmit={sendMessage}>
-        <div className="relative flex w-full focus:outline-none focus:placeholder-gray-400 bg-white rounded-b-lg py-2">
+    <div className="w-3/5 bg-transparent">
+      <form onSubmit={sendMessage}>
+        <div className="relative flex focus:outline-none focus:placeholder-gray-400 bg-[#2b2542] rounded-full py-2 px-2 w-full">
           {target.id !== user?.roomId ? (
             <span className="text-bold text-gray-400 ml-3 flex justify-center items-center">
               {target.username}
@@ -54,20 +54,20 @@ const Chat: React.FC<any> = () => {
             placeholder="Type your message..."
             value={message}
             maxLength={60}
-            className="text-gray-600 placeholder-gray-600 w-full ml-3 outline-none"
+            className="text-slate-100 placeholder-slate-300 w-full outline-none bg-transparent"
             onChange={(event) => setMessage(event.target.value)}
             onKeyDown={(e) => hdlKeyDown(e.key)}
           />
           <button
             type="submit"
             data-testid="chat-submit-btn"
-            className="flex items-center justify-center rounded-lg px-4 py-1 text-aldebaran font-bold"
+            className="flex items-center justify-center rounded-full px-4 py-1 text-slate-200 font-bold bg-[#6C81C4]"
           >
             Send
           </button>
         </div>
       </form>
-    </React.Fragment>
+    </div>
   );
 };
 
