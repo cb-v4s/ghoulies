@@ -1,61 +1,80 @@
 /* styles/index.css */
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 html {
-    font-family: system-ui, sans-serif;
-    background: #769EC1;
-    background-size: 224px;
+  font-family: system-ui, sans-serif;
+  background: #769ec1;
+  background-size: 224px;
 }
 
 body {
-    margin: 0;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    /* image-rendering: pixelated; */
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  /* image-rendering: pixelated; */
 }
 
 .bubble {
-    /* visibility: hidden; */
-    /* user-select: none; */
-    position: relative;
-    display: inline-block;
-    text-align: center;
-    font-family: "Press Start 2P", cursive;
-    font-size: 14px;
-    padding: 2px 6px 2px 6px;
-    line-height: 1.3em;
-    margin-top: -135px;
-    margin-left: -10px;
+  /* visibility: hidden; */
+  /* user-select: none; */
+  position: relative;
+  display: inline-block;
+  text-align: center;
+  font-family: "Press Start 2P", cursive;
+  font-size: 14px;
+  padding: 2px 6px 2px 6px;
+  line-height: 1.3em;
+  margin-top: -135px;
+  margin-left: -10px;
 
-    /* white-space: nowrap; */
+  /* white-space: nowrap; */
 
-    box-sizing: border-box;
+  box-sizing: border-box;
 
-    background-color: white;
-    color: black;
-    box-shadow: 0 -4px #fff, 0 -8px #000, 4px 0 #fff, 4px -4px #000, 8px 0 #000,
-        0 4px #fff, 0 8px #000, -4px 0 #fff, -4px 4px #000, -8px 0 #000,
-        -4px -4px #000, 4px 4px #000;
-    /* box-sizing: border-box; */
-    /* width: initial; */
+  background-color: white;
+  color: black;
+  box-shadow: 0 -4px #fff, 0 -8px #000, 4px 0 #fff, 4px -4px #000, 8px 0 #000,
+    0 4px #fff, 0 8px #000, -4px 0 #fff, -4px 4px #000, -8px 0 #000,
+    -4px -4px #000, 4px 4px #000;
+  /* box-sizing: border-box; */
+  /* width: initial; */
 }
 
 .bubble::after {
-    content: "";
-    display: block;
-    position: absolute;
-    box-sizing: border-box;
+  content: "";
+  display: block;
+  position: absolute;
+  box-sizing: border-box;
 
-    height: 4px;
-    width: 4px;
-    bottom: -4px;
-    left: 32px;
-    box-shadow: 0 4px #000, 0 8px #000, 0 12px #000, 0 16px #000, -4px 12px #000,
-        -8px 8px #000, -12px 4px #000, -4px 4px #fff, -8px 4px #fff, -4px 8px #fff,
-        -4px 0 #fff, -8px 0 #fff, -12px 0 #fff;
+  height: 4px;
+  width: 4px;
+  bottom: -4px;
+  left: 32px;
+  box-shadow: 0 4px #000, 0 8px #000, 0 12px #000, 0 16px #000, -4px 12px #000,
+    -8px 8px #000, -12px 4px #000, -4px 4px #fff, -8px 4px #fff, -4px 8px #fff,
+    -4px 0 #fff, -8px 0 #fff, -12px 0 #fff;
+}
+
+/* ::-webkit-scrollbar {
+  display: none;
+} */
+
+.console-scrollbar::-webkit-scrollbar-track {
+  -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  background-color: #000000;
+}
+
+.console-scrollbar::-webkit-scrollbar {
+  width: 2px;
+  background-color: #f5f5f5;
+}
+
+.console-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #86efac;
+  border: none;
 }

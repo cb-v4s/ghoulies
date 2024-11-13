@@ -1,7 +1,7 @@
 import { api } from "./lib/api";
-import { Todo } from "./types";
+import { RoomInfo } from "./types";
 
-export const fetchRooms = async (): Promise<Todo> => {
-    const { rooms } = (await api.get("/rooms")).data as any;
-    return rooms;
-  };
+export const fetchRooms = async (): Promise<RoomInfo[]> => {
+  const rooms: RoomInfo[] = ((await api.get("/rooms")).data as any).rooms;
+  return rooms;
+};

@@ -1,13 +1,22 @@
-import { Fragment } from "react/jsx-runtime";
 import { Room } from "../components/room/Room.tsx";
 import { Controls } from "../components/Controls.tsx";
+import { Console } from "../components/Console.tsx";
+import { useSelector } from "react-redux";
+import { getConsoleState } from "../state/room.reducer.ts";
 
 const Lobby = () => {
+  const displayConsole = useSelector(getConsoleState);
+
   return (
-    <Fragment>
+    <div className="relative w-full h-full">
+      {displayConsole && (
+        <div className="absolute w-full h-[90%] flex items-center justify-center">
+          <Console />
+        </div>
+      )}
       <Room />
       <Controls />
-    </Fragment>
+    </div>
   );
 };
 

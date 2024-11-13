@@ -16,7 +16,7 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    strictPort: true,
+    strictPort: false, // TODO: set this to true when release
     host: true,
     origin: "http://0.0.0.0:3000",
   },

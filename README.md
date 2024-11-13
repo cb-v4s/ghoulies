@@ -13,6 +13,7 @@ This is web-based platform that enables users to host and join virtual meetups i
 - **Postgres** SQL database.
 - **Redis** Memory-based data storage (gamer speed pro max) used mainly for keeping track of active Websocket sessions, rooms info and caching.
 - **React** SPA for dynamic and interactive UI components.
+- **HTML Canvas API** faster for complex, interactive graphics because it doesn't have to maintain a DOM for each object
 
 ### Setup
 
@@ -27,7 +28,7 @@ make watch
 ```
 
 ```sh
-make watch EXTERNAL_DB=true # when using a service like neon for postgres, so it doesn't download postgres/pgadmin images
+make watch EXTERNAL_DB=true # when using a service like neon for postgres
 ```
 
 Go visit `http://localhost`

@@ -1,63 +1,9 @@
 import { useEffect, useRef } from "react";
-import { themeColor } from "../../siteConfig";
 import { resources } from "./resources";
+import { FacingDirection } from "../../types";
+import { RoomI } from "./Room";
 
 export const Room = () => {
-  // TODO: mover esto a otro lado
-  class GameLoop {
-    lastFrameTime: number;
-    accumulatedTime: number;
-    timeStep: number;
-    update: any; // TODO: describe this
-    render: any; // TODO: describe this
-    rafId: number | null; // stands for RequestAnimationFrame Id
-    isRunning: boolean;
-
-    constructor(update: any, render: any) {
-      this.lastFrameTime = 0;
-      this.accumulatedTime = 0;
-      this.timeStep = 1000 / 60; // 60 frames per second
-
-      this.update = update;
-      this.render = render;
-
-      this.rafId = null;
-      this.isRunning = false;
-    }
-
-    mainLoop = (timestamp: number) => {
-      if (!this.isRunning) return;
-
-      clearViewport(themeColor);
-
-      let deltaTime = timestamp - this.lastFrameTime;
-      this.lastFrameTime = timestamp;
-      this.accumulatedTime += deltaTime;
-
-      while (this.accumulatedTime >= this.timeStep) {
-        this.update(this.timeStep);
-        this.accumulatedTime -= this.timeStep;
-      }
-
-      this.render();
-      this.rafId = requestAnimationFrame(this.mainLoop);
-    };
-
-    start() {
-      if (!this.isRunning) {
-        this.isRunning = true;
-        this.rafId = requestAnimationFrame(this.mainLoop);
-      }
-    }
-
-    stop() {
-      if (this.rafId) {
-        cancelAnimationFrame(this.rafId);
-      }
-      this.isRunning = false;
-    }
-  }
-
   let tileMap = [
     [3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
     [3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
@@ -70,12 +16,13 @@ export const Room = () => {
     [3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
     [3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
   ];
+  let currentCharacterImage = resources.images.lghostie.imgElem;
 
   let currentRow = 0;
   let currentCol = 0;
 
   let context: CanvasRenderingContext2D | null = null;
-  const canvasWidth = 1240;
+  const canvasWidth = 740;
   const canvasHeight = 710;
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -90,8 +37,6 @@ export const Room = () => {
   let mouseScreenY = 0;
   let mouseTileX = 0;
   let mouseTileY = 0;
-
-  let characterImg: HTMLImageElement | null = null;
 
   //let tileSheetWidth = 390;
   //let tileSheetHeight = 500;
@@ -121,36 +66,6 @@ export const Room = () => {
 
   let projectedTileWidth = tileWidth - overlapWidth - overlapHeight;
   let projectedTileHeight = tileHeight - overlapWidth - overlapHeight;
-
-  const clearViewport = (color: string) => {
-    if (!context) return;
-
-    context.fillStyle = color;
-    context.fillRect(0, 0, canvasWidth, canvasHeight);
-  };
-
-  const displayLoading = (context: CanvasRenderingContext2D) => {
-    context.textAlign = "center";
-    context.fillStyle = "red";
-    context.font = "26px Tahoma";
-
-    var textX = canvasWidth / 2;
-    var textY = canvasHeight / 2;
-
-    context.fillText("Loading assets...", textX, textY);
-  };
-
-  // delete
-  const displayFinished = (context: CanvasRenderingContext2D) => {
-    context.textAlign = "center";
-    context.fillStyle = "blue";
-    context.font = "26px Tahoma";
-
-    var textX = canvasWidth / 2;
-    var textY = canvasHeight / 2;
-
-    context.fillText("The end...", textX, textY);
-  };
 
   const limit = (value: number, min: number, max: number) => {
     return Math.max(min, Math.min(value, max));
@@ -198,18 +113,6 @@ export const Room = () => {
     );
   };
 
-  // const mainLoop = (
-  //   context: CanvasRenderingContext2D,
-  //   img: HTMLImageElement
-  // ) => {
-  //   clearViewport(context, themeColor);
-  //   draw(context);
-
-  //   window.requestAnimationFrame(() => {
-  //     mainLoop(context, img);
-  //   });
-  // };
-
   const convertTileToScreen = (tileX: number, tileY: number) => {
     const isoX = tileX - tileY;
     const isoY = tileX + tileY;
@@ -228,14 +131,17 @@ export const Room = () => {
 
     // Calculate destination coordinates on the canvas
     const destPos = convertTileToScreen(characterX, characterY);
-    const destX = destPos.x;
-    const destY = destPos.y;
+    const destX = destPos.x - 45;
+    const destY = destPos.y - 10;
 
     // Assuming the character image is a single sprite
     const srcX = 0;
     const srcY = 0;
     const srcWidth = img.width;
     const srcHeight = img.height;
+
+    let blockWidth = 74 + 95;
+    let blockHeight = 70 + 30;
 
     context.drawImage(
       img,
@@ -248,6 +154,26 @@ export const Room = () => {
       blockWidth,
       blockHeight
     );
+  };
+
+  const getFacingDirection = (from: any, to: any): any => {
+    let updatedXAxis: FacingDirection = FacingDirection.Right;
+
+    const deltaRow = to.row - from.row;
+    const deltaCol = to.col - from.col;
+
+    // Compare column values
+    if (deltaCol > 0) updatedXAxis = FacingDirection.Right;
+    else if (deltaCol < 0) updatedXAxis = FacingDirection.Left;
+
+    // Diagonal movement
+    if (Math.abs(deltaRow) === Math.abs(deltaCol)) {
+      if (deltaCol > 0 && deltaRow < 0) updatedXAxis = FacingDirection.Right;
+      else if (deltaCol < 0 && deltaRow > 0)
+        updatedXAxis = FacingDirection.Left;
+    }
+
+    return updatedXAxis;
   };
 
   const draw = async () => {
@@ -270,11 +196,7 @@ export const Room = () => {
         var destWidth = blockWidth;
         var destHeight = blockHeight;
 
-        drawCharacterAt(
-          resources.images.ghostie.imgElem as HTMLImageElement,
-          currentRow - 1,
-          currentCol - 1
-        );
+        drawCharacterAt(currentCharacterImage, currentRow - 1, currentCol - 1);
 
         context.drawImage(
           resources.images.tileMap.imgElem,
@@ -298,33 +220,11 @@ export const Room = () => {
     let screenX = screenPos.x;
     let screenY = screenPos.y;
 
-    // to save images, the mouse cursor is just a tile sprite
-    var drawTile = 15;
-
-    var spriteWidth = blockWidth + 2 * spritePadding;
-    var spriteHeight = blockHeight + 2 * spritePadding;
-
-    var srcX = (drawTile % spriteColumns) * spriteWidth + spritePadding;
-    var srcY =
-      Math.floor(drawTile / spriteColumns) * spriteHeight + spritePadding;
-
-    context.drawImage(
-      resources.images.tileMap.imgElem,
-      srcX,
-      srcY,
-      blockWidth,
-      blockHeight,
-      screenX,
-      screenY,
-      blockWidth,
-      blockHeight
-    );
-
     // output the tile location of the mouse
-    context.font = "bold 11px Tahoma";
+    context.font = "bold 12px Tahoma";
     context.textAlign = "center";
     context.textBaseline = "middle";
-    context.fillStyle = "#F15A24";
+    context.fillStyle = "#13f0aa";
 
     let textX = screenX + projectedTileWidth / 2;
     let textY = screenY + projectedTileHeight / 2;
@@ -394,12 +294,15 @@ export const Room = () => {
     canvas.height = canvasHeight;
     canvas.width = canvasWidth;
 
-    context = canvas.getContext("2d");
+    context = canvas.getContext("2d", {
+      willReadFrequently:
+        true /* improve performance for chrome browser: https://www.schiener.io/2024-08-02/canvas-willreadfrequently */,
+    });
 
     if (!context) return;
 
-    clearViewport("#060814");
-    displayLoading(context);
+    // ! clearViewport();
+    // ! displayLoading(context);
 
     canvas.onmousedown = (e) => {
       if (e.button === 0) {
@@ -423,8 +326,24 @@ export const Room = () => {
         mouseTileX = mouseTilePos.x;
         mouseTileY = mouseTilePos.y;
 
+        const prevRow = currentRow;
+        const prevCol = currentCol;
+
         currentRow = mouseTileX;
         currentCol = mouseTileY;
+
+        if (
+          getFacingDirection(
+            { row: prevRow, col: prevCol },
+            { row: currentRow, col: currentCol }
+          ) === 1
+        ) {
+          console.log("to right");
+          currentCharacterImage = resources.images.rghostie.imgElem;
+        } else {
+          console.log("to left");
+          currentCharacterImage = resources.images.lghostie.imgElem;
+        }
 
         console.log(`Destination: ${currentRow},${currentCol}`);
       }
@@ -456,17 +375,17 @@ export const Room = () => {
       return false;
     };
 
-    updateMapOffset(580, 180);
+    updateMapOffset(320, 180);
 
-    const gameLoop = new GameLoop(
+    const gameLoop = new RoomI(
+      context,
+      canvasWidth,
+      canvasHeight,
       () => {},
       () => draw()
     );
 
     gameLoop.start();
-
-    // mainLoop(context, resources.images.tileMap.imgElem);
-    // displayFinished(context);
   };
 
   useEffect(() => {

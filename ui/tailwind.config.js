@@ -6,6 +6,13 @@ export default {
       fontFamily: {
         custom: ["Press Start 2P", "cursive"],
       },
+      screens: {
+        'sm': '640px',
+        'md': '768px',
+        'lg': '1024px',
+        'xl': '1280px',
+        '2xl': '1536px',
+      },
       height: {
         "10v": "10vh",
         "20v": "20vh",

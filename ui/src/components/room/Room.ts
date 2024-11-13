@@ -1,4 +1,7 @@
-export class RoomX {
+import { themeColor } from "../../siteConfig";
+
+export class RoomI {
+  context: CanvasRenderingContext2D;
   lastFrameTime: number;
   accumulatedTime: number;
   timeStep: number;
@@ -6,8 +9,19 @@ export class RoomX {
   render: any; // TODO: describe this
   rafId: number | null; // stands for RequestAnimationFrame Id
   isRunning: boolean;
+  canvasWidth: number;
+  canvasHeight: number;
 
-  constructor(update: any, render: any) {
+  constructor(
+    context: CanvasRenderingContext2D,
+    canvasWidth: number,
+    canvasHeight: number,
+    update: any,
+    render: any
+  ) {
+    this.canvasWidth = canvasWidth;
+    this.canvasHeight = canvasHeight;
+    this.context = context;
     this.lastFrameTime = 0;
     this.accumulatedTime = 0;
     this.timeStep = 1000 / 60; // 60 frames per second
@@ -19,8 +33,22 @@ export class RoomX {
     this.isRunning = false;
   }
 
+  clearViewport = (color: string) => {
+    if (!this.context) return;
+
+    this.context.fillStyle = color;
+    this.context.fillRect(
+      0,
+      0,
+      this.canvasWidth + 500,
+      this.canvasHeight + 500
+    );
+  };
+
   mainLoop = (timestamp: number) => {
     if (!this.isRunning) return;
+
+    this.clearViewport(themeColor);
 
     let deltaTime = timestamp - this.lastFrameTime;
     this.lastFrameTime = timestamp;

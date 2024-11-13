@@ -132,5 +132,6 @@ type DirectMsg struct {
 type PopularRoomList struct {
 	RoomId     RoomId `json:"roomId"`
 	RoomName   string `json:"roomName"`
+	RoomDesc   string `json:"roomDesc"` // rooms description
 	TotalConns int    `json:"totalConns"`
 }

@@ -10,7 +10,8 @@ export class Resources {
   constructor() {
     this.imgSrcList = {
       tileMap: "/sprites/tilemap.png",
-      ghostie: "/sprites/gosty.png",
+      lghostie: "/sprites/lgosty.png",
+      rghostie: "/sprites/rgosty.png",
     };
 
     this.images = {};

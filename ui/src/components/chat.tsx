@@ -1,35 +1,35 @@
 import React, { createRef, useState } from "react";
-import { sendMessageTo } from "./wsHandler";
+// import { sendMessageTo } from "./wsHandler";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  selectTarget,
-  selectUserById,
-  selectUserId,
-  setTarget,
-  selectRoomsId,
-} from "../state/room.reducer";
+// import {
+//   selectTarget,
+//   selectUserById,
+//   selectUserId,
+//   setTarget,
+//   selectRoomsId,
+// } from "../state/room.reducer";
 
 export const inputChatMessage = createRef<any>();
 
 const Chat: React.FC<any> = () => {
   const dispatch = useDispatch();
   const [message, setMessage] = useState<string>("");
-  const target = useSelector(selectTarget);
-  const userId = useSelector(selectUserId);
-  const user = selectUserById(userId as string);
-  const roomId = useSelector(selectRoomsId);
+  // const target = useSelector(selectTarget);
+  // const userId = useSelector(selectUserId);
+  // const user = selectUserById(userId as string);
+  // const roomId = useSelector(selectRoomsId);
 
   const sendMessage = (event: any) => {
     event.preventDefault();
     if (!message) return;
 
-    sendMessageTo(message, target?.id as string);
+    // sendMessageTo(message, target?.id as string);
     setMessage("");
   };
 
   const hdlKeyDown = (key: string) => {
     if (!message.length && key === "Backspace") {
-      dispatch(setTarget({ username: null, id: roomId }));
+      // dispatch(setTarget({ username: null, id: roomId }));
 
       // @ts-ignore
       inputChatMessage.current.focus();
@@ -37,14 +37,14 @@ const Chat: React.FC<any> = () => {
   };
 
   return (
-    <div className="w-3/5 bg-transparent">
+    <div className="w-4/5 bg-transparent">
       <form onSubmit={sendMessage}>
         <div className="relative flex focus:outline-none focus:placeholder-gray-400 bg-[#2b2542] rounded-full py-2 px-2 w-full">
-          {target.id !== user?.roomId ? (
+          {/* {target.id !== user?.roomId ? (
             <span className="text-bold text-gray-400 ml-3 flex justify-center items-center">
               {target.username}
             </span>
-          ) : null}
+          ) : null} */}
 
           <input
             type="text"
