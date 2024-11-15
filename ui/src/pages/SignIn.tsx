@@ -6,7 +6,11 @@ import { loginSchema } from "../validations/auth.schema";
 import { ArrowRight, Eye, EyeOff } from "../lib/icons";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { api } from "../lib/api";
-import { apiRoutes, ACCESS_TOKEN_IDENTIFIER_KEY, REFRESH_TOKEN_IDENTIFIER_KEY } from "../siteConfig";
+import {
+  apiRoutes,
+  ACCESS_TOKEN_IDENTIFIER_KEY,
+  REFRESH_TOKEN_IDENTIFIER_KEY,
+} from "../siteConfig";
 import { ApiError } from "../types";
 
 export const SignIn = () => {
@@ -26,15 +30,18 @@ export const SignIn = () => {
     setIsLoading(true);
 
     try {
-      const response: any = await api.post(
-        apiRoutes.login,
-        data
+      const response: any = await api.post(apiRoutes.login, data);
+
+      localStorage.setItem(
+        ACCESS_TOKEN_IDENTIFIER_KEY,
+        response.data.accessToken
+      );
+      localStorage.setItem(
+        REFRESH_TOKEN_IDENTIFIER_KEY,
+        response.data.refreshToken
       );
 
-      localStorage.setItem(ACCESS_TOKEN_IDENTIFIER_KEY, response.data.accessToken);
-      localStorage.setItem(REFRESH_TOKEN_IDENTIFIER_KEY, response.data.refreshToken);
-    
-      navigate("/dashboard");
+      navigate("/");
     } catch (error: any) {
       if (error?.name === "AxiosError") {
         const apiError: ApiError = error.response?.data;

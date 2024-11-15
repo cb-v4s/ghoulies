@@ -1,3 +1,8 @@
+/* 
+  example for creating a custom svg icon and apply tw classes,
+  export it from lib/icons.ts
+*/
+
 export const X = ({ className }: { className: string }) => {
   return (
     <svg
@@ -10,7 +15,7 @@ export const X = ({ className }: { className: string }) => {
       stroke-width="2"
       stroke-linecap="round"
       stroke-linejoin="round"
-      className={`lucide lucide-x ${className}`}
+      className={className}
     >
       <path d="M18 6 6 18" />
       <path d="m6 6 12 12" />

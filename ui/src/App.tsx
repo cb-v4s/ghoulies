@@ -13,7 +13,7 @@ import Lobby from "./pages/Lobby";
 
 const Logout = () => {
   localStorage.clear();
-  return <Navigate to="/signin" />;
+  return <Navigate to="/login" />;
 };
 
 const RegisterAndLogout = () => {
@@ -41,12 +41,12 @@ function App() {
             </MainLayout>
           }
         /> */}
-        <Route path="/signin" element={<SignIn />} />
+        <Route path="/login" element={<SignIn />} />
         <Route path="/logout" element={<Logout />} />
         <Route path="/signup" element={<RegisterAndLogout />} />
         <Route path="*" element={<Logout />} />
 
-        <Route path="/lobby" element={<Lobby />} />
+        <Route path="/" element={<Lobby />} />
       </Routes>
     </BrowserRouter>
   );

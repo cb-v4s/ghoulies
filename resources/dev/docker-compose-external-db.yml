@@ -31,6 +31,20 @@ services:
         - action: rebuild
           path: ../../ui
 
+  # lb:
+  #   image: haproxy
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - ./haproxy:/usr/local/etc/haproxy
+
+  # app1:
+  #   image: app
+  # app2:
+  #   image: app
+  # app3:
+  #   image: app
+
   nginx:
     image: nginx:latest
     ports:

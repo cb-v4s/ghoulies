@@ -10,8 +10,7 @@ import { updatePlayerPosition } from "../components/wsHandler";
 // state management
 import { useSelector } from "react-redux";
 import { selectGridSize, selectPlayers } from "../state/room.reducer";
-import { CoordinatesT } from "../types"
-
+import { CoordinatesT } from "../types";
 
 export const Room: React.FC<any> = () => {
   const gridSize = useSelector(selectGridSize);
@@ -19,9 +18,9 @@ export const Room: React.FC<any> = () => {
   const [modalOpen, setModalOpen] = useState<boolean>(true);
   const [allowedMovement, setAllowedMovement] = useState<boolean>(true);
 
-//   const openModal = () => {
-//     setModalOpen(true);
-//   };
+  //   const openModal = () => {
+  //     setModalOpen(true);
+  //   };
 
   const closeModal = () => {
     setModalOpen(false);
@@ -46,7 +45,8 @@ export const Room: React.FC<any> = () => {
     for (let row = 0; row < gridSize; row++) {
       for (let col = 0; col < gridSize; col++) {
         const player = players.find(
-          ({ position }: { position: CoordinatesT }) => position.row === row && position.col === col
+          ({ position }: { position: CoordinatesT }) =>
+            position.row === row && position.col === col
         );
 
         cells.push(

@@ -2,8 +2,12 @@ import { useEffect, useRef } from "react";
 import { resources } from "./resources";
 import { FacingDirection } from "../../types";
 import { RoomI } from "./Room";
+import { useSelector } from "react-redux";
+import { getRoomInfo, setRoomInfo } from "../../state/room.reducer";
 
 export const Room = () => {
+  const roomInfo = useSelector(getRoomInfo);
+
   let tileMap = [
     [3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
     [3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
@@ -196,7 +200,13 @@ export const Room = () => {
         var destWidth = blockWidth;
         var destHeight = blockHeight;
 
-        drawCharacterAt(currentCharacterImage, currentRow - 1, currentCol - 1);
+        for (let user of roomInfo.Users) {
+          drawCharacterAt(
+            currentCharacterImage,
+            user.Position.Row - 1,
+            user.Position.Col - 1
+          );
+        }
 
         context.drawImage(
           resources.images.tileMap.imgElem,
@@ -332,6 +342,8 @@ export const Room = () => {
         currentRow = mouseTileX;
         currentCol = mouseTileY;
 
+        // dispatch(setRoomInfo())
+
         if (
           getFacingDirection(
             { row: prevRow, col: prevCol },
@@ -389,8 +401,12 @@ export const Room = () => {
   };
 
   useEffect(() => {
-    init();
-  }, []);
+    if (roomInfo.Users.length) init();
+  }, [roomInfo]);
+
+  useEffect(() => {
+    console.log("roomInfo ============+>", roomInfo);
+  }, [roomInfo]);
 
   return (
     <div>

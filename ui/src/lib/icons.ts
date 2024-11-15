@@ -1,1 +1,7 @@
-export { Eye, EyeOff, ArrowRight } from "lucide-react";
+export {
+  Eye,
+  EyeOff,
+  ArrowRight,
+  X,
+  SquareArrowOutUpRight,
+} from "lucide-react";

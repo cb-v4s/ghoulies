@@ -2,7 +2,6 @@ package ws
 
 import (
 	"core/config"
-	"core/internal/lib"
 	"core/internal/memory"
 	"core/internal/server/services"
 	"core/types"
@@ -15,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -27,9 +25,7 @@ var upgrader = websocket.Upgrader{
 		origin := r.Header.Get("origin")
 
 		if config.GinMode == gin.DebugMode {
-			if origin == "" {
-				return true
-			}
+			return true
 		}
 
 		allowedOrigins := strings.Split(config.AllowOrigins, ",")
@@ -44,12 +40,21 @@ var upgrader = websocket.Upgrader{
 }
 
 var (
+	connections         = make(map[string]interface{})
 	activeIPAddresses   = make(map[net.Addr]int)
 	activeIPAddressesMu sync.Mutex
 )
 
 // HandleWebSocket handles incoming WebSocket connections.
 func HandleWebSocket(c *gin.Context) {
+	// ! Extract token from headers
+	// token := c.Request.Header.Get("Authorization")
+	// userId, err := extractUserIdFromToken(token) // Validate token and get user ID
+	// if err != nil {
+	// 	// Handle error (e.g., unauthorized)
+	// 	return
+	// }
+
 	userConn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Printf("Error while upgrading connection: %v", err)
@@ -86,7 +91,6 @@ func HandleWebSocket(c *gin.Context) {
 	// Create a new client
 	client := &types.Client{
 		ID:     userId,
-		Conn:   userConn,
 		RoomId: "",
 	}
 
@@ -95,7 +99,7 @@ func HandleWebSocket(c *gin.Context) {
 	log.Println("A user connected:", userConn.RemoteAddr())
 
 	defer func() {
-		// userConn.Close() // ya se hace en LeaveRoom
+		fmt.Printf("User is leaving: %v", userId)
 		LeaveRoom(userId)
 		memory.DeleteClient(userId)
 
@@ -116,180 +120,135 @@ func HandleWebSocket(c *gin.Context) {
 		}
 
 		switch payload.Event {
-		// ! 1.
-		/* Este evento se encarga de crear una sala (si no existe) e integrar un usuario a una sala,
-		y va a emitir un evento con el tamaño de la sala y datos de los usuarios en ella */
 		case "newRoom":
 			var reqData types.NewRoom
 			err := parsePayload(payload.Data, &reqData)
 			if err != nil {
 				fmt.Printf("Error: %s\n", err)
-				return
 			}
-
-			fmt.Println("payload.Event =>", reqData)
 
 			resData, err := services.NewRoom(userConn, types.UserID(userId), reqData)
 			if err != nil {
-				// TODO: sendDirect the error
 				fmt.Printf("something went wrong: %v\n", err)
-				return
 			}
-
-			fmt.Printf("resData: %v\n", resData)
 
 			if err := memory.UpdateUserRoom(userId, resData.RoomId); err != nil {
 				fmt.Printf("failed to update client room: %v", err)
-				return
 			}
 
-			fmt.Printf("Client room update to roomId: ")
+			// ! Subscribe to the Redis channel for RoomId
+			go memory.UserSubscribe(userConn, resData.RoomId)
 
-			// if err := broadcastRoom(eventName, resData, reqData.RoomName); err != nil {
-			// 	fmt.Printf("failed to broadcast to room: %s", reqData.RoomName)
-			// 	return
-			// }
+			if err := broadcastRoom("updateScene", resData, resData.RoomId); err != nil {
+				fmt.Printf("failed to broadcast to room: %s", reqData.RoomName)
+			}
 
 		case "joinRoom":
-			return
-
-		// ! 2.
-		/* Este evento se encarga de actualizar datos de un usuario (posicion, nombre o direccion)
-		de un usuario en una sala para todos los usuarios en ella */
-		case "updateUserPos":
-			var reqData types.UpdateUserPos
+			var reqData types.JoinRoom
 			err := parsePayload(payload.Data, &reqData)
 			if err != nil {
-				fmt.Printf("Error: %s", err)
-				return
+				fmt.Printf("Error: %s\n", err)
 			}
 
-			fmt.Println("payload.Event =>", reqData)
-
-			var row, col int
-			fmt.Sscanf(reqData.Dest, "%d,%d", &row, &col)
-
-			roomData, exists := memory.GetRoom(reqData.RoomId)
-
-			if !exists {
-				fmt.Printf("room not found")
-				return
-			}
-
-			userIdx := services.GetUserIdx(types.UserID(userId), reqData.RoomId)
-			if userIdx == -1 {
-				fmt.Printf("user not found")
-				return
-			}
-
-			currentPos := roomData.Users[userIdx].Position
-			posKey := fmt.Sprintf("%d,%d", currentPos.Row, currentPos.Col)
-
-			invalidPositions := roomData.UsersPositions
-
-			// Find path to the destination (implement findPath)
-			path := lib.FindPath(currentPos.Row, currentPos.Col, row, col, services.GridSize, invalidPositions)
-			if len(path) == 0 {
-				fmt.Printf("no valid path")
-				return
-			}
-
-			// TODO:
-			// ! move to background (a go routine) ?
-			for _, newPosition := range path {
-				fmt.Printf("newPosition: %v\n", newPosition)
-
-				roomData.Users[userIdx].Position = newPosition
-				newPosKey := fmt.Sprintf("%d,%d", newPosition.Row, newPosition.Col)
-				roomData.UsersPositions = append(roomData.UsersPositions, newPosKey)
-				util.Delete(roomData.UsersPositions, posKey)
-
-				data := map[string]interface{}{
-					"users": roomData.Users,
-				}
-
-				broadcastRoom("updateMap", data, reqData.RoomId)
-				time.Sleep(time.Duration(services.SpeedUserMov) * time.Millisecond) // Simulate movement delay
-			}
-
-		// TODO: check if working
-		case "updateUserFacingDir":
-			var reqData types.UpdateUserFacingDir
-			err := parsePayload(payload, &reqData)
+			resData, err := services.JoinRoom(userConn, types.UserID(userId), reqData)
 			if err != nil {
-				fmt.Printf("Error: %s", err)
-				return
+				fmt.Printf("something went wrong joining the room: %s. %v\n", string(reqData.RoomId), err)
 			}
 
-			client, err := memory.GetClient(types.UserID(userId))
-			if err != nil {
-				fmt.Printf("client does not exist")
-				return
+			fmt.Printf("resData: %v", resData)
+
+			if err := memory.UpdateUserRoom(userId, reqData.RoomId); err != nil {
+				fmt.Printf("failed to update client room: %v", err)
 			}
 
-			roomData, exists := memory.GetRoom(client.RoomId)
-			if !exists {
-				fmt.Printf("room not found")
-				return
-			}
+			// ! Subscribe to the Redis channel for RoomId
+			go memory.UserSubscribe(userConn, reqData.RoomId)
 
-			userIdx, exists := roomData.UserIdxMap[types.UserID(userId)]
-			if !exists {
-				fmt.Printf("user not found")
-				return
-			}
+			memory.BroadcastRoom(reqData.RoomId, "updateScene", resData)
 
-			var row, col int
-			fmt.Sscanf(reqData.Dest, "%d,%d", &row, &col)
-
-			destPos := lib.Position{Row: row, Col: col}
-			currPos := roomData.Users[userIdx].Position
-			roomData.Users[userIdx].AvatarXAxis = services.GetUserFacingDir(currPos, destPos)
-
-			data := map[string]interface{}{
-				"users": roomData.Users,
-			}
-
-			broadcastRoom("updateMap", data, client.RoomId)
-		case "directMessage":
-			var reqData types.DirectMsg
-			err := parsePayload(payload.Data, &reqData)
-			if err != nil {
-				fmt.Printf("Error: %s", err)
-				return
-			}
-
-			filter := lib.TextFilter()
-			var filteredText string = filter.CleanText(reqData.Msg)
-			fmt.Printf("filteredText: %s", filteredText)
-
-			sendDirect("directMsg", reqData.UserId, map[string]interface{}{
-				"From": userId,
-				"Msg":  filteredText,
-			})
-		case "roomBroadcast":
+		case "broadcastMessage":
 			var reqData types.Msg
 			err := parsePayload(payload.Data, &reqData)
 			if err != nil {
-				fmt.Printf("Error: %s", err)
-				return
+				fmt.Printf("Error: %s\n", err)
+				continue
 			}
 
-			filter := lib.TextFilter()
-			var filteredText string = filter.CleanText(reqData.Msg)
-			fmt.Printf("filteredText: %s", filteredText)
-
-			client, err := memory.GetClient(userId)
-			if err != nil {
-				fmt.Printf("client does not exist")
-				return
+			type MessageData struct {
+				Msg  string `json:"msg"`
+				From string `json:"from"`
 			}
 
-			broadcastRoom("broadcastRoom", map[string]interface{}{
-				"Msg": filteredText,
-			}, client.RoomId)
-		case "disconnect":
+			payload := MessageData{
+				Msg:  reqData.Msg,
+				From: string(reqData.From),
+			}
+
 			// TODO:
+			// memory.GetClient().RoomId
+			// if client.RoomId != reqData.RoomId {
+			// 	fmt.Println("Operation not allowed.")
+			// 	continue
+			// }
+
+			memory.BroadcastRoom(reqData.RoomId, "broadcastMessage", payload)
+
+		// case "updatePosition":
+		// 	var reqData types.UpdateUserPos
+		// 	err := parsePayload(payload.Data, &reqData)
+		// 	if err != nil {
+		// 		fmt.Printf("Error: %s", err)
+		// 		return
+		// 	}
+
+		// 	fmt.Println("payload.Event =>", reqData)
+
+		// 	var row, col int
+		// 	fmt.Sscanf(reqData.Dest, "%d,%d", &row, &col)
+
+		// 	roomData, exists := memory.GetRoom(reqData.RoomId)
+
+		// 	if !exists {
+		// 		fmt.Printf("room not found")
+		// 		return
+		// 	}
+
+		// 	userIdx := services.GetUserIdx(types.UserID(userId), reqData.RoomId)
+		// 	if userIdx == -1 {
+		// 		fmt.Printf("user not found")
+		// 		return
+		// 	}
+
+		// 	currentPos := roomData.Users[userIdx].Position
+		// 	posKey := fmt.Sprintf("%d,%d", currentPos.Row, currentPos.Col)
+
+		// 	invalidPositions := roomData.UsersPositions
+
+		// 	// Find path to the destination (implement findPath)
+		// 	path := lib.FindPath(currentPos.Row, currentPos.Col, row, col, services.GridSize, invalidPositions)
+		// 	if len(path) == 0 {
+		// 		fmt.Printf("no valid path")
+		// 		return
+		// 	}
+
+		// 	// TODO:
+		// 	// ! move to background (a go routine) ?
+		// 	for _, newPosition := range path {
+		// 		fmt.Printf("newPosition: %v\n", newPosition)
+
+		// 		roomData.Users[userIdx].Position = newPosition
+		// 		newPosKey := fmt.Sprintf("%d,%d", newPosition.Row, newPosition.Col)
+		// 		roomData.UsersPositions = append(roomData.UsersPositions, newPosKey)
+		// 		util.Delete(roomData.UsersPositions, posKey)
+
+		// 		data := map[string]interface{}{
+		// 			"users": roomData.Users,
+		// 		}
+
+		// 		broadcastRoom("updateMap", data, reqData.RoomId)
+		// 		time.Sleep(time.Duration(services.SpeedUserMov) * time.Millisecond) // Simulate movement delay
+		// 	}
+
 		default:
 			log.Println("Unknown event:", payload.Event)
 		}
@@ -310,39 +269,39 @@ func parsePayload(data interface{}, dest interface{}) error {
 	return nil
 }
 
-func broadcastRoom(eventName string, data map[string]interface{}, roomId types.RoomId) error {
-	payload := make(map[string]interface{})
-	payload["Event"] = eventName
-	payload["Data"] = data
-
-	room, exists := memory.GetRoom(roomId)
-	if !exists {
-		return fmt.Errorf("room does not exist")
-	}
-
-	for _, user := range room.Users {
-		userConn := user.Connection
-
-		if err := sendPayload(userConn, payload); err != nil {
-			return fmt.Errorf("failed to send payload to %v. %v", userConn.RemoteAddr(), err)
-		}
-	}
-
+func broadcastRoom(eventName string, data any, roomId types.RoomId) error {
 	return nil
+	// payload := make(map[string]interface{})
+	// payload["Event"] = eventName
+	// payload["Data"] = data
+
+	// fmt.Printf("from broadcastRoom: %v\n", payload)
+
+	// room, exists := memory.GetRoom(roomId)
+	// if !exists {
+	// 	return fmt.Errorf("room does not exist")
+	// }
+
+	// ctx, cancelCtx := memory.NewContextWithTimeout(10 * time.Second)
+	// defer cancelCtx()
+
+	// // Publish to Redis
+	// return memory.RedisClient.Publish(ctx, roomId, payload).Err()
 }
 
 func sendDirect(eventName string, userId types.UserID, data map[string]interface{}) error {
-	user, err := memory.GetClient(userId)
-	if err != nil {
-		return fmt.Errorf("client is not connected")
-	}
+	// TODO: uncomment
+	// user, err := memory.GetClient(userId)
+	// if err != nil {
+	// 	return fmt.Errorf("client is not connected")
+	// }
 
-	if err := sendPayload(user.Conn, map[string]interface{}{
-		"Event": eventName,
-		"Data":  data,
-	}); err != nil {
-		return fmt.Errorf("failed to send payload to %v. %v", user.Conn.RemoteAddr(), err)
-	}
+	// if err := sendPayload(user.Conn, map[string]interface{}{
+	// 	"Event": eventName,
+	// 	"Data":  data,
+	// }); err != nil {
+	// 	return fmt.Errorf("failed to send payload to %v. %v", user.Conn.RemoteAddr(), err)
+	// }
 
 	return nil
 }
@@ -363,6 +322,7 @@ func LeaveRoom(userId types.UserID) error {
 	}
 
 	services.RemoveUser(types.UserID(userId), userData.RoomId)
-	userData.Conn.Close()
+	// TODO: uncomment
+	// userData.Conn.Close()
 	return nil
 }

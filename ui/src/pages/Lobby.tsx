@@ -1,6 +1,6 @@
 import { Room } from "../components/room/Room.tsx";
 import { Controls } from "../components/Controls.tsx";
-import { Console } from "../components/Console.tsx";
+import { Console } from "../components/console";
 import { useSelector } from "react-redux";
 import { getConsoleState } from "../state/room.reducer.ts";
 

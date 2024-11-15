@@ -101,9 +101,8 @@ func PositionToString(p lib.Position) string {
 }
 
 type NewRoomResponse struct {
-	RoomId   types.RoomId
-	GridSize int
-	Users    []types.User
+	RoomId types.RoomId
+	Users  []types.User
 }
 
 func NewRoom(socket *websocket.Conn, userId types.UserID, data types.NewRoom) (*NewRoomResponse, error) {
@@ -112,13 +111,10 @@ func NewRoom(socket *websocket.Conn, userId types.UserID, data types.NewRoom) (*
 
 	// Create new user
 	newUser := types.User{
-		UserName:    data.UserName,
-		UserID:      userId,
-		Connection:  socket,
-		RoomID:      data.RoomName,
-		Position:    newPosition,
-		Avatar:      types.DefaultAvatars[data.AvatarId],
-		AvatarXAxis: types.Right,
+		UserName: data.UserName,
+		UserID:   userId,
+		RoomID:   data.RoomName,
+		Position: newPosition,
 	}
 
 	fmt.Printf("Creating room: %s\n", data.RoomName)
@@ -145,9 +141,8 @@ func NewRoom(socket *websocket.Conn, userId types.UserID, data types.NewRoom) (*
 		_, exists := memory.GetRoom(*roomId)
 		if !exists {
 			response := &NewRoomResponse{
-				RoomId:   *roomId,
-				GridSize: GridSize,
-				Users:    roomData.Users,
+				RoomId: *roomId,
+				Users:  roomData.Users,
 			}
 
 			memory.CreateRoom(data.RoomName, *roomId, roomData)
@@ -158,8 +153,7 @@ func NewRoom(socket *websocket.Conn, userId types.UserID, data types.NewRoom) (*
 }
 
 type JoinRoomResponse struct {
-	GridSize int
-	Users    []types.User
+	Users []types.User
 }
 
 func JoinRoom(socket *websocket.Conn, userId types.UserID, data types.JoinRoom) (*JoinRoomResponse, error) {
@@ -177,13 +171,10 @@ func JoinRoom(socket *websocket.Conn, userId types.UserID, data types.JoinRoom) 
 
 	// Create new user
 	newUser := types.User{
-		UserName:    data.UserName,
-		UserID:      userId,
-		Connection:  socket,
-		RoomID:      data.RoomName,
-		Position:    newPosition,
-		Avatar:      types.DefaultAvatars[data.AvatarId],
-		AvatarXAxis: types.Right,
+		UserName: data.UserName,
+		UserID:   userId,
+		RoomID:   string(data.RoomId),
+		Position: newPosition,
 	}
 
 	fmt.Printf("Updating room: %s\n", data.RoomId)
@@ -197,8 +188,7 @@ func JoinRoom(socket *websocket.Conn, userId types.UserID, data types.JoinRoom) 
 	fmt.Printf("roomData: %v\n", roomData)
 
 	response := &JoinRoomResponse{
-		GridSize: GridSize,
-		Users:    roomData.Users,
+		Users: roomData.Users,
 	}
 
 	memory.UpdateRoom(data.RoomId, roomData)

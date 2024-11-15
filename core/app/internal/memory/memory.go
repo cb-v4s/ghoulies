@@ -9,7 +9,8 @@ import (
 	"log"
 	"time"
 
-	redis "github.com/go-redis/redis/v8"
+	"github.com/go-redis/redis/v8"
+	"github.com/gorilla/websocket"
 )
 
 var (
@@ -17,14 +18,67 @@ var (
 )
 
 const (
-	popularRoomsLimit int    = 10
-	clientsKey        string = "clients"
-	roomsKey          string = "rooms"
+	popularRoomsLimit int           = 10
+	clientsKey        string        = "clients"
+	roomsKey          string        = "rooms"
+	ctxTimeout        time.Duration = 1000 * time.Second
 )
+
+func UserSubscribe(userConn *websocket.Conn, roomId types.RoomId) {
+	ctx, cancelCtx := context.WithTimeout(context.Background(), ctxTimeout)
+	defer cancelCtx()
+
+	pubsub := redisClient.Subscribe(ctx, string(roomId))
+	defer pubsub.Close()
+
+	for {
+		msg, err := pubsub.ReceiveMessage(ctx)
+		if err != nil {
+			log.Printf("Error receiving message: %v", err)
+			return
+		}
+
+		fmt.Printf("Message received. From here here we get the data and parse it into a ws { Event, Data } type. Received msg: %v\n", msg)
+
+		var payload any
+		err = json.Unmarshal([]byte(msg.Payload), &payload)
+		if err != nil {
+			fmt.Printf("something went wrong trying to marshal msg.Payload: %v\n", err)
+		}
+
+		if err := userConn.WriteJSON(payload); err != nil {
+			userConn.Close()
+			fmt.Printf("error on sending websocket message: %v", err)
+		}
+	}
+}
+
+func BroadcastRoom(roomId types.RoomId, event string, data interface{}) {
+	ctx, cancelCtx := context.WithTimeout(context.Background(), ctxTimeout)
+	defer cancelCtx()
+
+	payload := make(map[string]interface{})
+	payload["Event"] = event
+	payload["Data"] = data
+
+	// serialize payload to json so that redis accepts it
+	JSONPayload, err := json.Marshal(payload)
+	if err != nil {
+		fmt.Printf("Error on serialize payload: %v\n", err)
+		return
+	}
+
+	err = redisClient.Publish(ctx, string(roomId), JSONPayload).Err()
+	if err != nil {
+		fmt.Printf("Error on publish %v\n", err)
+	}
+
+	fmt.Println("Payload published to channel successfully.")
+}
 
 // ! call `defer cancel()` on each func call to avoid resource leaks
 func NewContextWithTimeout(timeout time.Duration) (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 
 	go func() {
 		<-ctx.Done()
@@ -86,17 +140,19 @@ func AddClient(data *types.Client) {
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
 	defer cancelCtx()
 
-	clientJSON, err := json.Marshal(data)
+	clientJSON, err := json.Marshal(&data)
 	if err != nil {
 		log.Fatalf("Error marshalling client data: %s", err)
 	}
 
-	err = redisClient.HSet(ctx, clientsKey, data.ID, clientJSON).Err()
+	err = redisClient.HSet(ctx, clientsKey, string(data.ID), clientJSON).Err()
 	if err != nil {
 		log.Fatalf("Error saving client data to Redis: %s", err)
 	}
 }
 
+// ! this is not working for some reason
+// TODO:
 func GetClient(clientID types.UserID) (*types.Client, error) {
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
 	defer cancelCtx()
@@ -106,10 +162,14 @@ func GetClient(clientID types.UserID) (*types.Client, error) {
 		return nil, err
 	}
 
+	fmt.Printf("clientJSON: %v\n", clientJSON)
+
 	var client types.Client
 	if err := json.Unmarshal([]byte(clientJSON), &client); err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("actual client: %v\n", &client)
 
 	return &client, nil
 }
@@ -151,7 +211,7 @@ func UpdateUserRoom(clientID types.UserID, roomId types.RoomId) error {
 	}
 
 	// Use HSET to update the client entry in Redis
-	err = redisClient.HSet(ctx, clientsKey, clientID, updatedClientJSON).Err()
+	err = redisClient.HSet(ctx, clientsKey, string(clientID), updatedClientJSON).Err()
 	if err != nil {
 		return fmt.Errorf("could not update client in Redis: %w", err)
 	}
@@ -168,7 +228,7 @@ func CreateRoom(roomName string, roomId types.RoomId, roomData types.RoomData) {
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
 	defer cancelCtx()
 
-	err = redisClient.HSet(ctx, roomsKey, roomId, roomJson).Err()
+	err = redisClient.HSet(ctx, roomsKey, string(roomId), roomJson).Err()
 	if err != nil {
 		log.Fatalf("Error saving room data to Redis: %s", err)
 	}
@@ -244,7 +304,7 @@ func GetPopularRooms() ([]types.PopularRoomList, error) {
 }
 
 func UpdateRoom(roomId types.RoomId, newRoomData *types.RoomData) {
-	roomJson, err := json.Marshal(newRoomData)
+	roomJson, err := json.Marshal(&newRoomData)
 	if err != nil {
 		log.Fatalf("Error marshalling room data: %s", err)
 	}
@@ -252,7 +312,7 @@ func UpdateRoom(roomId types.RoomId, newRoomData *types.RoomData) {
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
 	defer cancelCtx()
 
-	err = redisClient.HSet(ctx, roomsKey, roomId, roomJson).Err()
+	err = redisClient.HSet(ctx, roomsKey, string(roomId), roomJson).Err()
 	if err != nil {
 		log.Fatalf("Error saving room data to Redis: %s", err)
 	}

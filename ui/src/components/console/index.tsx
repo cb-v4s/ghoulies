@@ -1,30 +1,18 @@
-import { useEffect, useState } from "react";
-import { fetchRooms } from "../apiHooks";
-import { RoomInfo } from "../types";
-import { appName } from "../siteConfig";
+import { ReactNode, useEffect, useState } from "react";
+import { fetchRooms } from "../../apiHooks";
+import { RoomInfo } from "../../types";
+import { appName } from "../../siteConfig";
 import { useDispatch } from "react-redux";
-import { switchConsoleState } from "../state/room.reducer";
-import { X } from "./icons/x";
-
-const defaultRooms = [
-  {
-    roomId: "keep the block hot#3342",
-    roomName: "nostrud irure incididunt culpa ullamco <3",
-    roomDesc: "Qui nisi nostrud nostrud irure incididunt culpa ullamco.",
-    totalConns: 0,
-  },
-  {
-    roomId: "keep the block hot#3342",
-    roomName: "keep the block hot",
-    roomDesc: "Qui nisi nostrud nostrud irure incididunt culpa ullamco.",
-    totalConns: 0,
-  },
-];
+import { switchConsoleState } from "../../state/room.reducer";
+import { X } from "../../lib/icons";
+import { RoomStudio } from "./sections/RoomStudio";
+import { Friends } from "./sections/Friends";
+import { capitalize } from "../../lib/misc";
+import { joinRoom } from "../wsHandler";
 
 export const Console = () => {
   const dispatch = useDispatch();
-  const [rooms, setRooms] = useState<RoomInfo[]>(defaultRooms);
-  const [joinRoomId, setJoinRoomId] = useState<string | null>(null);
+  const [rooms, setRooms] = useState<RoomInfo[]>([]);
   const [selectedBtn, setSelectedBtn] = useState<number>(0);
 
   const getData = async () => {
@@ -42,32 +30,43 @@ export const Console = () => {
     roomId: string
   ) => {
     e.preventDefault();
-    setJoinRoomId(roomId);
+
+    try {
+      joinRoom({ roomId, userName: "Alice" });
+      dispatch(switchConsoleState());
+    } catch (err) {
+      alert("couldnt join room :(");
+    }
   };
 
   const Rows = () => {
     return rooms.map(({ roomId, roomName, totalConns }, idx: number) => (
-      <tr className="text-left text-slate-200 text-sm" key={idx}>
-        <td>
+      <tr className="text-slate-200 text-sm " key={idx}>
+        <td className="select-none">
+          {roomName.length < 34 ? (
+            <span>{roomName}</span>
+          ) : (
+            <span>{roomName.slice(0, 31) + "..."}</span>
+          )}
+        </td>
+        <td className="text-right">
+          <span>{totalConns}/50</span>
+        </td>
+        <td className="text-right">
           <button
-            className="text-blue-50"
+            className="text-blue-500 hover:underline"
             onClick={(e) => hdlSelectRoom(e, roomId)}
           >
-            {roomName}
+            Join Room
           </button>
         </td>
-        <td>{totalConns}/100</td>
       </tr>
     ));
   };
 
   useEffect(() => {
-    // getData();
+    getData();
   }, []);
-
-  useEffect(() => {
-    if (joinRoomId) console.log("joinRoom", joinRoomId);
-  }, [joinRoomId]);
 
   const hdlCloseConsole = (e: any) => {
     e.preventDefault();
@@ -89,16 +88,16 @@ export const Console = () => {
     };
   }, []);
 
-  const ConsoleButtons = () => {
-    const opts: any = {
-      rooms: () => <Rooms />,
-      create: () => <span className="text-slate-200">Create</span>,
-      friends: () => <span className="text-slate-200">Friends</span>,
+  const ConsoleContent = () => {
+    const opts: { [key: string]: () => ReactNode } = {
+      Lobby: () => <Rooms />,
+      "My Rooms": () => <RoomStudio />,
+      Friends: () => <Friends />,
     };
 
     const optKeys = Object.keys(opts);
     const baseBtnClass =
-      "px-4 py-2 rounded-md border-2 border-[#735faa] outline-none focus:outline-none";
+      "px-4 py-2 rounded-md border-2 border-[#735faa] outline-none focus:outline-none w-[30%]";
     const selectedClass = baseBtnClass + " border-b-4 border-b-[#31284b]";
 
     return (
@@ -109,6 +108,7 @@ export const Console = () => {
         <div className="mx-auto mt-4 text-slate-200 font-bold space-x-2">
           {optKeys.map((title: string, idx: number) => (
             <button
+              key={idx}
               onClick={() => setSelectedBtn(idx)}
               className={selectedBtn === idx ? selectedClass : baseBtnClass}
             >
@@ -125,8 +125,9 @@ export const Console = () => {
       <table className="table-auto w-full border-separate border-spacing-y-3 p-4">
         <thead>
           <tr className="text-left text-slate-200">
-            <th>Popular Rooms</th>
-            <th>Users</th>
+            <th>Public Rooms</th>
+            <th> </th>
+            <th> </th>
           </tr>
         </thead>
         <tbody>{rooms && rooms.length ? <Rows /> : null}</tbody>
@@ -135,8 +136,8 @@ export const Console = () => {
   };
 
   return (
-    <div className="w-full md:w-4/5 lg:w-3/5 h-96 bg-[#8770c4] rounded-xl pt-5 pb-14 px-6 text-center relative console shadow-xl">
-      <span className="text-slate-100 font-bold">
+    <div className="w-full md:w-4/5 lg:w-3/5 h-96 bg-[#8770c4] rounded-xl pt-3 pb-14 px-6 text-center relative console shadow-xl">
+      <span className="text-slate-100 font-bold text-sm">
         {capitalize(appName)} Console
       </span>
       <button
@@ -146,12 +147,7 @@ export const Console = () => {
         <X className="w-5 h-5 text-slate-100 hover:text-slate-300 transition duration-150 font-bold" />
       </button>
 
-      {ConsoleButtons()}
+      {ConsoleContent()}
     </div>
   );
-};
-
-export const capitalize = (s: string) => {
-  const firstLetter = s[0].toUpperCase();
-  return firstLetter + s.slice(1, s.length);
 };

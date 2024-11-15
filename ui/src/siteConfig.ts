@@ -11,6 +11,6 @@ export const ACCESS_TOKEN_IDENTIFIER_KEY = "accessToken";
 export const REFRESH_TOKEN_IDENTIFIER_KEY = "refreshToken";
 
 export const links = {
-  githubProfile: "//github.com/kovltsx",
-  sourceCode: "//github.com/kovltsx/proyecto",
+  githubProfile: "//github.com/czdor",
+  sourceCode: "//github.com/czdor/proyecto",
 };

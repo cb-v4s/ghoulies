@@ -2,8 +2,6 @@ package types
 
 import (
 	"core/internal/lib"
-
-	"github.com/gorilla/websocket"
 )
 
 // XAxis type represents the horizontal axis direction
@@ -16,60 +14,18 @@ const (
 	RoomIdFormat string = "%s#%s" // e.g. "my room#334288"
 )
 
-// Avatar struct using XAxis as keys
-type Avatar struct {
-	Direction map[XAxis]string
-}
-
-type Avatars map[int]Avatar
+// type Avatars map[int]Avatar
 type RoomId string
 
-var DefaultAvatars = Avatars{
-	1: {
-		Direction: map[XAxis]string{
-			Right: "1_r.png",
-			Left:  "1_l.png",
-		},
-	},
-	2: {
-		Direction: map[XAxis]string{
-			Right: "2_r.png",
-			Left:  "2_l.png",
-		},
-	},
-	3: {
-		Direction: map[XAxis]string{
-			Right: "3_r.png",
-			Left:  "3_l.png",
-		},
-	},
-	4: {
-		Direction: map[XAxis]string{
-			Right: "4_r.png",
-			Left:  "4_l.png",
-		},
-	},
-	5: {
-		Direction: map[XAxis]string{
-			Right: "5_r.png",
-			Left:  "5_l.png",
-		},
-	},
-}
-
 type User struct {
-	UserName    string
-	UserID      UserID
-	Connection  *websocket.Conn
-	RoomID      string
-	Position    lib.Position
-	Avatar      Avatar
-	AvatarXAxis XAxis
+	UserName string
+	UserID   UserID
+	RoomID   string
+	Position lib.Position
 }
 
 type Client struct {
 	ID     UserID
-	Conn   *websocket.Conn // ! esto probablemente haya que almacenarlo en memoria?
 	RoomId RoomId
 }
 
@@ -105,14 +61,11 @@ type UpdateUserFacingDir struct {
 type NewRoom struct {
 	UserName string `json:"userName"`
 	RoomName string `json:"roomName"`
-	AvatarId int    `json:"avatarId"`
 }
 
 type JoinRoom struct {
 	RoomId   RoomId `json:"roomId"`
 	UserName string `json:"userName"`
-	RoomName string `json:"roomName"`
-	AvatarId int    `json:"avatarId"`
 }
 
 type WsPayload struct {
@@ -121,12 +74,14 @@ type WsPayload struct {
 }
 
 type Msg struct {
-	Msg string `json:"msg"`
+	From   UserID `json:"from"`
+	RoomId RoomId `json:"roomId"`
+	Msg    string `json:"msg"`
 }
 
 type DirectMsg struct {
-	Msg    string `json:"msg"`
-	UserId UserID `json:"userId"`
+	Msg      string `json:"msg"`
+	ToUserId UserID `json:"userId"`
 }
 
 type PopularRoomList struct {

@@ -1,87 +1,89 @@
-// import { useDispatch, useSelector } from "react-redux";
+import { useEffect } from "react";
+import { wsApiUrl } from "../siteConfig";
+import { useDispatch } from "react-redux";
+import { setRoomInfo } from "../state/room.reducer";
 
-// // types
-// import { MessageT, CoordinatesT } from "../types";
+export const ws = new WebSocket(wsApiUrl);
 
-// import {
-//   setGridSize,
-//   setUsers,
-//   removeUserById,
-//   addMessage,
-//   selectUserId,
-// } from "../state/room.reducer";
-// import { useEffect } from "react";
-// import { wsApiUrl } from "../siteConfig";
+interface WsResponseData {
+  Event: string;
+  Data: any;
+}
 
-// export const socket = new WebSocket(wsApiUrl);
+enum RequestEvents {
+  CreateRoom = "newRoom",
+  JoinRoom = "joinRoom",
+  UpdatePosition = "updatePosition", // ! this should include facingDirection (right or left)
+  BroadcastMessage = "broadcastMessage",
+}
 
-// export const updatePlayerDirection = (dest: CoordinatesT) => {
-//   const data = {
-//     Event: "updatePlayerDirection",
-//     Data: dest,
-//   };
+enum ResponseEvents {
+  UpdateScene = "updateScene",
+  BroadcastMessage = "broadcastMessage",
+  JoinRoom = "joinRoom",
+}
 
-//   socket.send(JSON.stringify(data)); //.emit("updatePlayerDirection", dest);
-// };
+interface JoinRoomData {
+  roomId: string;
+  userName: string;
+}
 
-// export const createUser = (data: {
-//   roomName: string;
-//   userName: string;
-//   avatarId: number;
-// }) => {
-//   console.log("userCreation", data);
-//   socket.emit("userCreation", data);
-// };
+interface BroadcastMessageData {
+  roomId: string;
+  from: string;
+  msg: string;
+}
+export const joinRoom = (data: JoinRoomData) => {
+  const payload = {
+    Event: RequestEvents.JoinRoom,
+    Data: data,
+  };
 
-// export const sendMessageTo = (message: string, socketId: string) => {
-//   socket.emit("message", { message, socketId });
-// };
+  console.log("from ws.joinRoom: ", payload);
+  ws.send(JSON.stringify(payload));
+};
 
-// export const updatePlayerPosition = (data: { row: number; col: number }) =>
-//   socket.emit("updatePlayerPosition", data);
+export const broadcastMessage = (data: BroadcastMessageData) => {
+  const payload = {
+    Event: RequestEvents.BroadcastMessage,
+    Data: data,
+  };
 
-// const SocketHandler = () => {
-//   const dispatch = useDispatch();
-//   const currentUserI = useSelector(selectUserId);
+  console.log("from ws.broadcastMessage: ", payload);
 
-//   useEffect(() => {
-//     socket.on("initMap", (data) => {
-//       dispatch(setGridSize(data.gridSize));
-//     });
+  ws.send(JSON.stringify(payload));
+};
 
-//     socket.on("error_room_full", () => {
-//       console.error("error_room_full");
-//     });
+export const WsHandler = () => {
+  const dispatch = useDispatch();
+  // const roomInfo = useSelector(getRoomInfo)
 
-//     socket.on("userDisconnected", (userId) => {
-//       if (userId === currentUserI) window.location.reload();
-//       dispatch(removeUserById(userId));
-//     });
+  useEffect(() => {
+    ws.onmessage = (ev: MessageEvent<any>) => {
+      const wsResponse: WsResponseData = JSON.parse(ev.data);
+      const event = wsResponse.Event;
+      const data = wsResponse.Data;
 
-//     socket.on("updateMap", (data) => {
-//       dispatch(setUsers(data?.players)); // ! si no metemos la lista completa de users no funciona wtf
-//     });
+      console.log("event received =>", wsResponse);
 
-//     socket.on("userCreated", (users) => {
-//       dispatch(setUsers(users)); // ! todo: busca como arreglar luego wtf 2
-//     });
+      if (event === ResponseEvents.JoinRoom) {
+      }
 
-//     socket.on("message", ({ message, userId }: MessageT) => {
-//       dispatch(
-//         addMessage({
-//           userId,
-//           message,
-//         })
-//       );
-//     });
+      if (event === ResponseEvents.UpdateScene) {
+        console.log("setting data as roomInfo =>", data);
+        dispatch(setRoomInfo(data));
+      }
 
-//     return () => {
-//       socket.disconnect(); // * disconnect the socket connection
-//       socket.off("userCreated"); // * unsubscribe from the "userCreated" event
-//     };
-//   }, [socket, dispatch]);
+      if (event === ResponseEvents.BroadcastMessage) {
+        console.log("New message received", data);
+      }
+    };
 
-//   return null;
-// };
+    return () => {
+      //   socket.disconnect(); // * disconnect the socket connection
+      //   socket.off("userCreated"); // * unsubscribe from the "userCreated" event
+    };
+  }, [ws /*, dispatch */]);
 
-// export default SocketHandler;
+  return null;
+};

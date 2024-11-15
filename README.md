@@ -4,7 +4,7 @@
 
 ### Overview
 
-This is web-based platform that enables users to host and join virtual meetups in a game-like environment allowing them to interact with others through text chat. Built with security and scalability in mind, this project aims to handle millions of concurrent users (with some tweaks) while providing a seamless and engaging experience.
+This is web-based platform that enables users to host and join virtual meetups in a game-like environment allowing them to interact with others through text chat.
 
 ### Tech stack
 
