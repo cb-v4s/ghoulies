@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { wsApiUrl } from "../siteConfig";
 import { useDispatch } from "react-redux";
-import { setRoomInfo } from "../state/room.reducer";
+import { setRoomInfo, setUserId } from "../state/room.reducer";
 
 export const ws = new WebSocket(wsApiUrl);
 
@@ -20,7 +20,7 @@ enum RequestEvents {
 enum ResponseEvents {
   UpdateScene = "updateScene",
   BroadcastMessage = "broadcastMessage",
-  JoinRoom = "joinRoom",
+  SetUserId = "setUserId",
 }
 
 interface JoinRoomData {
@@ -54,6 +54,33 @@ export const broadcastMessage = (data: BroadcastMessageData) => {
   ws.send(JSON.stringify(payload));
 };
 
+interface UpdatePositionData {
+  dest: string;
+  roomId: string;
+  userId: string;
+}
+
+export const updatePosition = (
+  roomId: string,
+  userId: string,
+  x: number,
+  y: number
+) => {
+  const payload: {
+    Event: string;
+    Data: UpdatePositionData;
+  } = {
+    Event: RequestEvents.UpdatePosition,
+    Data: {
+      dest: `${x},${y}`,
+      roomId,
+      userId,
+    },
+  };
+
+  ws.send(JSON.stringify(payload));
+};
+
 export const WsHandler = () => {
   const dispatch = useDispatch();
   // const roomInfo = useSelector(getRoomInfo)
@@ -64,18 +91,23 @@ export const WsHandler = () => {
       const event = wsResponse.Event;
       const data = wsResponse.Data;
 
-      console.log("event received =>", wsResponse);
+      switch (event) {
+        case ResponseEvents.UpdateScene:
+          console.log("setting data as roomInfo =>", data);
+          dispatch(setRoomInfo(data));
 
-      if (event === ResponseEvents.JoinRoom) {
-      }
+          break;
+        case ResponseEvents.BroadcastMessage:
+          console.log("New message received", data);
 
-      if (event === ResponseEvents.UpdateScene) {
-        console.log("setting data as roomInfo =>", data);
-        dispatch(setRoomInfo(data));
-      }
+          break;
+        case ResponseEvents.SetUserId:
+          console.log("setUserId: ", data);
+          dispatch(setUserId(data));
 
-      if (event === ResponseEvents.BroadcastMessage) {
-        console.log("New message received", data);
+          break;
+        default:
+          console.log("unknown event received: ", event);
       }
     };
 

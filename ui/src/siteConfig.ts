@@ -1,3 +1,4 @@
+export const githubName = "czdor";
 export const themeColor = "#769EC1";
 export const appName = "ghosties";
 export const coreApiUrl = "http://localhost:8000/api/v1";

@@ -14,17 +14,21 @@ type User = {
 };
 
 interface Room {
+  RoomId: string | null;
   Users: User[];
 }
 
-interface DefaultState {
+interface RoomState {
   displayConsole: boolean;
   roomInfo: Room;
+  userId: string | null;
 }
 
-const initialState: DefaultState = {
+const initialState: RoomState = {
+  userId: null,
   displayConsole: false,
   roomInfo: {
+    RoomId: null,
     Users: [],
   },
 };
@@ -37,16 +41,22 @@ export const roomSlice = createSlice({
       state.displayConsole = !state.displayConsole;
     },
     setRoomInfo: (state, action: PayloadAction<any>) => {
-      const { Users } = action.payload;
-      console.log("updating roomInfo ------------------------", Users);
-      state.roomInfo = { Users: Users };
+      const { roomId, users } = action.payload;
+      console.log("updating roomInfo ------------------------", users);
+      state.roomInfo = { RoomId: roomId, Users: users };
+    },
+    setUserId: (state, action: PayloadAction<any>) => {
+      const { userId } = action.payload;
+      console.log("UserId from setUser action: ", userId, action.payload);
+      state.userId = userId;
     },
   },
 });
 
-export const { switchConsoleState, setRoomInfo } = roomSlice.actions;
+export const { switchConsoleState, setRoomInfo, setUserId } = roomSlice.actions;
 
 export const getConsoleState = (state: RootState) => state.room.displayConsole;
 export const getRoomInfo = (state: RootState) => state.room.roomInfo;
+export const getUserId = (state: RootState) => state.room.userId;
 
 export default roomSlice.reducer;

@@ -3,10 +3,14 @@ import { resources } from "./resources";
 import { FacingDirection } from "../../types";
 import { RoomI } from "./Room";
 import { useSelector } from "react-redux";
-import { getRoomInfo, setRoomInfo } from "../../state/room.reducer";
+import { getRoomInfo, getUserId } from "../../state/room.reducer";
+import { updatePosition } from "../wsHandler";
+import { sleep } from "../../lib/misc";
 
 export const Room = () => {
+  const gameLoopRef = useRef<any>(null);
   const roomInfo = useSelector(getRoomInfo);
+  const userId = useSelector(getUserId);
 
   let tileMap = [
     [3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
@@ -180,7 +184,7 @@ export const Room = () => {
     return updatedXAxis;
   };
 
-  const draw = async () => {
+  const draw = () => {
     if (!context) return;
 
     for (var x = renderStartX; x <= renderFinishX; x++) {
@@ -293,6 +297,79 @@ export const Room = () => {
     if (mouseDown) updateMapOffset(mouseDeltaX, mouseDeltaY);
   };
 
+  const hdlMouseMove = (e: any, canvas: any) => {
+    if (mouseDown) {
+      const dx = e.clientX - mouseScreenX; // distance moved in X
+      const dy = e.clientY - mouseScreenY; // distance moved in Y
+
+      // * check if the mouse has moved beyond the drag threshold
+      if (Math.sqrt(dx * dx + dy * dy) > dragThreshold) {
+        isDragging = true;
+      }
+    }
+
+    onMouseMove(canvas, e);
+  };
+
+  const hdlMouseUp = (e: any, canvas: any) => {
+    if (mouseDown && !isDragging && e.button === 0) {
+      getDestination(canvas, e); // * only if its a click, thus ignoring a drag
+    }
+
+    mouseDown = false; // Reset mouseDown state
+    isDragging = false; // Reset dragging flag
+    return false;
+  };
+
+  const hdlMouseDown = (e: any, canvas: any) => {
+    // * left mouse button is pressed
+    if (e.button !== 0) return false;
+
+    mouseDown = true;
+    isDragging = false;
+
+    let rect = canvas.getBoundingClientRect();
+
+    let newX = e.clientX - rect.left;
+    let newY = e.clientY - rect.top;
+
+    mouseScreenX = newX;
+    mouseScreenY = newY;
+
+    let mouseTilePos = convertScreenToTile(
+      mouseScreenX - mapOffsetX,
+      mouseScreenY - mapOffsetY
+    );
+
+    mouseTileX = mouseTilePos.x;
+    mouseTileY = mouseTilePos.y;
+
+    const prevRow = currentRow;
+    const prevCol = currentCol;
+
+    currentRow = mouseTileX;
+    currentCol = mouseTileY;
+
+    if (roomInfo.RoomId && userId) {
+      console.log(`Destination: ${currentRow},${currentCol}`);
+      updatePosition(roomInfo.RoomId, userId, currentRow, currentCol);
+    }
+
+    // TODO: move this to backend
+    if (
+      getFacingDirection(
+        { row: prevRow, col: prevCol },
+        { row: currentRow, col: currentCol }
+      ) === 1
+    ) {
+      console.log("to right");
+      currentCharacterImage = resources.images.rghostie.imgElem;
+    } else {
+      console.log("to left");
+      currentCharacterImage = resources.images.lghostie.imgElem;
+    }
+  };
+
   const init = async () => {
     const canvas = canvasRef.current;
 
@@ -314,82 +391,17 @@ export const Room = () => {
     // ! clearViewport();
     // ! displayLoading(context);
 
-    canvas.onmousedown = (e) => {
-      if (e.button === 0) {
-        // * left mouse button is pressed
-        mouseDown = true;
-        isDragging = false;
+    canvas.removeEventListener("mousemove", (e) => hdlMouseMove(e, canvas));
+    canvas.removeEventListener("mouseup", (e) => hdlMouseUp(e, canvas));
+    canvas.removeEventListener("mousedown", (e) => hdlMouseDown(e, canvas));
 
-        let rect = canvas.getBoundingClientRect();
-
-        let newX = e.clientX - rect.left;
-        let newY = e.clientY - rect.top;
-
-        mouseScreenX = newX;
-        mouseScreenY = newY;
-
-        let mouseTilePos = convertScreenToTile(
-          mouseScreenX - mapOffsetX,
-          mouseScreenY - mapOffsetY
-        );
-
-        mouseTileX = mouseTilePos.x;
-        mouseTileY = mouseTilePos.y;
-
-        const prevRow = currentRow;
-        const prevCol = currentCol;
-
-        currentRow = mouseTileX;
-        currentCol = mouseTileY;
-
-        // dispatch(setRoomInfo())
-
-        if (
-          getFacingDirection(
-            { row: prevRow, col: prevCol },
-            { row: currentRow, col: currentCol }
-          ) === 1
-        ) {
-          console.log("to right");
-          currentCharacterImage = resources.images.rghostie.imgElem;
-        } else {
-          console.log("to left");
-          currentCharacterImage = resources.images.lghostie.imgElem;
-        }
-
-        console.log(`Destination: ${currentRow},${currentCol}`);
-      }
-
-      return false;
-    };
-
-    canvas.onmousemove = (e) => {
-      if (mouseDown) {
-        const dx = e.clientX - mouseScreenX; // distance moved in X
-        const dy = e.clientY - mouseScreenY; // distance moved in Y
-
-        // * check if the mouse has moved beyond the drag threshold
-        if (Math.sqrt(dx * dx + dy * dy) > dragThreshold) {
-          isDragging = true;
-        }
-      }
-
-      onMouseMove(canvas, e);
-    };
-
-    canvas.onmouseup = (e) => {
-      if (mouseDown && !isDragging && e.button === 0) {
-        getDestination(canvas, e); // * only if its a click, thus ignoring a drag
-      }
-
-      mouseDown = false; // Reset mouseDown state
-      isDragging = false; // Reset dragging flag
-      return false;
-    };
+    canvas.addEventListener("mousemove", (e) => hdlMouseMove(e, canvas));
+    canvas.addEventListener("mouseup", (e) => hdlMouseUp(e, canvas));
+    canvas.addEventListener("mousedown", (e) => hdlMouseDown(e, canvas));
 
     updateMapOffset(320, 180);
 
-    const gameLoop = new RoomI(
+    gameLoopRef.current = new RoomI(
       context,
       canvasWidth,
       canvasHeight,
@@ -397,20 +409,25 @@ export const Room = () => {
       () => draw()
     );
 
-    gameLoop.start();
+    gameLoopRef.current.start();
   };
 
   useEffect(() => {
-    if (roomInfo.Users.length) init();
-  }, [roomInfo]);
+    init();
 
-  useEffect(() => {
-    console.log("roomInfo ============+>", roomInfo);
-  }, [roomInfo]);
+    return () => {
+      if (gameLoopRef.current) {
+        gameLoopRef.current.stop();
+        gameLoopRef.current = null; // Clear the reference
+      }
+    };
+  }, [draw]);
 
   return (
     <div>
-      <canvas ref={canvasRef} />
+      <canvas ref={canvasRef}>
+        Your browser does not support HTML Canvas.
+      </canvas>
     </div>
   );
 };

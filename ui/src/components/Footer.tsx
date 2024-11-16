@@ -1,5 +1,5 @@
 import React from "react";
-import { links } from "../siteConfig";
+import { links, githubName } from "../siteConfig";
 
 export const Footer: React.FC<any> = () => {
   return (
@@ -12,7 +12,7 @@ export const Footer: React.FC<any> = () => {
           rel="noreferrer"
           className="font-sm underline underline-offset-4"
         >
-          Carlos Barrios
+          {githubName}
         </a>
         .
       </p>

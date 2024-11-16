@@ -2,6 +2,7 @@ package ws
 
 import (
 	"core/config"
+	"core/internal/lib"
 	"core/internal/memory"
 	"core/internal/server/services"
 	"core/types"
@@ -14,10 +15,16 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
+
+type UpdateScene struct {
+	RoomId string       `json:"roomId"`
+	Users  []types.User `json:"users"`
+}
 
 // Upgrader is used to upgrade an HTTP connection to a WebSocket connection.
 var upgrader = websocket.Upgrader{
@@ -40,7 +47,6 @@ var upgrader = websocket.Upgrader{
 }
 
 var (
-	connections         = make(map[string]interface{})
 	activeIPAddresses   = make(map[net.Addr]int)
 	activeIPAddressesMu sync.Mutex
 )
@@ -139,7 +145,12 @@ func HandleWebSocket(c *gin.Context) {
 			// ! Subscribe to the Redis channel for RoomId
 			go memory.UserSubscribe(userConn, resData.RoomId)
 
-			if err := broadcastRoom("updateScene", resData, resData.RoomId); err != nil {
+			updateSceneData := UpdateScene{
+				RoomId: string(resData.RoomId),
+				Users:  resData.Users,
+			}
+
+			if err := broadcastRoom("updateScene", updateSceneData, resData.RoomId); err != nil {
 				fmt.Printf("failed to broadcast to room: %s", reqData.RoomName)
 			}
 
@@ -164,7 +175,25 @@ func HandleWebSocket(c *gin.Context) {
 			// ! Subscribe to the Redis channel for RoomId
 			go memory.UserSubscribe(userConn, reqData.RoomId)
 
-			memory.BroadcastRoom(reqData.RoomId, "updateScene", resData)
+			updateSceneData := UpdateScene{
+				RoomId: string(reqData.RoomId),
+				Users:  resData.Users,
+			}
+
+			memory.BroadcastRoom(reqData.RoomId, "updateScene", updateSceneData)
+
+			type SetUser struct {
+				UserId string `json:"userId"`
+			}
+
+			setUserData := SetUser{
+				UserId: string(userId),
+			}
+
+			sendPayload(userConn, map[string]interface{}{"Event": "updateScene", "Data": updateSceneData})
+			sendPayload(userConn, map[string]interface{}{
+				"Event": "setUserId",
+				"Data":  setUserData})
 
 		case "broadcastMessage":
 			var reqData types.Msg
@@ -193,64 +222,77 @@ func HandleWebSocket(c *gin.Context) {
 
 			memory.BroadcastRoom(reqData.RoomId, "broadcastMessage", payload)
 
-		// case "updatePosition":
-		// 	var reqData types.UpdateUserPos
-		// 	err := parsePayload(payload.Data, &reqData)
-		// 	if err != nil {
-		// 		fmt.Printf("Error: %s", err)
-		// 		return
-		// 	}
+		case "updatePosition":
+			var reqData types.UpdateUserPos
+			err := parsePayload(payload.Data, &reqData)
+			if err != nil {
+				fmt.Printf("Error: %s", err)
+				continue
+			}
 
-		// 	fmt.Println("payload.Event =>", reqData)
+			fmt.Println("payload.Event =>", reqData)
 
-		// 	var row, col int
-		// 	fmt.Sscanf(reqData.Dest, "%d,%d", &row, &col)
+			var row, col int
+			fmt.Sscanf(reqData.Dest, "%d,%d", &row, &col)
 
-		// 	roomData, exists := memory.GetRoom(reqData.RoomId)
+			roomData, exists := memory.GetRoom(reqData.RoomId)
 
-		// 	if !exists {
-		// 		fmt.Printf("room not found")
-		// 		return
-		// 	}
+			if !exists {
+				fmt.Printf("room not found")
+				continue
+			}
 
-		// 	userIdx := services.GetUserIdx(types.UserID(userId), reqData.RoomId)
-		// 	if userIdx == -1 {
-		// 		fmt.Printf("user not found")
-		// 		return
-		// 	}
+			userIdx := services.GetUserIdx(types.UserID(reqData.UserId), reqData.RoomId)
+			if userIdx == -1 {
+				fmt.Printf("user not found")
+				continue
+			}
 
-		// 	currentPos := roomData.Users[userIdx].Position
-		// 	posKey := fmt.Sprintf("%d,%d", currentPos.Row, currentPos.Col)
+			currentPos := roomData.Users[userIdx].Position
+			posKey := fmt.Sprintf("%d,%d", currentPos.Row, currentPos.Col)
 
-		// 	invalidPositions := roomData.UsersPositions
+			invalidPositions := roomData.UsersPositions
 
-		// 	// Find path to the destination (implement findPath)
-		// 	path := lib.FindPath(currentPos.Row, currentPos.Col, row, col, services.GridSize, invalidPositions)
-		// 	if len(path) == 0 {
-		// 		fmt.Printf("no valid path")
-		// 		return
-		// 	}
+			fmt.Printf("Invalid positions: %v\n", invalidPositions)
 
-		// 	// TODO:
-		// 	// ! move to background (a go routine) ?
-		// 	for _, newPosition := range path {
-		// 		fmt.Printf("newPosition: %v\n", newPosition)
+			// Find path to the destination (implement findPath)
+			path := lib.FindPath(currentPos.Row, currentPos.Col, row, col, services.GridSize, []string{}) // invalidPositions
+			fmt.Printf("Path: %v\n", path)
 
-		// 		roomData.Users[userIdx].Position = newPosition
-		// 		newPosKey := fmt.Sprintf("%d,%d", newPosition.Row, newPosition.Col)
-		// 		roomData.UsersPositions = append(roomData.UsersPositions, newPosKey)
-		// 		util.Delete(roomData.UsersPositions, posKey)
+			if len(path) == 0 {
+				fmt.Printf("no valid path")
+				continue
+			}
 
-		// 		data := map[string]interface{}{
-		// 			"users": roomData.Users,
-		// 		}
+			// TODO:
+			// ? move to background (a go routine) ?
+			// ? also will this update redis data ?
+			for _, newPosition := range path {
+				fmt.Printf("newPosition: %v\n", newPosition)
 
-		// 		broadcastRoom("updateMap", data, reqData.RoomId)
-		// 		time.Sleep(time.Duration(services.SpeedUserMov) * time.Millisecond) // Simulate movement delay
-		// 	}
+				roomData.Users[userIdx].Position = newPosition
+				newPosKey := fmt.Sprintf("%d,%d", newPosition.Row, newPosition.Col)
+				roomData.UsersPositions = append(roomData.UsersPositions, newPosKey)
+
+				// ! updates room
+				memory.UpdateRoom(reqData.RoomId, roomData)
+
+				updateSceneData := UpdateScene{
+					RoomId: string(reqData.RoomId),
+					Users:  roomData.Users,
+				}
+
+				memory.BroadcastRoom(reqData.RoomId, "updateScene", updateSceneData)
+
+				// Simulate movement delay
+				time.Sleep(time.Duration(services.SpeedUserMov) * time.Millisecond)
+
+				util.Delete(roomData.UsersPositions, posKey) // TODO: make this func name more descriptive
+				posKey = newPosKey
+			}
 
 		default:
-			log.Println("Unknown event:", payload.Event)
+			log.Println("Unknown event received:", payload.Event)
 		}
 	}
 }

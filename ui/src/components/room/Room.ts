@@ -72,6 +72,7 @@ export class RoomI {
 
   stop() {
     if (this.rafId) {
+      console.log("cancelling animation frame *********************");
       cancelAnimationFrame(this.rafId);
     }
     this.isRunning = false;
