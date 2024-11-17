@@ -38,10 +38,9 @@ export default {
         "100v": "100vh",
       },
       colors: {
-        aldebaran: "#53aefe",
-        black: "#000000",
-        white: "#ffffff",
-        isabella: "#adca2b",
+        "light-purple": "#8770c4",
+        "dark-purple": "#2b2542",
+        background: ""
       },
     },
   },

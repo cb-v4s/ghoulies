@@ -136,7 +136,7 @@ export const Console = () => {
   };
 
   return (
-    <div className="w-full md:w-4/5 lg:w-3/5 h-96 bg-[#8770c4] rounded-xl pt-3 pb-14 px-6 text-center relative console shadow-xl">
+    <div className="w-full md:w-4/5 lg:w-3/5 h-96 bg-light-purple rounded-xl pt-3 pb-14 px-6 text-center relative console shadow-xl">
       <span className="text-slate-100 font-bold text-sm">
         {capitalize(appName)} Console
       </span>

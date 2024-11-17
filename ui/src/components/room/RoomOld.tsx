@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { resources } from "./resources";
 import { FacingDirection } from "../../types";
-import { RoomI } from "./Room";
+import { RoomI } from "./RoomOld";
 import { useSelector } from "react-redux";
 import { getRoomInfo, getUserId } from "../../state/room.reducer";
 import { updatePosition } from "../wsHandler";

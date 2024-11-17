@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { resources } from "./room/resources";
+import { resources } from "./resources";
 import { useSelector } from "react-redux";
-import { getRoomInfo, getUserId } from "../state/room.reducer";
-import { updatePosition } from "./wsHandler";
+import { getRoomInfo, getUserId } from "../../state/room.reducer";
+import { updatePosition } from "../wsHandler";
+import { RoomData } from "./roomData";
 
-export const CanvasTest = () => {
+export const Room = () => {
   const [locations, setLocations] = useState<{ x: number; y: number }[]>([]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 740, height: 710 });
@@ -403,12 +404,21 @@ export const CanvasTest = () => {
 
     const ctx = canvas.getContext("2d");
     if (ctx) {
-      draw(ctx, locations, resources.images.tileMap.imgElem);
+      // ! without requestAnimationFrame simply call
+      // draw(ctx, locations, resources.images.tileMap.imgElem);
+
+      const drawFrame = () => {
+        draw(ctx, locations, resources.images.tileMap.imgElem);
+        requestAnimationFrame(drawFrame);
+      };
+
+      drawFrame();
     }
   }, [locations, canvasSize, userId, roomInfo]);
 
   return (
     <div className="flex items-center justify-center">
+      <RoomData currentRow={currentRow} currentCol={currentCol} />
       <canvas ref={canvasRef} />
     </div>
   );
