@@ -1,4 +1,4 @@
-import Chat from "./chat";
+import { Chat } from "./Chat";
 import { useDispatch } from "react-redux";
 import { switchConsoleState } from "../state/room.reducer";
 

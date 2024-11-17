@@ -5,41 +5,49 @@ export type MessageT = {
 
 export type Todo = {};
 
-export type CoordinatesT = {
-  row: number;
-  col: number;
-};
-
-export enum XAxis {
-  Right = 1,
-  Left = -1,
-}
-
-interface Avatar {
-  [XAxis.Right]: string;
-  [XAxis.Left]: string;
-}
-
-export interface PlayerI {
-  userId: string;
-  position: CoordinatesT;
-  roomId?: string;
-  userName: string;
-  avatar: Avatar;
-  avatarXAxis: XAxis;
-}
-
 export interface ApiError {
   error: string;
-}
-
-export enum FacingDirection {
-  Right = 0,
-  Left = 1,
 }
 
 export interface RoomInfo {
   roomId: string;
   roomName: string;
   totalConns: number;
+}
+
+type Position = {
+  Row: number;
+  Col: number;
+};
+
+// TODO: move this 1 or -1
+export enum FacingDirection {
+  Right = 1,
+  Left = -1,
+}
+
+export type User = {
+  Position: Position;
+  Direction: FacingDirection;
+  RoomID: string;
+  UserID: string;
+  Username: string;
+};
+
+export type Message = {
+  Msg: string;
+  From: string;
+};
+
+interface Room {
+  RoomId: string | null;
+  Users: User[];
+  Messages: Message[];
+}
+
+export interface RoomState {
+  displayConsole: boolean;
+  roomInfo: Room;
+  userId: string | null;
+  username: string | null;
 }

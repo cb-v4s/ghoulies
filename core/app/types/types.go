@@ -5,28 +5,31 @@ import (
 )
 
 // XAxis type represents the horizontal axis direction
-type XAxis string
+type XAxis int
 
 // Constants for XAxis
 const (
-	Right        XAxis  = "right"
-	Left         XAxis  = "left"
-	RoomIdFormat string = "%s#%s" // e.g. "my room#334288"
+	Right            XAxis  = 1
+	Left             XAxis  = -1
+	DefaultDirection        = Left
+	RoomIdFormat     string = "%s#%s" // e.g. "my room#334288"
 )
 
 // type Avatars map[int]Avatar
 type RoomId string
 
 type User struct {
-	UserName string
-	UserID   UserID
-	RoomID   string
-	Position lib.Position
+	UserName  string
+	UserID    UserID
+	RoomID    string
+	Position  lib.Position
+	Direction XAxis
 }
 
 type Client struct {
-	ID     UserID
-	RoomId RoomId
+	ID       UserID
+	RoomId   RoomId
+	Username string
 }
 
 type Room struct {

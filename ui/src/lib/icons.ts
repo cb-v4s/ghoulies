@@ -4,4 +4,5 @@ export {
   ArrowRight,
   X,
   SquareArrowOutUpRight,
+  SendHorizontal,
 } from "lucide-react";

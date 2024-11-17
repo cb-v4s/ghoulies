@@ -6,14 +6,13 @@ import (
 	types "core/types"
 	"core/util"
 	"fmt"
-	"math"
 
 	"github.com/gorilla/websocket"
 	"golang.org/x/exp/rand"
 )
 
 const (
-	SpeedUserMov = 220
+	SpeedUserMov = 180
 	GridSize     = 10
 	RoomLimit    = 10
 )
@@ -111,10 +110,11 @@ func NewRoom(socket *websocket.Conn, userId types.UserID, data types.NewRoom) (*
 
 	// Create new user
 	newUser := types.User{
-		UserName: data.UserName,
-		UserID:   userId,
-		RoomID:   data.RoomName,
-		Position: newPosition,
+		UserName:  data.UserName,
+		UserID:    userId,
+		RoomID:    data.RoomName,
+		Position:  newPosition,
+		Direction: types.DefaultDirection,
 	}
 
 	fmt.Printf("Creating room: %s\n", data.RoomName)
@@ -171,10 +171,11 @@ func JoinRoom(socket *websocket.Conn, userId types.UserID, data types.JoinRoom) 
 
 	// Create new user
 	newUser := types.User{
-		UserName: data.UserName,
-		UserID:   userId,
-		RoomID:   string(data.RoomId),
-		Position: newPosition,
+		UserName:  data.UserName,
+		UserID:    userId,
+		RoomID:    string(data.RoomId),
+		Position:  newPosition,
+		Direction: types.DefaultDirection,
 	}
 
 	fmt.Printf("Updating room: %s\n", data.RoomId)
@@ -193,28 +194,4 @@ func JoinRoom(socket *websocket.Conn, userId types.UserID, data types.JoinRoom) 
 
 	memory.UpdateRoom(data.RoomId, roomData)
 	return response, nil
-}
-
-func GetUserFacingDir(origin lib.Position, target lib.Position) types.XAxis {
-	var updatedXAxis types.XAxis = types.Right
-
-	deltaRow := target.Row - origin.Row
-	deltaCol := target.Col - origin.Col
-
-	if deltaCol > 0 {
-		updatedXAxis = types.Right
-	} else if deltaCol < 0 {
-		updatedXAxis = types.Left
-	}
-
-	// Diagonal movement
-	if math.Abs(float64(deltaRow)) == math.Abs(float64(deltaCol)) {
-		if deltaCol > 0 && deltaRow < 0 {
-			updatedXAxis = types.Right
-		} else if deltaCol < 0 && deltaRow > 0 {
-			updatedXAxis = types.Left
-		}
-	}
-
-	return updatedXAxis
 }

@@ -87,13 +87,15 @@ export const Room = () => {
         var destWidth = blockWidth;
         var destHeight = blockHeight;
 
-        roomInfo.Users.forEach(({ Position }) => {
+        roomInfo.Users.forEach(({ Position, Direction }) => {
           drawCharacterAt(
             ctx,
-            resources.images.lghostie.imgElem,
+            Direction === 1
+              ? resources.images.lghostie.imgElem
+              : resources.images.rghostie.imgElem,
             Position.Row - 1,
             Position.Col - 1
-          ); // Draw each image
+          );
         });
 
         ctx.drawImage(

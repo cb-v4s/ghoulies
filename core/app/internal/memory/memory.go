@@ -38,8 +38,6 @@ func UserSubscribe(userConn *websocket.Conn, roomId types.RoomId) {
 			return
 		}
 
-		fmt.Printf("Message received. From here here we get the data and parse it into a ws { Event, Data } type. Received msg: %v\n", msg)
-
 		var payload any
 		err = json.Unmarshal([]byte(msg.Payload), &payload)
 		if err != nil {
@@ -186,7 +184,7 @@ func DeleteClient(clientID types.UserID) error {
 	return nil
 }
 
-func UpdateUserRoom(clientID types.UserID, roomId types.RoomId) error {
+func UpdateUser(clientID types.UserID, data map[string]string) error {
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
 	defer cancelCtx()
 
@@ -201,11 +199,20 @@ func UpdateUserRoom(clientID types.UserID, roomId types.RoomId) error {
 		return fmt.Errorf("could not unmarshal client data: %w", err)
 	}
 
-	// Update the RoomId field
-	client.RoomId = roomId
+	newClientData := types.Client{
+		ID: client.ID,
+	}
+
+	if roomId, ok := data["roomId"]; ok {
+		newClientData.RoomId = types.RoomId(roomId)
+	}
+
+	if userName, ok := data["userName"]; ok {
+		newClientData.Username = userName
+	}
 
 	// Marshal the updated client data back to JSON
-	updatedClientJSON, err := json.Marshal(client)
+	updatedClientJSON, err := json.Marshal(newClientData)
 	if err != nil {
 		return fmt.Errorf("could not marshal updated client data: %w", err)
 	}

@@ -4,6 +4,7 @@ import (
 	"core/internal/lib"
 	"core/types"
 	"fmt"
+	"math"
 	"math/big"
 
 	"crypto/rand"
@@ -61,4 +62,28 @@ func NewRoomId(roomName string) (*types.RoomId, error) {
 	roomId := types.RoomId(id)
 
 	return &roomId, nil
+}
+
+func GetUserFacingDir(origin lib.Position, target lib.Position) types.XAxis {
+	var updatedXAxis types.XAxis = types.Right
+
+	deltaRow := target.Row - origin.Row
+	deltaCol := target.Col - origin.Col
+
+	if deltaCol > 0 {
+		updatedXAxis = types.Right
+	} else if deltaCol < 0 {
+		updatedXAxis = types.Left
+	}
+
+	// Diagonal movement
+	if math.Abs(float64(deltaRow)) == math.Abs(float64(deltaCol)) {
+		if deltaCol > 0 && deltaRow < 0 {
+			updatedXAxis = types.Right
+		} else if deltaCol < 0 && deltaRow > 0 {
+			updatedXAxis = types.Left
+		}
+	}
+
+	return updatedXAxis
 }

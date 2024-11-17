@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { wsApiUrl } from "../siteConfig";
 import { useDispatch } from "react-redux";
-import { setRoomInfo, setUserId } from "../state/room.reducer";
+import { setRoomInfo, setRoomMessage, setUserId } from "../state/room.reducer";
 
 export const ws = new WebSocket(wsApiUrl);
 
@@ -89,6 +89,8 @@ export const WsHandler = () => {
     ws.onmessage = (ev: MessageEvent<any>) => {
       const wsResponse: WsResponseData = JSON.parse(ev.data);
       const event = wsResponse.Event;
+
+      // ! TODO: we must assure the data is the type we expect
       const data = wsResponse.Data;
 
       switch (event) {
@@ -99,6 +101,7 @@ export const WsHandler = () => {
           break;
         case ResponseEvents.BroadcastMessage:
           console.log("New message received", data);
+          dispatch(setRoomMessage(data));
 
           break;
         case ResponseEvents.SetUserId:

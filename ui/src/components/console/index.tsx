@@ -3,7 +3,7 @@ import { fetchRooms } from "../../apiHooks";
 import { RoomInfo } from "../../types";
 import { appName } from "../../siteConfig";
 import { useDispatch } from "react-redux";
-import { switchConsoleState } from "../../state/room.reducer";
+import { switchConsoleState, setUsername } from "../../state/room.reducer";
 import { X } from "../../lib/icons";
 import { RoomStudio } from "./sections/RoomStudio";
 import { Friends } from "./sections/Friends";
@@ -31,9 +31,26 @@ export const Console = () => {
   ) => {
     e.preventDefault();
 
+    const randomNames = [
+      "Alice",
+      "Hatter",
+      "Doormouse",
+      "White Knight",
+      "Red Queen",
+    ];
+
+    const randomUsername =
+      randomNames[Math.floor(Math.random() * randomNames.length)];
+    console.log("Console ~ randomUsername:", randomUsername);
+
     try {
-      joinRoom({ roomId, userName: "Alice" });
+      joinRoom({
+        roomId,
+        userName: randomUsername,
+      });
+
       dispatch(switchConsoleState());
+      dispatch(setUsername({ username: randomUsername }));
     } catch (err) {
       alert("couldnt join room :(");
     }
@@ -76,7 +93,7 @@ export const Console = () => {
   useEffect(() => {
     const handleClickOutside = (event: any) => {
       // Check if the clicked element is inside the component
-      if (!event.target.closest(".console")) {
+      if (!event.target.closest("#console")) {
         dispatch(switchConsoleState());
       }
     };
@@ -97,23 +114,24 @@ export const Console = () => {
 
     const optKeys = Object.keys(opts);
     const baseBtnClass =
-      "px-4 py-2 rounded-md border-2 border-[#735faa] outline-none focus:outline-none w-[30%]";
-    const selectedClass = baseBtnClass + " border-b-4 border-b-[#31284b]";
+      "px-4 py-2 rounded-md border-2 border-[#7d5edb] outline-none focus:outline-none w-full";
+    const selectedClass = baseBtnClass + " border-b-4 border-b-[#7d5edb]";
 
     return (
       <>
         <div className="mt-2 pb-10 overflow-y-scroll console-scrollbar relative text-left bg-slate-900 h-5/6 border-2 border-green-200">
           {opts[optKeys[selectedBtn]]()}
         </div>
-        <div className="mx-auto mt-4 text-slate-200 font-bold space-x-2">
+        <div className="mx-auto mt-4 text-slate-200 font-bold space-x-2 flex flex-row justify-center items-center">
           {optKeys.map((title: string, idx: number) => (
-            <button
-              key={idx}
-              onClick={() => setSelectedBtn(idx)}
-              className={selectedBtn === idx ? selectedClass : baseBtnClass}
-            >
-              {title}
-            </button>
+            <div className="flex flex-col w-[30%]" key={idx}>
+              <button
+                key={idx}
+                onClick={() => setSelectedBtn(idx)}
+                className={selectedBtn === idx ? selectedClass : baseBtnClass}
+              ></button>
+              <span className="text-sm mt-2">{title}</span>
+            </div>
           ))}
         </div>
       </>
@@ -136,8 +154,11 @@ export const Console = () => {
   };
 
   return (
-    <div className="w-full md:w-4/5 lg:w-3/5 h-96 bg-light-purple rounded-xl pt-3 pb-14 px-6 text-center relative console shadow-xl">
-      <span className="text-slate-100 font-bold text-sm">
+    <div
+      id="console"
+      className="w-full md:w-4/5 lg:w-3/5 h-96 bg-[#A593F2] rounded-xl pt-3 pb-14 px-6 text-center relative shadow-xl border-2 border-[#7d5edb] select-none"
+    >
+      <span className="text-[#7d5edb] font-bold text-sm">
         {capitalize(appName)} Console
       </span>
       <button

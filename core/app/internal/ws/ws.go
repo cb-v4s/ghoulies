@@ -96,8 +96,9 @@ func HandleWebSocket(c *gin.Context) {
 
 	// Create a new client
 	client := &types.Client{
-		ID:     userId,
-		RoomId: "",
+		ID:       userId,
+		RoomId:   "",
+		Username: "",
 	}
 
 	// * Register the new client to Redis
@@ -138,7 +139,8 @@ func HandleWebSocket(c *gin.Context) {
 				fmt.Printf("something went wrong: %v\n", err)
 			}
 
-			if err := memory.UpdateUserRoom(userId, resData.RoomId); err != nil {
+			data := map[string]string{"roomId": string(resData.RoomId), "userName": reqData.UserName}
+			if err := memory.UpdateUser(userId, data); err != nil {
 				fmt.Printf("failed to update client room: %v", err)
 			}
 
@@ -168,7 +170,13 @@ func HandleWebSocket(c *gin.Context) {
 
 			fmt.Printf("resData: %v", resData)
 
-			if err := memory.UpdateUserRoom(userId, reqData.RoomId); err != nil {
+			// ! ew there must be another way
+			data := map[string]string{
+				"roomId":   string(reqData.RoomId),
+				"userName": reqData.UserName,
+			}
+
+			if err := memory.UpdateUser(userId, data); err != nil {
 				fmt.Printf("failed to update client room: %v", err)
 			}
 
@@ -203,15 +211,7 @@ func HandleWebSocket(c *gin.Context) {
 				continue
 			}
 
-			type MessageData struct {
-				Msg  string `json:"msg"`
-				From string `json:"from"`
-			}
-
-			payload := MessageData{
-				Msg:  reqData.Msg,
-				From: string(reqData.From),
-			}
+			fmt.Printf("----+---- broadcastMessage received: %v\n", reqData)
 
 			// TODO:
 			// memory.GetClient().RoomId
@@ -219,6 +219,21 @@ func HandleWebSocket(c *gin.Context) {
 			// 	fmt.Println("Operation not allowed.")
 			// 	continue
 			// }
+
+			user, err := memory.GetClient(reqData.From)
+			if err != nil {
+				fmt.Printf("client is not connected")
+			}
+
+			type MessageData struct {
+				Msg  string `json:"msg"`
+				From string `json:"from"`
+			}
+
+			payload := MessageData{
+				Msg:  reqData.Msg,
+				From: user.Username,
+			}
 
 			memory.BroadcastRoom(reqData.RoomId, "broadcastMessage", payload)
 
@@ -231,9 +246,6 @@ func HandleWebSocket(c *gin.Context) {
 			}
 
 			fmt.Println("payload.Event =>", reqData)
-
-			var row, col int
-			fmt.Sscanf(reqData.Dest, "%d,%d", &row, &col)
 
 			roomData, exists := memory.GetRoom(reqData.RoomId)
 
@@ -251,12 +263,18 @@ func HandleWebSocket(c *gin.Context) {
 			currentPos := roomData.Users[userIdx].Position
 			posKey := fmt.Sprintf("%d,%d", currentPos.Row, currentPos.Col)
 
+			var destRow, destCol int
+			fmt.Sscanf(reqData.Dest, "%d,%d", &destRow, &destCol)
+
+			facingDirection := util.GetUserFacingDir(currentPos, lib.Position{Row: destRow, Col: destCol})
+
 			invalidPositions := roomData.UsersPositions
 
 			fmt.Printf("Invalid positions: %v\n", invalidPositions)
 
 			// Find path to the destination (implement findPath)
-			path := lib.FindPath(currentPos.Row, currentPos.Col, row, col, services.GridSize, []string{}) // invalidPositions
+			// ! TODO: add invalidPositions
+			path := lib.FindPath(currentPos.Row, currentPos.Col, destRow, destCol, services.GridSize, []string{})
 			fmt.Printf("Path: %v\n", path)
 
 			if len(path) == 0 {
@@ -271,6 +289,7 @@ func HandleWebSocket(c *gin.Context) {
 				fmt.Printf("newPosition: %v\n", newPosition)
 
 				roomData.Users[userIdx].Position = newPosition
+				roomData.Users[userIdx].Direction = facingDirection
 				newPosKey := fmt.Sprintf("%d,%d", newPosition.Row, newPosition.Col)
 				roomData.UsersPositions = append(roomData.UsersPositions, newPosKey)
 

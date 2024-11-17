@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 // components
-import Chat from "../components/chat";
+import Chat from "../components/Chat";
 import UserCharacter from "../components/userCharacter";
 import Lobby from "./Lobby";
 
