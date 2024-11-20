@@ -79,12 +79,11 @@ func HandleWebSocket(c *gin.Context) {
 	memory.AddClient(client)
 	log.Println("A user connected:", userConn.RemoteAddr())
 
+	// ! this rans when infinite loop breaks
 	defer func() {
-		fmt.Printf("User is leaving: %v", userId)
-
 		user, err := memory.GetClient(userId)
 		if err != nil {
-			fmt.Printf("client is not connected")
+			return
 		}
 
 		// 1. Remove user from the room info
@@ -116,18 +115,6 @@ func HandleWebSocket(c *gin.Context) {
 			}
 
 			fmt.Printf("LEAVING CLIENT:::::%v, roomId:::::%v\n", client.ID, client.RoomId)
-
-			// 1. Remove user from the room info
-			// services.RemoveUser(client.ID, client.RoomId)
-
-			// 2. close the ws connection
-			userConn.Close()
-
-			// 3. delete the userId from activeConnections
-			// activeConnections.Delete(userId)
-
-			// 4. delete the client from redis
-			// memory.DeleteClient(userId)
 
 			break
 		}
@@ -217,15 +204,6 @@ func HandleWebSocket(c *gin.Context) {
 				continue
 			}
 
-			fmt.Printf("----+---- broadcastMessage received: %v\n", reqData)
-
-			// TODO:
-			// memory.GetClient().RoomId
-			// if client.RoomId != reqData.RoomId {
-			// 	fmt.Println("Operation not allowed.")
-			// 	continue
-			// }
-
 			user, err := memory.GetClient(reqData.From)
 			if err != nil {
 				fmt.Printf("client is not connected")
@@ -276,30 +254,20 @@ func HandleWebSocket(c *gin.Context) {
 
 			invalidPositions := roomData.UsersPositions
 
-			fmt.Printf("Invalid positions: %v\n", invalidPositions)
-
-			// Find path to the destination (implement findPath)
-			// ! TODO: add invalidPositions
-			path := lib.FindPath(currentPos.Row, currentPos.Col, destRow, destCol, services.GridSize, []string{})
-			fmt.Printf("Path: %v\n", path)
+			path := lib.FindPath(currentPos.Row, currentPos.Col, destRow, destCol, services.GridSize, invalidPositions)
 
 			if len(path) == 0 {
-				fmt.Printf("no valid path")
 				continue
 			}
 
-			// TODO:
-			// ? move to background (a go routine) ?
-			// ? also will this update redis data ?
 			for _, newPosition := range path {
-				fmt.Printf("newPosition: %v\n", newPosition)
+				roomData.UsersPositions = util.DeleteFromSlice(roomData.UsersPositions, posKey)
 
 				roomData.Users[userIdx].Position = newPosition
 				roomData.Users[userIdx].Direction = facingDirection
 				newPosKey := fmt.Sprintf("%d,%d", newPosition.Row, newPosition.Col)
-				roomData.UsersPositions = append(roomData.UsersPositions, newPosKey)
 
-				// ! updates room
+				roomData.UsersPositions = append(roomData.UsersPositions, newPosKey)
 				memory.UpdateRoom(reqData.RoomId, roomData)
 
 				updateSceneData := UpdateScene{
@@ -312,9 +280,10 @@ func HandleWebSocket(c *gin.Context) {
 				// Simulate movement delay
 				time.Sleep(time.Duration(services.SpeedUserMov) * time.Millisecond)
 
-				util.DeleteFromSlice(roomData.UsersPositions, posKey) // TODO: make this func name more descriptive
 				posKey = newPosKey
 			}
+
+			fmt.Printf("Invalid positions: %v\n", invalidPositions)
 
 		case "leaveRoom":
 			var reqData types.UserLeave

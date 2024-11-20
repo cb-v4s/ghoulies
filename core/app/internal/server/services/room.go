@@ -57,7 +57,6 @@ func GetRandomEmptyPosition(occupiedPositions []string) (string, lib.Position) {
 	}
 }
 
-// TODO check if this is working
 func RemoveUser(userId types.UserID, roomId types.RoomId) {
 	room, exists := memory.GetRoom(roomId)
 	if !exists {
@@ -72,7 +71,8 @@ func RemoveUser(userId types.UserID, roomId types.RoomId) {
 
 	// Remove position from UsersPositions
 	pos := room.Users[userIdx].Position
-	util.DeleteFromSlice(room.UsersPositions, PositionToString(lib.Position{Row: pos.Row, Col: pos.Col}))
+	strPos := PositionToString(pos)
+	room.UsersPositions = util.DeleteFromSlice(room.UsersPositions, strPos)
 
 	// Replace the user with the last user for O(1) operation
 	lastIdx := len(room.Users) - 1

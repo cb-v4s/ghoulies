@@ -24,7 +24,7 @@ func Contains(target []string, value string) bool {
 func DeleteFromSlice(target []string, value string) []string {
 	for idx, v := range target {
 		if v == value {
-			return append(target[:idx], target[:idx+1]...)
+			return append(target[:idx], target[idx+1:]...)
 		}
 	}
 
