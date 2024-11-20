@@ -7,12 +7,9 @@ import (
 	"core/internal/server/services"
 	"core/types"
 	"core/util"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -47,45 +44,20 @@ var upgrader = websocket.Upgrader{
 }
 
 var (
-	activeIPAddresses   = make(map[net.Addr]int)
-	activeIPAddressesMu sync.Mutex
+	activeConnections sync.Map
 )
 
 // HandleWebSocket handles incoming WebSocket connections.
 func HandleWebSocket(c *gin.Context) {
 	// ! Extract token from headers
-	// token := c.Request.Header.Get("Authorization")
-	// userId, err := extractUserIdFromToken(token) // Validate token and get user ID
-	// if err != nil {
-	// 	// Handle error (e.g., unauthorized)
-	// 	return
-	// }
+	token := c.Request.Header.Get("Authorization")
+	fmt.Printf("token ----------->; %v\n", token)
 
 	userConn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Printf("Error while upgrading connection: %v", err)
 		return
 	}
-
-	ipAddr := userConn.RemoteAddr()
-
-	activeIPAddressesMu.Lock()
-
-	connectionsLimit, err := strconv.Atoi(config.WsConnectionsLimit)
-	if err != nil {
-		log.Printf("Error parsing WSCONN_LIMIT: %v. Defaulting to 1.", err)
-		connectionsLimit = 1
-	}
-
-	if activeIPAddresses[ipAddr] >= connectionsLimit {
-		fmt.Printf("Connection limit reached for IP: %s", ipAddr)
-		activeIPAddressesMu.Unlock()
-		userConn.WriteMessage(websocket.CloseMessage, []byte{})
-		return
-	}
-
-	activeIPAddresses[ipAddr]++
-	activeIPAddressesMu.Unlock()
 
 	id, err := util.GetRandomId()
 	userId := types.UserID(id)
@@ -99,20 +71,33 @@ func HandleWebSocket(c *gin.Context) {
 		ID:       userId,
 		RoomId:   "",
 		Username: "",
+		Conn:     userConn,
 	}
 
 	// * Register the new client to Redis
+	activeConnections.Store(userId, client)
 	memory.AddClient(client)
 	log.Println("A user connected:", userConn.RemoteAddr())
 
 	defer func() {
 		fmt.Printf("User is leaving: %v", userId)
-		LeaveRoom(userId)
-		memory.DeleteClient(userId)
 
-		activeIPAddressesMu.Lock()
-		activeIPAddresses[ipAddr]--
-		activeIPAddressesMu.Unlock()
+		user, err := memory.GetClient(userId)
+		if err != nil {
+			fmt.Printf("client is not connected")
+		}
+
+		// 1. Remove user from the room info
+		services.RemoveUser(user.ID, user.RoomId)
+
+		// 2. close the ws connection
+		userConn.Close()
+
+		// 3. delete the userId from activeConnections
+		activeConnections.Delete(userId)
+
+		// 4. delete the client from redis
+		memory.DeleteClient(userId)
 
 	}()
 
@@ -122,14 +107,35 @@ func HandleWebSocket(c *gin.Context) {
 
 		err := userConn.ReadJSON(&payload)
 		if err != nil {
-			log.Printf("Error reading JSON: %v", err)
+			fmt.Printf("Error reading JSON: %v", err)
+			fmt.Printf("User is leaving: %v", userId)
+
+			client, err := memory.GetClient(userId)
+			if err != nil {
+				fmt.Printf("client is not connected")
+			}
+
+			fmt.Printf("LEAVING CLIENT:::::%v, roomId:::::%v\n", client.ID, client.RoomId)
+
+			// 1. Remove user from the room info
+			// services.RemoveUser(client.ID, client.RoomId)
+
+			// 2. close the ws connection
+			userConn.Close()
+
+			// 3. delete the userId from activeConnections
+			// activeConnections.Delete(userId)
+
+			// 4. delete the client from redis
+			// memory.DeleteClient(userId)
+
 			break
 		}
 
 		switch payload.Event {
 		case "newRoom":
 			var reqData types.NewRoom
-			err := parsePayload(payload.Data, &reqData)
+			err := util.ParsePayload(payload.Data, &reqData)
 			if err != nil {
 				fmt.Printf("Error: %s\n", err)
 			}
@@ -147,18 +153,18 @@ func HandleWebSocket(c *gin.Context) {
 			// ! Subscribe to the Redis channel for RoomId
 			go memory.UserSubscribe(userConn, resData.RoomId)
 
-			updateSceneData := UpdateScene{
-				RoomId: string(resData.RoomId),
-				Users:  resData.Users,
-			}
+			// updateSceneData := UpdateScene{
+			// 	RoomId: string(resData.RoomId),
+			// 	Users:  resData.Users,
+			// }
 
-			if err := broadcastRoom("updateScene", updateSceneData, resData.RoomId); err != nil {
-				fmt.Printf("failed to broadcast to room: %s", reqData.RoomName)
-			}
+			// if err := memory.BroadcastRoom("updateScene", updateSceneData, resData.RoomId); err != nil {
+			// 	fmt.Printf("failed to broadcast to room: %s", reqData.RoomName)
+			// }
 
 		case "joinRoom":
 			var reqData types.JoinRoom
-			err := parsePayload(payload.Data, &reqData)
+			err := util.ParsePayload(payload.Data, &reqData)
 			if err != nil {
 				fmt.Printf("Error: %s\n", err)
 			}
@@ -198,14 +204,14 @@ func HandleWebSocket(c *gin.Context) {
 				UserId: string(userId),
 			}
 
-			sendPayload(userConn, map[string]interface{}{"Event": "updateScene", "Data": updateSceneData})
-			sendPayload(userConn, map[string]interface{}{
+			sendPayload(client, map[string]interface{}{"Event": "updateScene", "Data": updateSceneData})
+			sendPayload(client, map[string]interface{}{
 				"Event": "setUserId",
 				"Data":  setUserData})
 
 		case "broadcastMessage":
 			var reqData types.Msg
-			err := parsePayload(payload.Data, &reqData)
+			err := util.ParsePayload(payload.Data, &reqData)
 			if err != nil {
 				fmt.Printf("Error: %s\n", err)
 				continue
@@ -239,7 +245,7 @@ func HandleWebSocket(c *gin.Context) {
 
 		case "updatePosition":
 			var reqData types.UpdateUserPos
-			err := parsePayload(payload.Data, &reqData)
+			err := util.ParsePayload(payload.Data, &reqData)
 			if err != nil {
 				fmt.Printf("Error: %s", err)
 				continue
@@ -306,9 +312,37 @@ func HandleWebSocket(c *gin.Context) {
 				// Simulate movement delay
 				time.Sleep(time.Duration(services.SpeedUserMov) * time.Millisecond)
 
-				util.Delete(roomData.UsersPositions, posKey) // TODO: make this func name more descriptive
+				util.DeleteFromSlice(roomData.UsersPositions, posKey) // TODO: make this func name more descriptive
 				posKey = newPosKey
 			}
+
+		case "leaveRoom":
+			var reqData types.UserLeave
+			err := util.ParsePayload(payload.Data, &reqData)
+			if err != nil {
+				fmt.Printf("Error: %s", err)
+				continue
+			}
+
+			fmt.Printf("From \"leaveRoom\". User is leaving: %v", reqData.UserId)
+
+			user, err := memory.GetClient(types.UserID(reqData.UserId))
+			if err != nil {
+				fmt.Printf("client is not connected")
+			}
+
+			if err := memory.UpdateUser(types.UserID(reqData.UserId), map[string]string{
+				"roomId": "",
+			}); err != nil {
+				fmt.Printf("couldn't update user's room id")
+			}
+
+			// ! removes the user from room
+			services.RemoveUser(user.ID, user.RoomId)
+
+			activeConnections.Delete(userId)
+
+			return
 
 		default:
 			log.Println("Unknown event received:", payload.Event)
@@ -316,74 +350,13 @@ func HandleWebSocket(c *gin.Context) {
 	}
 }
 
-func parsePayload(data interface{}, dest interface{}) error {
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return fmt.Errorf("failed marshaling data: %w", err)
-	}
-
-	err = json.Unmarshal(jsonData, dest)
-	if err != nil {
-		return fmt.Errorf("failed unmarshaling data: %w", err)
-	}
-
-	return nil
-}
-
-func broadcastRoom(eventName string, data any, roomId types.RoomId) error {
-	return nil
-	// payload := make(map[string]interface{})
-	// payload["Event"] = eventName
-	// payload["Data"] = data
-
-	// fmt.Printf("from broadcastRoom: %v\n", payload)
-
-	// room, exists := memory.GetRoom(roomId)
-	// if !exists {
-	// 	return fmt.Errorf("room does not exist")
-	// }
-
-	// ctx, cancelCtx := memory.NewContextWithTimeout(10 * time.Second)
-	// defer cancelCtx()
-
-	// // Publish to Redis
-	// return memory.RedisClient.Publish(ctx, roomId, payload).Err()
-}
-
-func sendDirect(eventName string, userId types.UserID, data map[string]interface{}) error {
-	// TODO: uncomment
-	// user, err := memory.GetClient(userId)
-	// if err != nil {
-	// 	return fmt.Errorf("client is not connected")
-	// }
-
-	// if err := sendPayload(user.Conn, map[string]interface{}{
-	// 	"Event": eventName,
-	// 	"Data":  data,
-	// }); err != nil {
-	// 	return fmt.Errorf("failed to send payload to %v. %v", user.Conn.RemoteAddr(), err)
-	// }
-
-	return nil
-}
-
-func sendPayload(userConn *websocket.Conn, payload map[string]interface{}) error {
-	if err := userConn.WriteJSON(payload); err != nil {
-		userConn.Close()
+func sendPayload(client *types.Client, payload map[string]interface{}) error {
+	client.ConnMu.Lock()
+	defer client.ConnMu.Unlock()
+	if err := client.Conn.WriteJSON(payload); err != nil {
+		client.Conn.Close()
 		return fmt.Errorf("error: %v", err)
 	}
 
-	return nil
-}
-
-func LeaveRoom(userId types.UserID) error {
-	userData, err := memory.GetClient(userId)
-	if err != nil {
-		return fmt.Errorf("user not found")
-	}
-
-	services.RemoveUser(types.UserID(userId), userData.RoomId)
-	// TODO: uncomment
-	// userData.Conn.Close()
 	return nil
 }

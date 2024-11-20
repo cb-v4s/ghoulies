@@ -3,6 +3,7 @@ package util
 import (
 	"core/internal/lib"
 	"core/types"
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/big"
@@ -20,7 +21,7 @@ func Contains(target []string, value string) bool {
 	return false
 }
 
-func Delete(target []string, value string) []string {
+func DeleteFromSlice(target []string, value string) []string {
 	for idx, v := range target {
 		if v == value {
 			return append(target[:idx], target[:idx+1]...)
@@ -86,4 +87,18 @@ func GetUserFacingDir(origin lib.Position, target lib.Position) types.XAxis {
 	}
 
 	return updatedXAxis
+}
+
+func ParsePayload(data interface{}, dest interface{}) error {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("failed marshaling data: %w", err)
+	}
+
+	err = json.Unmarshal(jsonData, dest)
+	if err != nil {
+		return fmt.Errorf("failed unmarshaling data: %w", err)
+	}
+
+	return nil
 }

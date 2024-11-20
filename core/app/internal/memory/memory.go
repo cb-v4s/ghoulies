@@ -35,18 +35,20 @@ func UserSubscribe(userConn *websocket.Conn, roomId types.RoomId) {
 		msg, err := pubsub.ReceiveMessage(ctx)
 		if err != nil {
 			log.Printf("Error receiving message: %v", err)
-			return
+			break
 		}
 
 		var payload any
 		err = json.Unmarshal([]byte(msg.Payload), &payload)
 		if err != nil {
 			fmt.Printf("something went wrong trying to marshal msg.Payload: %v\n", err)
+			break
 		}
 
 		if err := userConn.WriteJSON(payload); err != nil {
 			userConn.Close()
 			fmt.Printf("error on sending websocket message: %v", err)
+			break
 		}
 	}
 }
@@ -143,14 +145,16 @@ func AddClient(data *types.Client) {
 		log.Fatalf("Error marshalling client data: %s", err)
 	}
 
-	err = redisClient.HSet(ctx, clientsKey, string(data.ID), clientJSON).Err()
+	added, err := redisClient.HSetNX(ctx, clientsKey, string(data.ID), clientJSON).Result()
 	if err != nil {
 		log.Fatalf("Error saving client data to Redis: %s", err)
 	}
+
+	if !added {
+		log.Printf("Client with ID %s already exists", string(data.ID))
+	}
 }
 
-// ! this is not working for some reason
-// TODO:
 func GetClient(clientID types.UserID) (*types.Client, error) {
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
 	defer cancelCtx()
@@ -160,14 +164,10 @@ func GetClient(clientID types.UserID) (*types.Client, error) {
 		return nil, err
 	}
 
-	fmt.Printf("clientJSON: %v\n", clientJSON)
-
 	var client types.Client
 	if err := json.Unmarshal([]byte(clientJSON), &client); err != nil {
 		return nil, err
 	}
-
-	fmt.Printf("actual client: %v\n", &client)
 
 	return &client, nil
 }

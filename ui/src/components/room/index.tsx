@@ -67,7 +67,6 @@ export const Room = () => {
     locations: { x: number; y: number }[],
     imageRef: any
   ) => {
-    console.log("drawing --------->");
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // Clear the canvas
 
     for (var x = renderStartX; x <= renderFinishX; x++) {
@@ -111,30 +110,7 @@ export const Room = () => {
         );
       }
     }
-
-    // drawCursor(ctx);
   };
-
-  //   const drawCursor = async (context: CanvasRenderingContext2D) => {
-  //     let screenPos = convertTileToScreen(mouseTileX, mouseTileY);
-  //     let screenX = screenPos.x;
-  //     let screenY = screenPos.y;
-
-  //     // output the tile location of the mouse
-  //     context.font = "bold 12px Tahoma";
-  //     context.textAlign = "center";
-  //     context.textBaseline = "middle";
-  //     context.fillStyle = "#13f0aa";
-
-  //     let textX = screenX + projectedTileWidth / 2;
-  //     let textY = screenY + projectedTileHeight / 2;
-
-  //     let text = "(" + mouseTileX + ", " + mouseTileY + ")";
-
-  //     console.log(text);
-
-  //     context.fillText(text, textX, textY);
-  //   };
 
   const limit = (value: number, min: number, max: number) => {
     return Math.max(min, Math.min(value, max));

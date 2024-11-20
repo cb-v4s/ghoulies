@@ -3,7 +3,16 @@ import { wsApiUrl } from "../siteConfig";
 import { useDispatch } from "react-redux";
 import { setRoomInfo, setRoomMessage, setUserId } from "../state/room.reducer";
 
-export const ws = new WebSocket(wsApiUrl);
+export var ws = new WebSocket(wsApiUrl);
+
+const NewWsConn = (): Promise<WebSocket> => {
+  let newWs = new WebSocket(wsApiUrl);
+
+  return new Promise((res, rej) => {
+    newWs.onopen = () => res(newWs);
+    newWs.onerror = (err) => rej(err);
+  });
+};
 
 interface WsResponseData {
   Event: string;
@@ -13,8 +22,9 @@ interface WsResponseData {
 enum RequestEvents {
   CreateRoom = "newRoom",
   JoinRoom = "joinRoom",
-  UpdatePosition = "updatePosition", // ! this should include facingDirection (right or left)
+  UpdatePosition = "updatePosition",
   BroadcastMessage = "broadcastMessage",
+  LeaveRoom = "leaveRoom",
 }
 
 enum ResponseEvents {
@@ -33,7 +43,52 @@ interface BroadcastMessageData {
   from: string;
   msg: string;
 }
-export const joinRoom = (data: JoinRoomData) => {
+
+// TODO: username should come from login
+// at the moment of signup a random username should be assigned
+// you get the username from the jwt token
+interface NewRoomData {
+  roomName: string;
+  userName: string;
+}
+
+export interface LeaveRoomData {
+  userId: string;
+}
+
+export const newRoom = async (data: NewRoomData) => {
+  if (ws.readyState === ws.CLOSING || ws.readyState === ws.CLOSED) {
+    console.log("reopening ws connection");
+
+    try {
+      ws = await NewWsConn();
+    } catch (err) {
+      console.error("couldn't establish ws connection", err);
+      return;
+    }
+  }
+
+  const payload = {
+    Event: RequestEvents.JoinRoom,
+    Data: data,
+  };
+
+  console.log("from ws.joinRoom: ", payload);
+  ws.send(JSON.stringify(payload));
+};
+
+export const joinRoom = async (data: JoinRoomData) => {
+  if (ws.readyState === ws.CLOSING || ws.readyState === ws.CLOSED) {
+    console.log("reopening ws connection");
+
+    try {
+      ws = await NewWsConn();
+    } catch (err) {
+      console.error("couldn't establish ws connection", err);
+      return;
+    }
+  }
+
   const payload = {
     Event: RequestEvents.JoinRoom,
     Data: data,
@@ -50,8 +105,17 @@ export const broadcastMessage = (data: BroadcastMessageData) => {
   };
 
   console.log("from ws.broadcastMessage: ", payload);
-
   ws.send(JSON.stringify(payload));
+};
+
+export const leaveRoom = (data: LeaveRoomData) => {
+  const payload = {
+    Event: RequestEvents.LeaveRoom,
+    Data: data,
+  };
+  console.log("Leaving room");
+  ws.send(JSON.stringify(payload));
+  ws.close();
 };
 
 interface UpdatePositionData {
@@ -114,11 +178,14 @@ export const WsHandler = () => {
       }
     };
 
-    return () => {
-      //   socket.disconnect(); // * disconnect the socket connection
-      //   socket.off("userCreated"); // * unsubscribe from the "userCreated" event
+    ws.onclose = () => {
+      console.log("Websocket connection closed");
     };
-  }, [ws /*, dispatch */]);
+
+    return () => {
+      ws.close();
+    };
+  }, []);
 
   return null;
 };

@@ -53,6 +53,16 @@ export const roomSlice = createSlice({
       const updatedMessages = state.roomInfo.Messages.slice(1, messagesLength);
       state.roomInfo.Messages = updatedMessages;
     },
+    setDefaultState: (state) => {
+      state.userId = null;
+      state.username = null;
+      state.displayConsole = false;
+      state.roomInfo = {
+        RoomId: null,
+        Users: [],
+        Messages: [],
+      };
+    },
   },
 });
 
@@ -63,6 +73,7 @@ export const {
   setRoomMessage,
   setUsername,
   removeFirstMessage,
+  setDefaultState,
 } = roomSlice.actions;
 
 export const getConsoleState = (state: RootState) => state.room.displayConsole;

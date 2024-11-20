@@ -72,7 +72,7 @@ func RemoveUser(userId types.UserID, roomId types.RoomId) {
 
 	// Remove position from UsersPositions
 	pos := room.Users[userIdx].Position
-	util.Delete(room.UsersPositions, PositionToString(lib.Position{Row: pos.Row, Col: pos.Col}))
+	util.DeleteFromSlice(room.UsersPositions, PositionToString(lib.Position{Row: pos.Row, Col: pos.Col}))
 
 	// Replace the user with the last user for O(1) operation
 	lastIdx := len(room.Users) - 1
@@ -91,7 +91,6 @@ func RemoveUser(userId types.UserID, roomId types.RoomId) {
 		memory.DeleteRoom(roomId)
 	}
 
-	// TODO: revisar esto
 	memory.UpdateRoom(roomId, room)
 }
 

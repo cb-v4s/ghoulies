@@ -2,16 +2,24 @@ import { ReactNode, useEffect, useState } from "react";
 import { fetchRooms } from "../../apiHooks";
 import { RoomInfo } from "../../types";
 import { appName } from "../../siteConfig";
-import { useDispatch } from "react-redux";
-import { switchConsoleState, setUsername } from "../../state/room.reducer";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  switchConsoleState,
+  setUsername,
+  getRoomInfo,
+  setDefaultState,
+  getUserId,
+} from "../../state/room.reducer";
 import { X } from "../../lib/icons";
 import { RoomStudio } from "./sections/RoomStudio";
 import { Friends } from "./sections/Friends";
 import { capitalize } from "../../lib/misc";
-import { joinRoom } from "../wsHandler";
+import { joinRoom, leaveRoom } from "../wsHandler";
 
 export const Console = () => {
   const dispatch = useDispatch();
+  const userId = useSelector(getUserId);
+  const roomInfo = useSelector(getRoomInfo);
   const [rooms, setRooms] = useState<RoomInfo[]>([]);
   const [selectedBtn, setSelectedBtn] = useState<number>(0);
 
@@ -25,7 +33,7 @@ export const Console = () => {
     setRooms(rooms);
   };
 
-  const hdlSelectRoom = (
+  const hdlSelectRoom = async (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
     roomId: string
   ) => {
@@ -52,8 +60,16 @@ export const Console = () => {
       dispatch(switchConsoleState());
       dispatch(setUsername({ username: randomUsername }));
     } catch (err) {
-      alert("couldnt join room :(");
+      console.error("couldnt join room :(", err);
     }
+  };
+
+  const hdlCloseConnection = (e: any) => {
+    e.preventDefault();
+    if (!userId) return;
+
+    leaveRoom({ userId });
+    dispatch(setDefaultState());
   };
 
   const Rows = () => {
@@ -70,12 +86,21 @@ export const Console = () => {
           <span>{totalConns}/50</span>
         </td>
         <td className="text-right">
-          <button
-            className="text-blue-500 hover:underline"
-            onClick={(e) => hdlSelectRoom(e, roomId)}
-          >
-            Join Room
-          </button>
+          {roomInfo?.RoomId === roomId ? (
+            <button
+              onClick={hdlCloseConnection}
+              className="text-red-500 hover:underline"
+            >
+              Leave Room
+            </button>
+          ) : (
+            <button
+              className="text-blue-500 hover:underline"
+              onClick={(e) => hdlSelectRoom(e, roomId)}
+            >
+              Join Room
+            </button>
+          )}
         </td>
       </tr>
     ));

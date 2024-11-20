@@ -2,6 +2,9 @@ package types
 
 import (
 	"core/internal/lib"
+	"sync"
+
+	"github.com/gorilla/websocket"
 )
 
 // XAxis type represents the horizontal axis direction
@@ -30,6 +33,8 @@ type Client struct {
 	ID       UserID
 	RoomId   RoomId
 	Username string
+	Conn     *websocket.Conn
+	ConnMu   sync.Mutex
 }
 
 type Room struct {
@@ -44,6 +49,10 @@ type Position struct {
 
 type UserID string
 type UserIdx int
+
+type UserLeave struct {
+	UserId string `json:"userId"`
+}
 
 type RoomData struct {
 	Name           string
