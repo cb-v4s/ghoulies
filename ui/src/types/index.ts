@@ -31,7 +31,7 @@ export type User = {
   Direction: FacingDirection;
   RoomID: string;
   UserID: string;
-  Username: string;
+  UserName: string;
 };
 
 export type Message = {

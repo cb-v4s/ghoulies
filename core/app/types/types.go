@@ -90,6 +90,7 @@ type Msg struct {
 	From   UserID `json:"from"`
 	RoomId RoomId `json:"roomId"`
 	Msg    string `json:"msg"`
+	Pos    string `json:"pos"`
 }
 
 type DirectMsg struct {

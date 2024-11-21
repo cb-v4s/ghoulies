@@ -23,8 +23,6 @@ export const Room = () => {
   let mouseScreenY = 0;
   let mouseTileX = 0;
   let mouseTileY = 0;
-  //let tileSheetWidth = 390;
-  //let tileSheetHeight = 500;
   let renderStartX = 0;
   let renderStartY = 0;
   let renderFinishX = 0;
@@ -62,11 +60,7 @@ export const Room = () => {
     y: 180,
   });
 
-  const draw = (
-    ctx: any,
-    locations: { x: number; y: number }[],
-    imageRef: any
-  ) => {
+  const draw = (ctx: any, imageRef: any) => {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // Clear the canvas
 
     for (var x = renderStartX; x <= renderFinishX; x++) {
@@ -361,7 +355,7 @@ export const Room = () => {
 
     // Whenever locations change, redraw
     if (ctx) {
-      draw(ctx, locations, resources.images.tileMap.imgElem);
+      draw(ctx, resources.images.tileMap.imgElem);
     }
 
     return () => {
@@ -382,11 +376,8 @@ export const Room = () => {
 
     const ctx = canvas.getContext("2d");
     if (ctx) {
-      // ! without requestAnimationFrame simply call
-      // draw(ctx, locations, resources.images.tileMap.imgElem);
-
       const drawFrame = () => {
-        draw(ctx, locations, resources.images.tileMap.imgElem);
+        draw(ctx, resources.images.tileMap.imgElem);
         requestAnimationFrame(drawFrame);
       };
 
