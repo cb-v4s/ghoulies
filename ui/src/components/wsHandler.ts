@@ -73,7 +73,6 @@ export const newRoom = async (data: NewRoomData) => {
     Data: data,
   };
 
-  console.log("from ws.joinRoom: ", payload);
   ws.send(JSON.stringify(payload));
 };
 
@@ -94,7 +93,6 @@ export const joinRoom = async (data: JoinRoomData) => {
     Data: data,
   };
 
-  console.log("from ws.joinRoom: ", payload);
   ws.send(JSON.stringify(payload));
 };
 
@@ -104,7 +102,6 @@ export const broadcastMessage = (data: BroadcastMessageData) => {
     Data: data,
   };
 
-  console.log("from ws.broadcastMessage: ", payload);
   ws.send(JSON.stringify(payload));
 };
 
@@ -113,6 +110,7 @@ export const leaveRoom = (data: LeaveRoomData) => {
     Event: RequestEvents.LeaveRoom,
     Data: data,
   };
+
   console.log("Leaving room");
   ws.send(JSON.stringify(payload));
   ws.close();
@@ -159,17 +157,14 @@ export const WsHandler = () => {
 
       switch (event) {
         case ResponseEvents.UpdateScene:
-          console.log("setting data as roomInfo =>", data);
           dispatch(setRoomInfo(data));
 
           break;
         case ResponseEvents.BroadcastMessage:
-          console.log("New message received", data);
           dispatch(setRoomMessage(data));
 
           break;
         case ResponseEvents.SetUserId:
-          console.log("setUserId: ", data);
           dispatch(setUserId(data));
 
           break;

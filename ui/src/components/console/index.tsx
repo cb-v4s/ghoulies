@@ -42,14 +42,32 @@ export const Console = () => {
     const randomNames = [
       "Alice",
       "Hatter",
-      "Doormouse",
-      "White Knight",
+      "Dormouse",
+      "White King",
+      "White Queen",
+      "Red King",
       "Red Queen",
+      "Tweedledum",
+      "Tweedledee",
+      "Guard",
+      "White Rabbit",
+      "Caterpillar",
+      "Cheshire Cat",
+      "Dodo",
+      "Talking Flowers",
+      "Eaglet",
+      "Playing Cards",
+      "Tortoise",
+      "Snowdrop",
+      "Nobody",
+      "Red Knight",
+      "Lily",
+      "Bread-and-Butterfly",
+      "Owl",
     ];
 
     const randomUsername =
       randomNames[Math.floor(Math.random() * randomNames.length)];
-    console.log("Console ~ randomUsername:", randomUsername);
 
     try {
       joinRoom({
@@ -60,7 +78,7 @@ export const Console = () => {
       dispatch(switchConsoleState());
       dispatch(setUsername({ username: randomUsername }));
     } catch (err) {
-      console.error("couldnt join room :(", err);
+      console.error("couldn't join room", err);
     }
   };
 

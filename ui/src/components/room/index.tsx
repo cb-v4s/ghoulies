@@ -201,13 +201,8 @@ export const Room = () => {
   };
 
   const hdlMouseDown = (e: any, canvas: any) => {
-    console.log("me llamaron aqui");
-
     // * left mouse button is pressed
-    if (e.button !== 0) {
-      console.log("aqui sali");
-      return false;
-    }
+    if (e.button !== 0) return false;
 
     mouseDown = true;
     isDragging = false;
@@ -290,7 +285,6 @@ export const Room = () => {
   };
 
   const updateCanvasSize = () => {
-    console.log("resizing ....");
     const width = window.innerWidth;
     let newWidth, newHeight;
 
@@ -305,9 +299,9 @@ export const Room = () => {
       newWidth = 560; // Example size for medium
       newHeight = 560; // Example size for medium
     } else {
-      setMapOffset({ x: 140, y: -40 });
+      setMapOffset({ x: 140, y: 0 });
       newWidth = 360;
-      newHeight = 360;
+      newHeight = 440;
     }
 
     setCanvasSize({ width: newWidth, height: newHeight });
@@ -354,7 +348,7 @@ export const Room = () => {
 
       drawFrame();
     }
-  }, [locations, canvasSize, userId, roomInfo]);
+  }, [locations, mapOffset, userId, roomInfo]);
 
   return (
     <div className="flex items-center justify-center">

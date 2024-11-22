@@ -214,10 +214,22 @@ func HandleWebSocket(c *gin.Context) {
 				From string `json:"from"`
 			}
 
+			var maxLenMsg int = 60
+
 			payload := MessageData{
 				Msg:  reqData.Msg,
 				From: user.Username,
 			}
+
+			// ! limit max text size
+			if len(reqData.Msg) > maxLenMsg {
+				payload.Msg = reqData.Msg[:maxLenMsg]
+			}
+
+			// ! filter bad words
+			filter := lib.TextFilter()
+			cleanMsg := filter.CleanText(payload.Msg)
+			payload.Msg = cleanMsg
 
 			memory.BroadcastRoom(reqData.RoomId, "broadcastMessage", payload)
 

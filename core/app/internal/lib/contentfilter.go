@@ -2,7 +2,7 @@
 
 filter := TextFilter()
 text := "This is a test with \"f u c k f.uc.k f-u-c-k fUCK Fuck\" and sh!t s h 1 t."
-cleanedText := filter.cleanText(text, true, true)
+cleanedText := filter.cleanText(text)
 fmt.Println("Cleaned text:", cleanedText) // Expected output: **** **** **** **** ****" and **** ****
 
 */
@@ -30,7 +30,7 @@ func TextFilter() *TextContentFilter {
 			replacement string
 		}{
 			{regexp.MustCompile("4"), "a"},
-			{regexp.MustCompile("\\$"), "s"},
+			{regexp.MustCompile("$"), "s"},
 			{regexp.MustCompile("5"), "s"},
 			{regexp.MustCompile("0"), "o"},
 			{regexp.MustCompile("1"), "i"},

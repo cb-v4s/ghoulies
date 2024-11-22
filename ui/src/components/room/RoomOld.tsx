@@ -267,8 +267,6 @@ export const Room = () => {
 
     mouseTileX = mouseTilePos.x;
     mouseTileY = mouseTilePos.y;
-
-    // console.log(`Destination: ${mouseTileX},${mouseTileY}`);
   };
 
   const onMouseMove = (canvas: HTMLCanvasElement, e: any) => {
@@ -351,7 +349,6 @@ export const Room = () => {
     currentCol = mouseTileY;
 
     if (roomInfo.RoomId && userId) {
-      console.log(`Destination: ${currentRow},${currentCol}`);
       updatePosition(roomInfo.RoomId, userId, currentRow, currentCol);
     }
 
@@ -362,10 +359,8 @@ export const Room = () => {
         { row: currentRow, col: currentCol }
       ) === 1
     ) {
-      console.log("to right");
       currentCharacterImage = resources.images.rghostie.imgElem;
     } else {
-      console.log("to left");
       currentCharacterImage = resources.images.lghostie.imgElem;
     }
   };

@@ -1,12 +1,11 @@
-import React, { createRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { broadcastMessage } from "./wsHandler";
 import { useSelector } from "react-redux";
 import { getRoomInfo, getUserId } from "../state/room.reducer";
 import { SendHorizontal } from "../lib/icons";
 
-export const inputChatMessage = createRef<any>();
-
 export const Chat: React.FC<any> = () => {
+  const inputChatMessage = useRef<any>();
   const [message, setMessage] = useState<string>("");
   const userId = useSelector(getUserId);
   const roomInfo = useSelector(getRoomInfo);
@@ -28,10 +27,9 @@ export const Chat: React.FC<any> = () => {
 
   const hdlKeyDown = (key: string) => {
     if (!message.length && key === "Backspace") {
-      // dispatch(setTarget({ username: null, id: roomId }));
-
-      // @ts-ignore
-      inputChatMessage.current.focus();
+      if (document.activeElement !== inputChatMessage.current) {
+        inputChatMessage.current.focus();
+      }
     }
   };
 
@@ -39,12 +37,6 @@ export const Chat: React.FC<any> = () => {
     <div className="w-4/5 bg-transparent">
       <form onSubmit={sendMessage}>
         <div className="relative flex focus:outline-none focus:placeholder-gray-400 bg-[#1f283b] rounded-full py-2 px-2 w-full">
-          {/* {target.id !== user?.roomId ? (
-            <span className="text-bold text-gray-400 ml-3 flex justify-center items-center">
-              {target.username}
-            </span>
-          ) : null} */}
-
           <input
             type="text"
             data-testid="chat-input"
@@ -53,7 +45,7 @@ export const Chat: React.FC<any> = () => {
             placeholder="Type your message..."
             value={message}
             maxLength={maxMsgLen}
-            className="text-slate-100 placeholder-slate-300 w-full outline-none bg-transparent ml-2"
+            className="text-slate-100 placeholder-slate-300 w-full outline-none bg-transparent mx-2"
             onChange={(event) => setMessage(event.target.value)}
             onKeyDown={(e) => hdlKeyDown(e.key)}
           />
