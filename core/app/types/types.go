@@ -12,9 +12,12 @@ type XAxis int
 
 // Constants for XAxis
 const (
-	Right            XAxis  = 1
-	Left             XAxis  = -1
-	DefaultDirection        = Left
+	FrontRight XAxis = -1
+	FrontLeft  XAxis = 1
+	BackLeft   XAxis = 0
+	BackRight  XAxis = 2
+
+	DefaultDirection        = FrontLeft
 	RoomIdFormat     string = "%s#%s" // e.g. "my room#334288"
 )
 

@@ -5,6 +5,7 @@ import { getRoomInfo, getUserId } from "../../state/room.reducer";
 import { updatePosition } from "../wsHandler";
 import { RoomData } from "./roomData";
 import { debounce } from "../../lib/misc";
+import { FacingDirection } from "../../types";
 
 export const Room = () => {
   const [locations, setLocations] = useState<{ x: number; y: number }[]>([]);
@@ -94,17 +95,34 @@ export const Room = () => {
       }
     }
 
+    // TODO: kitten ai
+    drawCharacterAt(
+      ctx,
+      getImageResource(FacingDirection.frontLeft, "kitten"),
+      3,
+      3,
+      blockWidth + 80,
+      blockHeight + 50,
+      33,
+      15
+    );
+
     roomInfo.Users.forEach(({ Position, Direction }) => {
       drawCharacterAt(
         ctx,
-        Direction === 1
-          ? resources.images.lghostie.imgElem
-          : resources.images.rghostie.imgElem,
+        getImageResource(Direction, "ghost"),
         Position.Row - 1,
-        Position.Col - 1
+        Position.Col - 1,
+        blockWidth + 90,
+        blockHeight + 20,
+        45,
+        0
       );
     });
   };
+
+  const getImageResource = (fd: FacingDirection, imgKey: string) =>
+    resources.images[`${imgKey}.${fd}`].imgElem;
 
   const limit = (value: number, min: number, max: number) => {
     return Math.max(min, Math.min(value, max));
@@ -166,7 +184,12 @@ export const Room = () => {
     ctx: any,
     img: HTMLImageElement,
     x: number,
-    y: number
+    y: number,
+    blockWidth: number,
+    blockHeight: number,
+    // * for some resources where dimensions are differente
+    XPosPadding: number,
+    YPosPadding: number
   ) => {
     if (!ctx) return;
 
@@ -175,17 +198,14 @@ export const Room = () => {
 
     // Calculate destination coordinates on the canvas
     const destPos = convertTileToScreen(characterX, characterY);
-    const destX = destPos.x - 45;
-    const destY = destPos.y - 10;
+    const destX = destPos.x - XPosPadding;
+    const destY = destPos.y - YPosPadding;
 
     // Assuming the character image is a single sprite
     const srcX = 0;
     const srcY = 0;
     const srcWidth = img.width;
     const srcHeight = img.height;
-
-    let blockWidth = 74 + 95;
-    let blockHeight = 70 + 30;
 
     ctx.drawImage(
       img,
@@ -222,9 +242,6 @@ export const Room = () => {
 
     mouseTileX = mouseTilePos.x;
     mouseTileY = mouseTilePos.y;
-
-    // const prevRow = currentRow;
-    // const prevCol = currentCol;
 
     setCurrentRow(mouseTileX);
     setCurrentCol(mouseTileY);

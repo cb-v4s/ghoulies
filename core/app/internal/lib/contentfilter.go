@@ -64,7 +64,6 @@ func (filter *TextContentFilter) CleanText(text string) string {
 
 	// Handle spaces between letters
 	for _, cussWord := range filter.cussWords {
-		// Create a regex that matches the bad word allowing spaces between letters
 		wordRegexStr := strings.Join(strings.Split(cussWord, ""), "\\s*")
 		wordRegex := regexp.MustCompile(wordRegexStr)
 

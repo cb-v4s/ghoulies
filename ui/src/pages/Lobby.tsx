@@ -15,9 +15,9 @@ const Lobby = () => {
   const displayConsole = useSelector(getConsoleState);
   const messages = useSelector(getMessages);
 
-  // useInterval(() => {
-  //   dispatch(cleanMessages());
-  // }, 1000);
+  useInterval(() => {
+    dispatch(cleanMessages());
+  }, 1000);
 
   return (
     <div className="relative w-full h-full">

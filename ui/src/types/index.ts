@@ -21,8 +21,10 @@ type Position = {
 };
 
 export enum FacingDirection {
-  Right = 1,
-  Left = -1,
+  frontRight = -1,
+  frontLeft = 1,
+  backLeft = 0,
+  backRight = 2,
 }
 
 export type User = {

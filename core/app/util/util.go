@@ -5,7 +5,6 @@ import (
 	"core/types"
 	"encoding/json"
 	"fmt"
-	"math"
 	"math/big"
 
 	"crypto/rand"
@@ -66,27 +65,48 @@ func NewRoomId(roomName string) (*types.RoomId, error) {
 }
 
 func GetUserFacingDir(origin lib.Position, target lib.Position) types.XAxis {
-	var updatedXAxis types.XAxis = types.Right
 
-	deltaRow := target.Row - origin.Row
-	deltaCol := target.Col - origin.Col
+	deltaX := target.Row - origin.Row
+	deltaY := target.Col - origin.Col
 
-	if deltaCol > 0 {
-		updatedXAxis = types.Right
-	} else if deltaCol < 0 {
-		updatedXAxis = types.Left
-	}
-
-	// Diagonal movement
-	if math.Abs(float64(deltaRow)) == math.Abs(float64(deltaCol)) {
-		if deltaCol > 0 && deltaRow < 0 {
-			updatedXAxis = types.Right
-		} else if deltaCol < 0 && deltaRow > 0 {
-			updatedXAxis = types.Left
+	if deltaY == 0 { // Horizontal movement only
+		if deltaX > 0 {
+			fmt.Println("Moving right")
+			return types.FrontRight // Moving right
+		} else if deltaX < 0 {
+			fmt.Println("Moving left")
+			return types.BackLeft // Moving left
 		}
+	} else if deltaX == 0 { // Vertical movement only
+		if deltaY > 0 {
+			return types.FrontLeft // Moving down
+		} else if deltaY < 0 {
+			return types.FrontRight // Moving up
+		}
+	} else if deltaX > 0 && deltaY > 0 {
+		fmt.Println("Moving down-right", deltaX, deltaY)
+		if deltaX == 1 {
+			return types.FrontLeft
+		}
+
+		return types.FrontRight // Moving down-right
+	} else if deltaX < 0 && deltaY > 0 {
+		fmt.Println("Moving down-left")
+		return types.FrontLeft // Moving down-left
+	} else if deltaX < 0 && deltaY < 0 {
+		fmt.Println("Moving up-left")
+		return types.BackLeft // Moving up-left
+	} else if deltaX > 0 && deltaY < 0 {
+		fmt.Println("Moving up-right", deltaX, deltaY)
+
+		if deltaX == 1 {
+			return types.FrontRight // Moving up-right
+		}
+
+		return types.BackRight // Moving up-right
 	}
 
-	return updatedXAxis
+	return types.FrontRight
 }
 
 func ParsePayload(data interface{}, dest interface{}) error {

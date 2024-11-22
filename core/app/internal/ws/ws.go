@@ -227,9 +227,9 @@ func HandleWebSocket(c *gin.Context) {
 			}
 
 			// ! filter bad words
-			filter := lib.TextFilter()
-			cleanMsg := filter.CleanText(payload.Msg)
-			payload.Msg = cleanMsg
+			// filter := lib.TextFilter()
+			// cleanMsg := filter.CleanText(payload.Msg)
+			// payload.Msg = cleanMsg
 
 			memory.BroadcastRoom(reqData.RoomId, "broadcastMessage", payload)
 
@@ -263,6 +263,7 @@ func HandleWebSocket(c *gin.Context) {
 			fmt.Sscanf(reqData.Dest, "%d,%d", &destRow, &destCol)
 
 			facingDirection := util.GetUserFacingDir(currentPos, lib.Position{Row: destRow, Col: destCol})
+			fmt.Printf("facingDirection::::::::::%v\n", facingDirection)
 
 			invalidPositions := roomData.UsersPositions
 
