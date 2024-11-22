@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { resources } from "./resources";
 import { useSelector } from "react-redux";
 import { getRoomInfo, getUserId } from "../../state/room.reducer";
 import { updatePosition } from "../wsHandler";
 import { RoomData } from "./roomData";
+import { debounce } from "../../lib/misc";
 
 export const Room = () => {
   const [locations, setLocations] = useState<{ x: number; y: number }[]>([]);
@@ -16,7 +17,6 @@ export const Room = () => {
 
   let mapOffsetX = 0;
   let mapOffsetY = 0;
-  let dragThreshold = 5;
   let isDragging = false;
   let mouseDown = false;
   let mouseScreenX = 0;
@@ -80,17 +80,6 @@ export const Room = () => {
         var destWidth = blockWidth;
         var destHeight = blockHeight;
 
-        roomInfo.Users.forEach(({ Position, Direction }) => {
-          drawCharacterAt(
-            ctx,
-            Direction === 1
-              ? resources.images.lghostie.imgElem
-              : resources.images.rghostie.imgElem,
-            Position.Row - 1,
-            Position.Col - 1
-          );
-        });
-
         ctx.drawImage(
           imageRef,
           srcX,
@@ -104,6 +93,17 @@ export const Room = () => {
         );
       }
     }
+
+    roomInfo.Users.forEach(({ Position, Direction }) => {
+      drawCharacterAt(
+        ctx,
+        Direction === 1
+          ? resources.images.lghostie.imgElem
+          : resources.images.rghostie.imgElem,
+        Position.Row - 1,
+        Position.Col - 1
+      );
+    });
   };
 
   const limit = (value: number, min: number, max: number) => {
@@ -160,42 +160,6 @@ export const Room = () => {
     const screenY = mapOffsetY + isoY * (tileHeight / 2 - overlapHeight);
 
     return { x: screenX, y: screenY };
-  };
-
-  const hdlMouseMove = (e: any, canvas: any) => {
-    if (mouseDown) {
-      const dx = e.clientX - mouseScreenX; // distance moved in X
-      const dy = e.clientY - mouseScreenY; // distance moved in Y
-
-      // * check if the mouse has moved beyond the drag threshold
-      if (Math.sqrt(dx * dx + dy * dy) > dragThreshold) {
-        isDragging = true;
-      }
-    }
-
-    if (!Array.isArray(tileMap) || tileMap.length < 1 || tileMap[0].length < 1)
-      return;
-
-    let rect = canvas.getBoundingClientRect();
-
-    let newX = e.clientX - rect.left;
-    let newY = e.clientY - rect.top;
-
-    let mouseDeltaX = newX - mouseScreenX;
-    let mouseDeltaY = newY - mouseScreenY;
-
-    mouseScreenX = newX;
-    mouseScreenY = newY;
-
-    let mouseTilePos = convertScreenToTile(
-      mouseScreenX - mapOffsetX,
-      mouseScreenY - mapOffsetY
-    );
-
-    mouseTileX = mouseTilePos.x;
-    mouseTileY = mouseTilePos.y;
-
-    if (mouseDown) updateMapOffset(mouseDeltaX, mouseDeltaY);
   };
 
   const drawCharacterAt = (
@@ -271,11 +235,16 @@ export const Room = () => {
     setCurrentCol(mouseTileY);
   };
 
+  const updatePositionDebounced = useCallback(
+    debounce((roomId: string, userId: string, row: number, col: number) => {
+      updatePosition(roomId, userId, row, col);
+    }, 200),
+    []
+  );
+
   useEffect(() => {
-    console.log(`roomInfo.RoomId: ${roomInfo.RoomId}, userId: ${userId}`);
     if (roomInfo.RoomId && userId) {
-      console.log(`Destination: ${currentRow},${currentCol}`);
-      updatePosition(roomInfo.RoomId, userId, currentRow, currentCol);
+      updatePositionDebounced(roomInfo.RoomId, userId, currentRow, currentCol);
     }
   }, [currentRow, currentCol]);
 
@@ -284,28 +253,35 @@ export const Room = () => {
       return;
 
     let rect = canvas.getBoundingClientRect();
-
     let newX = e.clientX - rect.left;
     let newY = e.clientY - rect.top;
 
-    mouseScreenX = newX;
-    mouseScreenY = newY;
-
     let mouseTilePos = convertScreenToTile(
-      mouseScreenX - mapOffsetX,
-      mouseScreenY - mapOffsetY
+      newX - mapOffset.x,
+      newY - mapOffset.y
     );
 
-    mouseTileX = mouseTilePos.x;
-    mouseTileY = mouseTilePos.y;
+    const maxTileX = tileMap.length - 1;
+    const maxTileY = tileMap[0].length - 1;
+
+    if (
+      mouseTilePos.x < 0 ||
+      mouseTilePos.x > maxTileX ||
+      mouseTilePos.y < 0 ||
+      mouseTilePos.y > maxTileY
+    ) {
+      return null; // Out of bounds
+    }
 
     return { x: mouseTilePos.x, y: mouseTilePos.y };
   };
 
   const hdlMouseUp = (e: any, canvas: any) => {
     if (mouseDown && !isDragging && e.button === 0) {
-      const dest = getDestination(canvas, e); // * only if its a click, thus ignoring a drag
-      setLocations([{ x: dest?.x ?? 0, y: dest?.y ?? 0 }]);
+      const dest = getDestination(canvas, e);
+      if (dest) {
+        setLocations([{ x: dest.x, y: dest.y }]);
+      }
     }
 
     mouseDown = false; // Reset mouseDown state
@@ -338,7 +314,7 @@ export const Room = () => {
   };
 
   useEffect(() => {
-    updateCanvasSize(); // Set initial canvas size
+    updateCanvasSize();
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -348,18 +324,13 @@ export const Room = () => {
 
     const ctx = canvas?.getContext("2d");
 
-    canvas.addEventListener("mousemove", (e) => hdlMouseMove(e, canvas));
     canvas.addEventListener("mouseup", (e) => hdlMouseUp(e, canvas));
     canvas.addEventListener("mousedown", (e) => hdlMouseDown(e, canvas));
     window.addEventListener("resize", updateCanvasSize);
 
-    // Whenever locations change, redraw
-    if (ctx) {
-      draw(ctx, resources.images.tileMap.imgElem);
-    }
+    if (ctx) draw(ctx, resources.images.tileMap.imgElem);
 
     return () => {
-      canvas.removeEventListener("mousemove", (e) => hdlMouseMove(e, canvas));
       canvas.removeEventListener("mouseup", (e) => hdlMouseUp(e, canvas));
       canvas.removeEventListener("mousedown", (e) => hdlMouseDown(e, canvas));
       window.removeEventListener("resize", updateCanvasSize);

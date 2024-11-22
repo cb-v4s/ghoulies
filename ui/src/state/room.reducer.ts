@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 import { RoomState, User } from "../types";
+import { isExpired } from "../lib/misc";
 
 const initialState: RoomState = {
   userId: null,
@@ -40,17 +41,37 @@ export const roomSlice = createSlice({
       action: PayloadAction<{ msg: string; from: string }>
     ) => {
       const { msg, from } = action.payload;
+      const userPosition = state.roomInfo.Users.find(
+        ({ UserName }) => UserName === from
+      )?.Position;
+
+      if (!userPosition) {
+        console.error("setRoomMessage: userPosition not found.");
+        return;
+      }
+
       const updatedMessages = [
         ...state.roomInfo.Messages,
-        { Msg: msg, From: from },
+        { Msg: msg, From: from, Timestamp: Date.now(), Position: userPosition },
       ];
       state.roomInfo = { ...state.roomInfo, Messages: updatedMessages };
     },
-    removeFirstMessage: (state) => {
+    cleanMessages: (state) => {
       const messagesLength = state.roomInfo.Messages.length;
       if (!messagesLength) return;
 
-      const updatedMessages = state.roomInfo.Messages.slice(1, messagesLength);
+      let idxListDelete: number[] = [];
+
+      state.roomInfo.Messages.map(({ Timestamp }, idx: number) => {
+        if (isExpired(Timestamp)) idxListDelete.push(idx);
+      });
+
+      if (!idxListDelete.length) return;
+
+      const updatedMessages = state.roomInfo.Messages.filter(
+        (_, idx: number) => !idxListDelete.includes(idx)
+      );
+
       state.roomInfo.Messages = updatedMessages;
     },
     setDefaultState: (state) => {
@@ -72,7 +93,7 @@ export const {
   setUserId,
   setRoomMessage,
   setUsername,
-  removeFirstMessage,
+  cleanMessages,
   setDefaultState,
 } = roomSlice.actions;
 

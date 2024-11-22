@@ -20,7 +20,6 @@ type Position = {
   Col: number;
 };
 
-// TODO: move this 1 or -1
 export enum FacingDirection {
   Right = 1,
   Left = -1,
@@ -37,6 +36,8 @@ export type User = {
 export type Message = {
   Msg: string;
   From: string;
+  Timestamp: number;
+  Position: Position;
 };
 
 interface Room {

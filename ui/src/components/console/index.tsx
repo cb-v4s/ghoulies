@@ -179,21 +179,23 @@ export const Console = () => {
   };
 
   return (
-    <div
-      id="console"
-      className="w-full md:w-4/5 lg:w-3/5 h-96 bg-[#A593F2] rounded-xl pt-3 pb-14 px-6 text-center relative shadow-xl border-2 border-[#7d5edb] select-none"
-    >
-      <span className="text-[#7d5edb] font-bold text-sm">
-        {capitalize(appName)} Console
-      </span>
-      <button
-        className="absolute top-4 right-4 outline-none focus:outline-none"
-        onClick={hdlCloseConsole}
+    <div className="absolute w-full h-full flex items-center justify-center z-50">
+      <div
+        id="console"
+        className="w-full md:w-4/5 lg:w-3/5 h-96 bg-[#A593F2] rounded-xl pt-3 pb-14 px-6 text-center relative shadow-xl border-2 border-[#7d5edb] select-none"
       >
-        <X className="w-5 h-5 text-slate-100 hover:text-slate-300 transition duration-150 font-bold" />
-      </button>
+        <span className="text-[#7d5edb] font-bold text-sm">
+          {capitalize(appName)} Console
+        </span>
+        <button
+          className="absolute top-2 right-2 outline-none focus:outline-none"
+          onClick={hdlCloseConsole}
+        >
+          <X className="w-5 h-5 text-[#7d5edb] hover:text-slate-300 transition duration-150 font-bold" />
+        </button>
 
-      {ConsoleContent()}
+        {ConsoleContent()}
+      </div>
     </div>
   );
 };
