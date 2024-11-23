@@ -6,6 +6,10 @@
 
 This is web-based platform that enables users to host and join virtual meetups in a game-like environment allowing them to interact with others through text chat.
 
+View Live [localhost](http://localhost/)  
+REST API Docs [:8000/docs/index.html](http://localhost:8000/docs/index.html)  
+WebSocket API Docs [:8000/wsdocs/index.html](http://localhost:8000/docs/index.html)
+
 ### Tech stack
 
 - **Typescript** Javascript but better.
@@ -31,7 +35,7 @@ make watch
 make watch EXTERNAL_DB=true # when using a service like neon for postgres
 ```
 
-Go visit `http://localhost`
+Go visit [localhost](http://localhost/)
 
 ###### Release
 
@@ -41,15 +45,13 @@ make run ENV=release
 
 ### Docs
 
-Visit `http://localhost:8000/docs/index.html`
-
-Generate REST API Docs using Swagger
+Using Swagger for REST API Docs
 
 ```sh
-cd core/app && /bin/bash -c "$(go env GOPATH)/bin/swag init -g ./cmd/api/main.go -o docs/"
+cd  && /bin/bash -c "$(go env GOPATH)/bin/swag init -g ./core/app/cmd/api/main.go -o ./core/app/docs/"
 ```
 
-Generate WebSocket API Docs using AsyncAPI
+Using AsyncAPI for WebSocket API Docs
 
 ```sh
 [p]npm|yarn install -g @asyncapi/generator

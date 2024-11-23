@@ -267,6 +267,10 @@ const docTemplate = `{
         "types.PopularRoomList": {
             "type": "object",
             "properties": {
+                "roomDesc": {
+                    "description": "rooms description",
+                    "type": "string"
+                },
                 "roomId": {
                     "type": "string"
                 },

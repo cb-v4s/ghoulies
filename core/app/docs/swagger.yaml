@@ -65,6 +65,9 @@ definitions:
     type: object
   types.PopularRoomList:
     properties:
+      roomDesc:
+        description: rooms description
+        type: string
       roomId:
         type: string
       roomName:

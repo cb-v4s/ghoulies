@@ -7,6 +7,11 @@ import (
 	"core/internal/ws"
 
 	"github.com/gin-gonic/gin"
+
+	docs "core/docs"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func SetupRoutes(r *gin.Engine) {
@@ -34,13 +39,12 @@ func SetupRoutes(r *gin.Engine) {
 	r.POST("/ws", ws.HandleWebSocket)
 
 	// WebSocket API Docs
-	r.Static("/wsdocs", "./docs")
+	r.Static("/wsdocs", "./wsdocs")
 
 	// Docs REST API
+	docs.SwaggerInfo.Title = "Ghosties"
+	docs.SwaggerInfo.Description = "REST API Documentation"
+	docs.SwaggerInfo.Version = "1.0"
 
-	// docs.SwaggerInfo.Title = "my api title"
-	// docs.SwaggerInfo.Description = "my description"
-	// docs.SwaggerInfo.Version = "1.0"
-
-	// r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
