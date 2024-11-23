@@ -4,15 +4,18 @@ info:
   version: "1.0.0"
   description: This is a simple example of AsyncAPI documentation for a Go project.
 servers:
+  development:
+    url: "ws://localhost:8000/ws"
+    protocol: ws
   production:
     url: "ws://localhost:8000/ws"
     protocol: ws
 channels:
-  user:
-    description: User-related events
+  room:
+    description: room-related events
     subscribe:
-      summary: Receive user updates
-      operationId: receiveUserUpdates
+      summary: Updates the user's position in the map
+      operationId: updatePosition
       message:
         contentType: application/json
         payload:
@@ -21,6 +24,14 @@ channels:
             userId:
               type: string
               description: The ID of the user
-            status:
+            roomId:
+              type: string
+              description: The ID of the room
+            Dest:
               type: string
               enum: [active, inactive]
+              examples:
+                - payload:
+                    userId: "334288"
+                    roomId: "keep the block hot#0"
+                    Dest: "3,3"

@@ -263,7 +263,6 @@ func HandleWebSocket(c *gin.Context) {
 			fmt.Sscanf(reqData.Dest, "%d,%d", &destRow, &destCol)
 
 			facingDirection := util.GetUserFacingDir(currentPos, lib.Position{Row: destRow, Col: destCol})
-			fmt.Printf("facingDirection::::::::::%v\n", facingDirection)
 
 			invalidPositions := roomData.UsersPositions
 
@@ -296,7 +295,7 @@ func HandleWebSocket(c *gin.Context) {
 				posKey = newPosKey
 			}
 
-			fmt.Printf("Invalid positions: %v\n", invalidPositions)
+			// fmt.Printf("Invalid positions: %v\n", invalidPositions)
 
 		case "leaveRoom":
 			var reqData types.UserLeave
