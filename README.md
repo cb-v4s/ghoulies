@@ -1,6 +1,6 @@
 ![gosty](./ui/public/cover.png)
 
-# ghosties-app
+# ghosties
 
 ### Overview
 
