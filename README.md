@@ -53,5 +53,5 @@ Generate WebSocket API Docs using AsyncAPI
 
 ```sh
 [p]npm|yarn install -g @asyncapi/generator
-ag ./core/app/docs/asyncapi.yaml @asyncapi/html-template -o ./core/app/docs/index.html
+ag ./core/app/wsdocs/asyncapi.yaml @asyncapi/html-template -o ./core/app/wsdocs
 ```
