@@ -1,4 +1,4 @@
-![gosty](./ui/public/gosties.png)
+![gosty](./ui/public/cover.png)
 
 # ghosties-app
 

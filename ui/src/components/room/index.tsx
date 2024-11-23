@@ -101,10 +101,10 @@ export const Room = () => {
       getImageResource(FacingDirection.frontLeft, "kitten"),
       3,
       3,
-      blockWidth + 80,
-      blockHeight + 50,
-      33,
-      15
+      blockWidth + 240,
+      blockHeight + 110,
+      125,
+      85
     );
 
     roomInfo.Users.forEach(({ Position, Direction }) => {

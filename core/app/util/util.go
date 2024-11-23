@@ -64,6 +64,7 @@ func NewRoomId(roomName string) (*types.RoomId, error) {
 	return &roomId, nil
 }
 
+// TODO: not perfect
 func GetUserFacingDir(origin lib.Position, target lib.Position) types.XAxis {
 
 	deltaX := target.Row - origin.Row
