@@ -7,15 +7,14 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// XAxis type represents the horizontal axis direction
-type XAxis int
+type FacingDirection int
 
-// Constants for XAxis
+// Constants for FacingDirection
 const (
-	FrontRight XAxis = -1
-	FrontLeft  XAxis = 1
-	BackLeft   XAxis = 0
-	BackRight  XAxis = 2
+	FrontRight FacingDirection = -1
+	FrontLeft  FacingDirection = 1
+	BackLeft   FacingDirection = 0
+	BackRight  FacingDirection = 2
 
 	DefaultDirection        = FrontLeft
 	RoomIdFormat     string = "%s#%s" // e.g. "my room#334288"
@@ -29,7 +28,7 @@ type User struct {
 	UserID    UserID
 	RoomID    string
 	Position  lib.Position
-	Direction XAxis
+	Direction FacingDirection
 }
 
 type Client struct {

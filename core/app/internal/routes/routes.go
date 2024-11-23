@@ -6,18 +6,12 @@ import (
 
 	"core/internal/ws"
 
-	docs "core/docs"
-
 	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func SetupRoutes(r *gin.Engine) {
-	docs.SwaggerInfo.Title = "my api title"
-	docs.SwaggerInfo.Description = "my description"
-	docs.SwaggerInfo.Version = "1.0"
 
+	// REST API
 	apiv1 := r.Group("/api/v1")
 	{
 		userGroup := apiv1.Group("/user")
@@ -25,7 +19,7 @@ func SetupRoutes(r *gin.Engine) {
 			userGroup.POST("/signup", controllers.Signup)
 			userGroup.POST("/login", controllers.Login)
 			userGroup.GET("/refresh", middleware.Authenticate, controllers.Refresh)
-			userGroup.GET("/protected", middleware.Authenticate, controllers.Protected) // this is a test ep
+			userGroup.GET("/protected", middleware.Authenticate, controllers.Protected) // ! this is a mock ep
 		}
 
 		roomGroup := apiv1.Group("/rooms")
@@ -35,7 +29,18 @@ func SetupRoutes(r *gin.Engine) {
 
 	}
 
+	// Docs WebSocket API
 	r.GET("/ws", ws.HandleWebSocket)
 	r.POST("/ws", ws.HandleWebSocket)
-	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// WebSocket API Docs
+	r.Static("/wsdocs", "./docs")
+
+	// Docs REST API
+
+	// docs.SwaggerInfo.Title = "my api title"
+	// docs.SwaggerInfo.Description = "my description"
+	// docs.SwaggerInfo.Version = "1.0"
+
+	// r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }

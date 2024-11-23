@@ -43,8 +43,15 @@ make run ENV=release
 
 Visit `http://localhost:8000/docs/index.html`
 
-Generate rest api docs using Swagger
+Generate REST API Docs using Swagger
 
 ```sh
 cd core/app && /bin/bash -c "$(go env GOPATH)/bin/swag init -g ./cmd/api/main.go -o docs/"
+```
+
+Generate WebSocket API Docs using AsyncAPI
+
+```sh
+[p]npm|yarn install -g @asyncapi/generator
+cd core/app/docs && ag ./asyncapi.yaml @asyncapi/html-template -o ./index.html
 ```

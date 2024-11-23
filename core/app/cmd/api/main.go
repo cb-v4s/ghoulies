@@ -4,7 +4,7 @@ import (
 	"core/config"
 	db "core/internal/database"
 	"core/internal/memory"
-	"core/routes"
+	"core/internal/routes"
 	"fmt"
 	"log"
 	"strings"

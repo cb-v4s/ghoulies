@@ -1,0 +1,26 @@
+asyncapi: "2.0.0"
+info:
+  title: Ghosties
+  version: "1.0.0"
+  description: This is a simple example of AsyncAPI documentation for a Go project.
+servers:
+  production:
+    url: "ws://localhost:8000/ws"
+    protocol: ws
+channels:
+  user:
+    description: User-related events
+    subscribe:
+      summary: Receive user updates
+      operationId: receiveUserUpdates
+      message:
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            userId:
+              type: string
+              description: The ID of the user
+            status:
+              type: string
+              enum: [active, inactive]
