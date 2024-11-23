@@ -2,7 +2,7 @@ asyncapi: "2.0.0"
 info:
   title: Ghosties
   version: "1.0.0"
-  description: This is a simple example of AsyncAPI documentation for a Go project.
+  description: WebSocket API Docs
 servers:
   development:
     url: "ws://localhost:8000/ws"
@@ -11,9 +11,10 @@ servers:
     url: "ws://localhost:8000/ws"
     protocol: ws
 channels:
-  room:
+  /:
     description: room-related events
-    subscribe:
+
+    publish:
       summary: Updates the user's position in the map
       operationId: updatePosition
       message:
@@ -27,11 +28,109 @@ channels:
             roomId:
               type: string
               description: The ID of the room
-            Dest:
+            dest:
               type: string
-              enum: [active, inactive]
-              examples:
-                - payload:
-                    userId: "334288"
-                    roomId: "keep the block hot#0"
-                    Dest: "3,3"
+              description: A string that contains row and col separated by a comma
+              example: "3,3"
+
+        examples:
+          - payload:
+              username: "Alice"
+              roomId: "keep the block hot#0"
+
+      summary: Create a new room
+      operationId: createRoom
+      message:
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            userName:
+              type: string
+              description: A username
+            roomName:
+              type: string
+              description: The name of the room
+              example: "My new room"
+
+        examples:
+          - payload:
+              userName: "Bob"
+              roomName: "My new room"
+
+      summary: Broadcasts a new message in a room
+      operationId: broadcastMessage
+      message:
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            msg:
+              type: string
+              description: message content
+            from:
+              type: string
+              description: The id of the sender user
+            roomId:
+              type: string
+              description: The id of the room
+
+      summary: Join a room
+      operationId: joinRoom
+      message:
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            username:
+              type: string
+              description: The ID of the user
+            roomId:
+              type: string
+              description: The ID of the room
+            
+        examples:
+          - payload:
+              userId: "334288"
+              roomId: "keep the block hot#0"
+              dest: "3,3"
+
+    subscribe:
+      summary: Receives an update when a user enters a room
+      operationId: updateScene
+      message:
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            roomId:
+              type: string
+              description: The ID of the room
+            users:
+              type: any[]
+              description: A list of objects containing user's ids, names and positions in the map
+
+      summary: Broadcasts a new message in a room
+      operationId: broadcastMessage
+      message:
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            msg:
+              type: string
+              description: A message
+            from:
+              type: string
+              description: The id of the sender user
+            
+      summary: Set user id
+      operationId: setUserId
+      message:
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            userId:
+              type: string
+              description: user id

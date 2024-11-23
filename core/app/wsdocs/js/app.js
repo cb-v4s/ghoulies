@@ -7,17 +7,21 @@
     "description": "This is a simple example of AsyncAPI documentation for a Go project."
   },
   "servers": {
+    "development": {
+      "url": "ws://localhost:8000/ws",
+      "protocol": "ws"
+    },
     "production": {
       "url": "ws://localhost:8000/ws",
       "protocol": "ws"
     }
   },
   "channels": {
-    "user": {
-      "description": "User-related events",
+    "room": {
+      "description": "room-related events",
       "subscribe": {
-        "summary": "Receive user updates",
-        "operationId": "receiveUserUpdates",
+        "summary": "Updates the user's position in the map",
+        "operationId": "updatePosition",
         "message": {
           "contentType": "application/json",
           "payload": {
@@ -28,13 +32,27 @@
                 "description": "The ID of the user",
                 "x-parser-schema-id": "<anonymous-schema-2>"
               },
-              "status": {
+              "roomId": {
+                "type": "string",
+                "description": "The ID of the room",
+                "x-parser-schema-id": "<anonymous-schema-3>"
+              },
+              "Dest": {
                 "type": "string",
                 "enum": [
                   "active",
                   "inactive"
                 ],
-                "x-parser-schema-id": "<anonymous-schema-3>"
+                "examples": [
+                  {
+                    "payload": {
+                      "userId": "334288",
+                      "roomId": "keep the block hot#0",
+                      "Dest": "3,3"
+                    }
+                  }
+                ],
+                "x-parser-schema-id": "<anonymous-schema-4>"
               }
             },
             "x-parser-schema-id": "<anonymous-schema-1>"
