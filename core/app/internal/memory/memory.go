@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/gorilla/websocket"
 )
 
 var (
@@ -24,7 +23,7 @@ const (
 	ctxTimeout        time.Duration = 1000 * time.Second
 )
 
-func UserSubscribe(userConn *websocket.Conn, roomId types.RoomId) {
+func UserSubscribe(mc *types.MessageClient, roomId types.RoomId) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancelCtx()
 
@@ -38,18 +37,7 @@ func UserSubscribe(userConn *websocket.Conn, roomId types.RoomId) {
 			break
 		}
 
-		var payload any
-		err = json.Unmarshal([]byte(msg.Payload), &payload)
-		if err != nil {
-			fmt.Printf("something went wrong trying to marshal msg.Payload: %v\n", err)
-			break
-		}
-
-		if err := userConn.WriteJSON(payload); err != nil {
-			userConn.Close()
-			fmt.Printf("error on sending websocket message: %v", err)
-			break
-		}
+		mc.Send <- []byte(msg.Payload)
 	}
 }
 
@@ -142,7 +130,7 @@ func AddClient(data *types.Client) {
 
 	clientJSON, err := json.Marshal(&data)
 	if err != nil {
-		log.Fatalf("Error marshalling client data: %s", err)
+		log.Fatalf("Error marshalling client data on AddClient: %s", err)
 	}
 
 	added, err := redisClient.HSetNX(ctx, clientsKey, string(data.ID), clientJSON).Result()

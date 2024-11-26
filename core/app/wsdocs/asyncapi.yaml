@@ -12,125 +12,200 @@ servers:
     protocol: ws
 channels:
   /:
-    description: room-related events
+    description: Room-related events
 
     publish:
-      summary: Updates the user's position in the map
-      operationId: updatePosition
+      description: Send messages to the API
+      operationId: sendMessages
       message:
-        contentType: application/json
-        payload:
+        oneOf:
+          - $ref: "#/components/messages/updatePosition"
+          - $ref: "#/components/messages/joinRoom"
+          - $ref: "#/components/messages/newRoom"
+          - $ref: "#/components/messages/broadcastMessage"
+
+    subscribe:
+      description: Messages Received from the API
+      operationId: ReceiveMessages
+      message:
+        oneOf:
+          - $ref: "#/components/messages/updateScene"
+          - $ref: "#/components/messages/broadcastMessage"
+
+components:
+  messages:
+    updatePosition:
+      summary: Updates user's positions in the map
+      payload:
+        $ref: "#/components/schemas/updatePosition"
+      x-response:
+        $ref: "#/components/schemas/updateScene"
+
+    updateScene:
+      summary: Updates map
+      payload:
+        $ref: "#/components/schemas/updateScene"
+
+    joinRoom:
+      summary: Join a chat room
+      payload:
+        $ref: "#/components/schemas/joinRoom"
+      x-response:
+        oneOf:
+          - $ref: "#/components/schemas/updateScene"
+          - $ref: "#/components/schemas/setUserId"
+
+    newRoom:
+      summary: Create a chat room
+      payload:
+        $ref: "#/components/schemas/newRoom"
+      x-response:
+        oneOf:
+          - $ref: "#/components/schemas/updateScene"
+          - $ref: "#/components/schemas/setUserId"
+
+    broadcastMessage:
+      summary: broadcast a message in a room
+      payload:
+        $ref: "#/components/schemas/broadcastMessage"
+      x-response:
+        $ref: "#/components/schemas/broadcastMessage"
+
+  schemas:
+    broadcastMessage:
+      type: object
+      required:
+        - event
+        - data
+      properties:
+        event:
+          type: string
+          const: broadcastMessage
+        data:
+          type: object
+          properties:
+            from:
+              type: string
+              description: The ID of the user
+              example: "334288"
+            roomId:
+              type: string
+              description: The ID of the room
+              example: "keep the block hot#0"
+            msg:
+              type: string
+              description: Text message
+              example: "Hello world!"
+
+    joinRoom:
+      type: object
+      required:
+        - event
+        - data
+      properties:
+        event:
+          type: string
+          const: joinRoom
+        data:
+          type: object
+          properties:
+            roomId:
+              type: string
+              description: The ID of the room
+              example: "keep the block hot#0"
+            userName:
+              type: string
+              description: user's chosen name
+              example: "Alice"
+
+    newRoom:
+      type: object
+      required:
+        - event
+        - data
+      properties:
+        event:
+          type: string
+          const: newRoom
+        data:
+          type: object
+          properties:
+            roomName:
+              type: string
+              description: The name of the room
+              example: "my new room"
+            userName:
+              type: string
+              description: user's chosen name
+              example: "Alice"
+
+    updatePosition:
+      type: object
+      required:
+        - event
+        - data
+      properties:
+        event:
+          type: string
+          const: updatePosition
+        data:
           type: object
           properties:
             userId:
               type: string
               description: The ID of the user
+              example: "334288"
             roomId:
               type: string
               description: The ID of the room
+              example: "keep the block hot#0"
             dest:
               type: string
               description: A string that contains row and col separated by a comma
               example: "3,3"
 
-        examples:
-          - payload:
-              username: "Alice"
-              roomId: "keep the block hot#0"
-
-      summary: Create a new room
-      operationId: createRoom
-      message:
-        contentType: application/json
-        payload:
+    updateScene:
+      type: object
+      required:
+        - event
+        - data
+      properties:
+        event:
+          type: string
+          const: updateScene
+        data:
           type: object
           properties:
-            userName:
-              type: string
-              description: A username
-            roomName:
-              type: string
-              description: The name of the room
-              example: "My new room"
-
-        examples:
-          - payload:
-              userName: "Bob"
-              roomName: "My new room"
-
-      summary: Broadcasts a new message in a room
-      operationId: broadcastMessage
-      message:
-        contentType: application/json
-        payload:
-          type: object
-          properties:
-            msg:
-              type: string
-              description: message content
-            from:
-              type: string
-              description: The id of the sender user
-            roomId:
-              type: string
-              description: The id of the room
-
-      summary: Join a room
-      operationId: joinRoom
-      message:
-        contentType: application/json
-        payload:
-          type: object
-          properties:
-            username:
-              type: string
-              description: The ID of the user
-            roomId:
-              type: string
-              description: The ID of the room
-            
-        examples:
-          - payload:
-              userId: "334288"
-              roomId: "keep the block hot#0"
-              dest: "3,3"
-
-    subscribe:
-      summary: Receives an update when a user enters a room
-      operationId: updateScene
-      message:
-        contentType: application/json
-        payload:
-          type: object
-          properties:
-            roomId:
-              type: string
-              description: The ID of the room
             users:
-              type: any[]
+              type: array
               description: A list of objects containing user's ids, names and positions in the map
+              example:
+                [
+                  {
+                    UserName: "Alice",
+                    UserID: "334288",
+                    RoomID: "keep the block hot#0",
+                    Position: { Row: 3, Col: 5 },
+                    Direction: -1,
+                  },
+                ]
+            roomId:
+              type: string
+              description: The ID of the room
+              example: "keep the block hot#0"
 
-      summary: Broadcasts a new message in a room
-      operationId: broadcastMessage
-      message:
-        contentType: application/json
-        payload:
-          type: object
-          properties:
-            msg:
-              type: string
-              description: A message
-            from:
-              type: string
-              description: The id of the sender user
-            
-      summary: Set user id
-      operationId: setUserId
-      message:
-        contentType: application/json
-        payload:
+    setUserId:
+      type: object
+      required:
+        - event
+        - data
+      properties:
+        event:
+          type: string
+          const: setUserId
+        data:
           type: object
           properties:
             userId:
               type: string
-              description: user id
+              description: User's id

@@ -8,7 +8,7 @@ export const Friends = () => {
 
   return (
     <div className="flex flex-col items-center justify-center pt-12">
-      <p className="text-blue-500">Friends</p>
+      <span className="text-slate-200">Coming soon.</span>
     </div>
   );
 };

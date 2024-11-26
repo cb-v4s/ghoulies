@@ -6,6 +6,7 @@ import { SendHorizontal } from "../lib/icons";
 
 export const Chat: React.FC<any> = () => {
   const inputChatMessage = useRef<any>();
+  const [targetUserId, _] = useState<string | null>(null);
   const [message, setMessage] = useState<string>("");
   const userId = useSelector(getUserId);
   const roomInfo = useSelector(getRoomInfo);
@@ -18,8 +19,8 @@ export const Chat: React.FC<any> = () => {
 
     broadcastMessage({
       roomId: roomInfo.RoomId,
-      from: userId,
       msg: message,
+      from: userId,
     });
 
     setMessage("");
@@ -37,6 +38,9 @@ export const Chat: React.FC<any> = () => {
     <div className="w-4/5 bg-transparent">
       <form onSubmit={sendMessage}>
         <div className="relative flex focus:outline-none focus:placeholder-gray-400 bg-[#1f283b] rounded-full py-2 px-2 w-full">
+          <span className="text-bold text-slate-200 ml-3 flex justify-center items-center select-none">
+            {targetUserId !== null ? targetUserId : "Everyone"}
+          </span>
           <input
             type="text"
             data-testid="chat-input"

@@ -13,8 +13,10 @@ import {
 import { X } from "../../lib/icons";
 import { RoomStudio } from "./sections/RoomStudio";
 import { Friends } from "./sections/Friends";
-import { capitalize } from "../../lib/misc";
+import { capitalize, getRandomUsername } from "../../lib/misc";
 import { joinRoom, leaveRoom } from "../wsHandler";
+import { getAccessTokenPayload } from "../../lib/auth";
+import { Accordeon } from "../Accordeon";
 
 export const Console = () => {
   const dispatch = useDispatch();
@@ -39,44 +41,22 @@ export const Console = () => {
   ) => {
     e.preventDefault();
 
-    const randomNames = [
-      "Alice",
-      "Hatter",
-      "Dormouse",
-      "White King",
-      "White Queen",
-      "Red King",
-      "Red Queen",
-      "Tweedledum",
-      "Tweedledee",
-      "Guard",
-      "White Rabbit",
-      "Caterpillar",
-      "Cheshire Cat",
-      "Dodo",
-      "Talking Flowers",
-      "Eaglet",
-      "Playing Cards",
-      "Tortoise",
-      "Snowdrop",
-      "Nobody",
-      "Red Knight",
-      "Lily",
-      "Bread-and-Butterfly",
-      "Owl",
-    ];
-
-    const randomUsername =
-      randomNames[Math.floor(Math.random() * randomNames.length)];
+    let username = "";
+    const accessTokenPayload = getAccessTokenPayload();
+    if (!accessTokenPayload?.username) {
+      username = getRandomUsername();
+    } else {
+      username = accessTokenPayload.username;
+    }
 
     try {
       joinRoom({
         roomId,
-        userName: randomUsername,
+        userName: username,
       });
 
       dispatch(switchConsoleState());
-      dispatch(setUsername({ username: randomUsername }));
+      dispatch(setUsername({ username: username }));
     } catch (err) {
       console.error("couldn't join room", err);
     }
@@ -105,12 +85,7 @@ export const Console = () => {
         </td>
         <td className="text-right">
           {roomInfo?.RoomId === roomId ? (
-            <button
-              onClick={hdlCloseConnection}
-              className="text-red-500 hover:underline"
-            >
-              Leave Room
-            </button>
+            <span>You are here</span>
           ) : (
             <button
               className="text-blue-500 hover:underline"
@@ -151,7 +126,7 @@ export const Console = () => {
   const ConsoleContent = () => {
     const opts: { [key: string]: () => ReactNode } = {
       Lobby: () => <Rooms />,
-      "My Rooms": () => <RoomStudio />,
+      "Room-o-matic": () => <RoomStudio />,
       Friends: () => <Friends />,
     };
 
@@ -182,17 +157,35 @@ export const Console = () => {
   };
 
   const Rooms = () => {
+    const PublicRooms = () => {
+      return (
+        <table className="table-auto w-full border-separate border-spacing-y-3">
+          <tbody>{rooms && rooms.length ? <Rows /> : null}</tbody>
+        </table>
+      );
+    };
+
+    const sections = [
+      {
+        title: "Public rooms",
+        content: () => <PublicRooms />,
+      },
+      {
+        title: "Events",
+        content: () => (
+          <>
+            <p className="text-slate-200">
+              Looks like there is nothing here yet.
+            </p>
+          </>
+        ),
+      },
+    ];
+
     return (
-      <table className="table-auto w-full border-separate border-spacing-y-3 p-4">
-        <thead>
-          <tr className="text-left text-slate-200">
-            <th>Public Rooms</th>
-            <th> </th>
-            <th> </th>
-          </tr>
-        </thead>
-        <tbody>{rooms && rooms.length ? <Rows /> : null}</tbody>
-      </table>
+      <div className="my-4">
+        <Accordeon sections={sections} />;
+      </div>
     );
   };
 

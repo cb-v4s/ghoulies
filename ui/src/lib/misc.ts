@@ -28,3 +28,34 @@ export const debounce = <T extends (...args: any[]) => void>(
     }, delay);
   };
 };
+
+export const getRandomUsername = () => {
+  const randomNames = [
+    "Alice",
+    "Hatter",
+    "Dormouse",
+    "White King",
+    "White Queen",
+    "Red King",
+    "Red Queen",
+    "Tweedledum",
+    "Tweedledee",
+    "Guard",
+    "White Rabbit",
+    "Caterpillar",
+    "Cheshire Cat",
+    "Dodo",
+    "Talking Flowers",
+    "Eaglet",
+    "Playing Cards",
+    "Tortoise",
+    "Snowdrop",
+    "Nobody",
+    "Red Knight",
+    "Lily",
+    "Bread-and-Butterfly",
+    "Owl",
+  ];
+
+  return randomNames[Math.floor(Math.random() * randomNames.length)];
+};

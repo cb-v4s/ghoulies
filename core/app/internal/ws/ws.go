@@ -7,6 +7,7 @@ import (
 	"core/internal/server/services"
 	"core/types"
 	"core/util"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -74,6 +75,14 @@ func HandleWebSocket(c *gin.Context) {
 		Conn:     userConn,
 	}
 
+	messageClient := &types.MessageClient{
+		Client: client,
+		Send:   make(chan []byte),
+		ConnMu: sync.Mutex{},
+	}
+
+	go WritePump(messageClient)
+
 	// * Register the new client to Redis
 	activeConnections.Store(userId, client)
 	memory.AddClient(client)
@@ -127,7 +136,13 @@ func HandleWebSocket(c *gin.Context) {
 				fmt.Printf("Error: %s\n", err)
 			}
 
-			resData, err := services.NewRoom(userConn, types.UserID(userId), reqData)
+			// ! remove a user from a room if connected
+			user, _ := memory.GetClient(types.UserID(userId))
+			if user != nil {
+				services.RemoveUser(user.ID, user.RoomId)
+			}
+
+			resData, err := services.NewRoom(types.UserID(userId), reqData)
 			if err != nil {
 				fmt.Printf("something went wrong: %v\n", err)
 			}
@@ -138,16 +153,27 @@ func HandleWebSocket(c *gin.Context) {
 			}
 
 			// ! Subscribe to the Redis channel for RoomId
-			go memory.UserSubscribe(userConn, resData.RoomId)
+			go memory.UserSubscribe(messageClient, resData.RoomId)
 
-			// updateSceneData := UpdateScene{
-			// 	RoomId: string(resData.RoomId),
-			// 	Users:  resData.Users,
-			// }
+			updateSceneData := UpdateScene{
+				RoomId: string(resData.RoomId),
+				Users:  resData.Users,
+			}
 
-			// if err := memory.BroadcastRoom("updateScene", updateSceneData, resData.RoomId); err != nil {
-			// 	fmt.Printf("failed to broadcast to room: %s", reqData.RoomName)
-			// }
+			memory.BroadcastRoom(resData.RoomId, "updateScene", updateSceneData)
+
+			type SetUser struct {
+				UserId string `json:"userId"`
+			}
+
+			setUserData := SetUser{
+				UserId: string(userId),
+			}
+
+			sendPayload(messageClient, map[string]interface{}{"Event": "updateScene", "Data": updateSceneData})
+			sendPayload(messageClient, map[string]interface{}{
+				"Event": "setUserId",
+				"Data":  setUserData})
 
 		case "joinRoom":
 			var reqData types.JoinRoom
@@ -156,12 +182,16 @@ func HandleWebSocket(c *gin.Context) {
 				fmt.Printf("Error: %s\n", err)
 			}
 
-			resData, err := services.JoinRoom(userConn, types.UserID(userId), reqData)
+			// ! remove a user from a room if connected
+			user, _ := memory.GetClient(types.UserID(userId))
+			if user != nil {
+				services.RemoveUser(user.ID, user.RoomId)
+			}
+
+			resData, err := services.JoinRoom(types.UserID(userId), reqData)
 			if err != nil {
 				fmt.Printf("something went wrong joining the room: %s. %v\n", string(reqData.RoomId), err)
 			}
-
-			fmt.Printf("resData: %v", resData)
 
 			// ! ew there must be another way
 			data := map[string]string{
@@ -174,7 +204,7 @@ func HandleWebSocket(c *gin.Context) {
 			}
 
 			// ! Subscribe to the Redis channel for RoomId
-			go memory.UserSubscribe(userConn, reqData.RoomId)
+			go memory.UserSubscribe(messageClient, reqData.RoomId)
 
 			updateSceneData := UpdateScene{
 				RoomId: string(reqData.RoomId),
@@ -191,8 +221,8 @@ func HandleWebSocket(c *gin.Context) {
 				UserId: string(userId),
 			}
 
-			sendPayload(client, map[string]interface{}{"Event": "updateScene", "Data": updateSceneData})
-			sendPayload(client, map[string]interface{}{
+			sendPayload(messageClient, map[string]interface{}{"Event": "updateScene", "Data": updateSceneData})
+			sendPayload(messageClient, map[string]interface{}{
 				"Event": "setUserId",
 				"Data":  setUserData})
 
@@ -331,13 +361,28 @@ func HandleWebSocket(c *gin.Context) {
 	}
 }
 
-func sendPayload(client *types.Client, payload map[string]interface{}) error {
-	client.ConnMu.Lock()
-	defer client.ConnMu.Unlock()
-	if err := client.Conn.WriteJSON(payload); err != nil {
-		client.Conn.Close()
-		return fmt.Errorf("error: %v", err)
+func sendPayload(mc *types.MessageClient, payload map[string]interface{}) error {
+	JSONPayload, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("something went wrong on sendPayload marshal: %v", err)
 	}
 
+	mc.Send <- JSONPayload
+
 	return nil
+}
+
+func WritePump(mc *types.MessageClient) {
+	for {
+		select {
+		case msg := <-mc.Send:
+			mc.ConnMu.Lock()
+			err := mc.Client.Conn.WriteMessage(websocket.TextMessage, msg)
+			mc.ConnMu.Unlock()
+			if err != nil {
+				fmt.Printf("write error: %v\n", err)
+				return
+			}
+		}
+	}
 }

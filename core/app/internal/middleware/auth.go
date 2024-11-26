@@ -55,11 +55,7 @@ func Authenticate(c *gin.Context) {
 		}
 
 		// * Attach user data to cookie
-		c.Set("user", map[string]any{
-			"ID":       user.ID,
-			"Username": user.Username,
-			"Email":    user.Email,
-		})
+		c.Set("user", user)
 
 		c.Next()
 	} else {

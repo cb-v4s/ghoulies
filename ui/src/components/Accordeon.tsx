@@ -6,7 +6,7 @@ type Section = {
 };
 
 export const Accordeon = ({ sections }: { sections: Section[] }) => {
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(1);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
 
   const toggleSection = (idx: number) => {
     setExpandedIndex(idx === expandedIndex ? null : idx);
@@ -47,7 +47,7 @@ export const Accordeon = ({ sections }: { sections: Section[] }) => {
                   aria-controls={`accordion-collapse-body-${idx}`}
                   onClick={() => toggleSection(idx)}
                 >
-                  <span>{title}</span>
+                  <span className="font-semibold">{title}</span>
                   <AccordeonSwitch isOpen={idx === expandedIndex} />
                 </button>
               </h2>

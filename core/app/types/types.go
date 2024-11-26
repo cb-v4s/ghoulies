@@ -39,6 +39,12 @@ type Client struct {
 	ConnMu   sync.Mutex
 }
 
+type MessageClient struct {
+	Client *Client
+	Send   chan []byte
+	ConnMu sync.Mutex
+}
+
 type Room struct {
 	Name string
 	Id   string

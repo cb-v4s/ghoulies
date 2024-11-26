@@ -45,15 +45,22 @@ make run ENV=release
 
 ### Docs
 
-Using Swagger for REST API Docs
+###### Using Swagger for REST API Docs
 
 ```sh
-cd  && /bin/bash -c "$(go env GOPATH)/bin/swag init -g ./core/app/cmd/api/main.go -o ./core/app/docs/"
+go install github.com/swaggo/swag/cmd/swag@latest
 ```
 
-Using AsyncAPI for WebSocket API Docs
+```sh
+/bin/bash -c "$(go env GOPATH)/bin/swag init -g ./core/app/cmd/api/main.go -o ./core/app/docs/"
+```
+
+###### Using AsyncAPI for WebSocket API Docs
 
 ```sh
 [p]npm|yarn install -g @asyncapi/generator
+```
+
+```sh
 ag ./core/app/wsdocs/asyncapi.yaml @asyncapi/html-template -o ./core/app/wsdocs
 ```

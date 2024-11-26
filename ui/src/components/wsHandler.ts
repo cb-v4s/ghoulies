@@ -40,14 +40,11 @@ interface JoinRoomData {
 
 interface BroadcastMessageData {
   roomId: string;
-  from: string;
   msg: string;
+  from: string;
 }
 
-// TODO: username should come from login
-// at the moment of signup a random username should be assigned
-// you get the username from the jwt token
-interface NewRoomData {
+export interface NewRoomData {
   roomName: string;
   userName: string;
 }
@@ -69,7 +66,7 @@ export const newRoom = async (data: NewRoomData) => {
   }
 
   const payload = {
-    Event: RequestEvents.JoinRoom,
+    Event: RequestEvents.CreateRoom,
     Data: data,
   };
 
@@ -145,7 +142,6 @@ export const updatePosition = (
 
 export const WsHandler = () => {
   const dispatch = useDispatch();
-  // const roomInfo = useSelector(getRoomInfo)
 
   useEffect(() => {
     ws.onmessage = (ev: MessageEvent<any>) => {

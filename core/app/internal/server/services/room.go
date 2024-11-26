@@ -7,7 +7,6 @@ import (
 	"core/util"
 	"fmt"
 
-	"github.com/gorilla/websocket"
 	"golang.org/x/exp/rand"
 )
 
@@ -103,7 +102,7 @@ type NewRoomResponse struct {
 	Users  []types.User
 }
 
-func NewRoom(socket *websocket.Conn, userId types.UserID, data types.NewRoom) (*NewRoomResponse, error) {
+func NewRoom(userId types.UserID, data types.NewRoom) (*NewRoomResponse, error) {
 	// Set initial position
 	newPosition := lib.Position{Row: 0, Col: 0}
 
@@ -155,7 +154,7 @@ type JoinRoomResponse struct {
 	Users []types.User
 }
 
-func JoinRoom(socket *websocket.Conn, userId types.UserID, data types.JoinRoom) (*JoinRoomResponse, error) {
+func JoinRoom(userId types.UserID, data types.JoinRoom) (*JoinRoomResponse, error) {
 	if IsRoomFull(data.RoomId) {
 		return nil, fmt.Errorf("error_room_full")
 	}

@@ -1,6 +1,9 @@
 package config
 
-import "os"
+import (
+	"os"
+	"strconv"
+)
 
 type Postgres struct {
 	Database string
@@ -8,6 +11,7 @@ type Postgres struct {
 	Port     string
 	User     string
 	Password string
+	SSL      bool
 }
 
 var (
@@ -22,11 +26,14 @@ var (
 	RedisPassword      = os.Getenv("REDIS_PASSWORD")
 	WsConnectionsLimit = os.Getenv("WSCONN_LIMIT")
 
+	ssl, _ = strconv.ParseBool(os.Getenv("SSL"))
+
 	Database = Postgres{
 		Database: os.Getenv("POSTGRES_DATABASE"),
 		Host:     os.Getenv("POSTGRES_HOST"),
 		Port:     os.Getenv("POSTGRES_PORT"),
 		User:     os.Getenv("POSTGRES_USER"),
 		Password: os.Getenv("POSTGRES_PASS"),
+		SSL:      ssl,
 	}
 )

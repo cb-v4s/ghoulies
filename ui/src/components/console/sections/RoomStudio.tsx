@@ -1,53 +1,95 @@
-import { Accordeon } from "../../Accordeon";
-import { useIsAuthenticated } from "../../../hooks/useIsAuthenticated";
-import { ProtectedSection } from "./Protected";
+import { useEffect, useState } from "react";
 import { SquareArrowOutUpRight } from "../../../lib/icons";
+import { newRoom, NewRoomData } from "../../wsHandler";
+import { getRandomUsername } from "../../../lib/misc";
+import { getAccessTokenPayload } from "../../../lib/auth";
+import { useDispatch } from "react-redux";
+import { setUsername, switchConsoleState } from "../../../state/room.reducer";
 
 export const RoomStudio = () => {
-  const isAuthenticated = useIsAuthenticated();
+  const dispatch = useDispatch();
+  const defaultFormData = {
+    roomName: "",
+    userName: ((): string => {
+      const payload = getAccessTokenPayload();
+      if (!payload?.username) {
+        return getRandomUsername();
+      }
 
-  if (!isAuthenticated) return <ProtectedSection />;
+      return payload.username;
+    })(),
+  };
+
+  const [formData, setFormData] = useState<NewRoomData>(defaultFormData);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    console.log("data from new room form =>", e.target);
+    const { userName, roomName } = formData;
+    if (!userName.length || !roomName.length) return;
+
+    newRoom(formData);
+
+    setFormData(defaultFormData);
+    dispatch(switchConsoleState());
+    dispatch(setUsername({ username: userName }));
   };
 
-  const NewRoom = () => {
-    // TODO: reuse input for the form as a component
-    return (
+  const updateFormData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    const newFormData = {
+      ...formData,
+      [name]: value,
+    };
+
+    setFormData(newFormData);
+  };
+
+  return (
+    <div className="pt-4 px-4">
+      <h2 className="text-md font-semibold text-slate-200 lext-left mt-2 mb-6">
+        Create a new room
+      </h2>
       <form onSubmit={handleSubmit}>
         <div className="space-y-2">
-          <div className="flex flex-row mt-2">
-            <label
-              className="w-[30%] pr-4 py-2 text-left text-slate-200"
-              htmlFor="roomName"
-            >
-              Title
-            </label>
+          <div className="flex flex-col mt-2">
+            <div className="flex">
+              <label
+                className="w-[30%] pr-4 py-2 text-left text-slate-200"
+                htmlFor="roomName"
+              >
+                Name
+              </label>
 
-            <input
-              className="w-[70%] rounded-sm border-2 border-slate-800 outline-none focus:outline-none bg-transparent text-slate-200 px-4 py-2"
-              name="roomName"
-              placeholder="Add a title"
-              type="text"
-            />
+              <input
+                className="w-[70%] rounded-sm border-2 border-slate-800 outline-none focus:outline-none bg-transparent text-slate-200 px-4 py-2"
+                name="roomName"
+                value={formData.roomName}
+                onChange={updateFormData}
+                placeholder="Add a room name"
+                type="text"
+              />
+            </div>
+            <div className="flex">
+              <label
+                className="w-[30%] pr-4 py-2 text-left text-slate-200"
+                htmlFor="userName"
+              >
+                Enter as
+              </label>
+
+              <input
+                className="w-[70%] rounded-sm border-2 border-slate-800 outline-none focus:outline-none bg-transparent text-slate-200 px-4 py-2"
+                name="userName"
+                value={formData.userName}
+                onChange={updateFormData}
+                placeholder="Choose a username"
+                type="text"
+              />
+            </div>
           </div>
-          <div className="flex flex-row">
-            <label
-              className="w-[30%] pr-4 py-2 text-left text-slate-200"
-              htmlFor="roomName"
-            >
-              Description
-            </label>
-            <input
-              className="w-[70%] rounded-sm border-2 border-slate-800 outline-none focus:outline-none bg-transparent text-slate-200 px-4 py-2"
-              name="roomDescription"
-              placeholder="Add a description (optional)"
-              type="text"
-            />
-          </div>
+
           <div className="pt-2 pb-4 flex flex-row items-center justify-center border-t-2 border-slate-800">
             <div className="text-sm text-slate-300">
               <span>Learn about </span>
@@ -66,29 +108,7 @@ export const RoomStudio = () => {
             </button>
           </div>
         </div>
-        {/* <input
-          name="password"
-          placeholder="Password (optional)"
-          type="password"
-        /> */}
       </form>
-    );
-  };
-
-  const sections = [
-    {
-      title: "New room",
-      content: () => <NewRoom />,
-    },
-    {
-      title: "My rooms",
-      content: () => (
-        <>
-          <p className="text-slate-200">Looks like there is nothing yet.</p>
-        </>
-      ),
-    },
-  ];
-
-  return <Accordeon sections={sections} />;
+    </div>
+  );
 };

@@ -4,7 +4,6 @@ import (
 	"core/config"
 	db "core/internal/database"
 	"core/internal/database/models"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -186,8 +185,9 @@ func Login(c *gin.Context) {
 
 	// * Generate jwt access and refresh pair tokens
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": user.ID,
-		"exp": time.Now().Add(time.Minute * 15).Unix(),
+		"sub":      user.ID,
+		"username": user.Username,
+		"exp":      time.Now().Add(time.Minute * 15).Unix(),
 	})
 
 	accessTokenString, err := accessToken.SignedString([]byte(config.JwtSecret))
@@ -200,8 +200,9 @@ func Login(c *gin.Context) {
 	}
 
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": user.ID,
-		"exp": time.Now().Add(time.Hour * 24).Unix(),
+		"sub":      user.ID,
+		"username": user.Username,
+		"exp":      time.Now().Add(time.Hour * 24).Unix(),
 	})
 
 	refreshTokenString, err := refreshToken.SignedString([]byte(config.JwtSecret))
@@ -230,14 +231,13 @@ func Login(c *gin.Context) {
 // @Failure      400  {object}  RefreshTokenErrorResponse "Failed response"
 // @Router /api/v1/user/refresh  [get]
 func Refresh(c *gin.Context) {
-	user, _ := c.Get("user") // * esto va a venir del middleware
+	user, _ := c.Get("user")
 	var userData models.User = user.(models.User)
 
-	fmt.Printf("User: %v. Abajo deberia dar error\n", user)
-
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": userData.ID,
-		"exp": time.Now().Add(time.Hour * 24).Unix(),
+		"sub":      userData.ID,
+		"username": userData.Username,
+		"exp":      time.Now().Add(time.Hour * 24).Unix(),
 	})
 
 	refreshTokenString, err := refreshToken.SignedString([]byte(config.JwtSecret))

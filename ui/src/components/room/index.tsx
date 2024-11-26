@@ -107,7 +107,7 @@ export const Room = () => {
       85
     );
 
-    roomInfo.Users.forEach(({ Position, Direction }) => {
+    roomInfo.Users.forEach(({ Position, Direction, UserName }) => {
       drawCharacterAt(
         ctx,
         getImageResource(Direction, "ghost"),
@@ -116,7 +116,8 @@ export const Room = () => {
         blockWidth + 90,
         blockHeight + 20,
         45,
-        0
+        0,
+        UserName
       );
     });
   };
@@ -189,7 +190,8 @@ export const Room = () => {
     blockHeight: number,
     // * for some resources where dimensions are differente
     XPosPadding: number,
-    YPosPadding: number
+    YPosPadding: number,
+    username: string | null = null
   ) => {
     if (!ctx) return;
 
@@ -218,6 +220,17 @@ export const Room = () => {
       blockWidth,
       blockHeight
     );
+
+    if (username) {
+      ctx.font = "600 14px arial";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#DCDCE4";
+
+      const textX = destX + blockWidth / 2;
+      const textY = destY + blockHeight;
+
+      ctx.fillText(username, textX, textY);
+    }
   };
 
   const hdlMouseDown = (e: any, canvas: any) => {
@@ -314,7 +327,7 @@ export const Room = () => {
       setMapOffset({ x: 210, y: 80 });
       // Medium screens
       newWidth = 560; // Example size for medium
-      newHeight = 560; // Example size for medium
+      newHeight = 960; // Example size for medium
     } else {
       setMapOffset({ x: 140, y: 0 });
       newWidth = 360;
