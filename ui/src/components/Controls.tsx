@@ -1,9 +1,10 @@
 import { Chat } from "./Chat";
-import { useDispatch } from "react-redux";
-import { switchConsoleState } from "../state/room.reducer";
+import { useDispatch, useSelector } from "react-redux";
+import { getRoomInfo, switchConsoleState } from "../state/room.reducer";
 
 export const Controls = () => {
   const dispatch = useDispatch();
+  const roomInfo = useSelector(getRoomInfo);
 
   const hdlSwitchConsole = (_: any) => {
     dispatch(switchConsoleState());
@@ -11,7 +12,7 @@ export const Controls = () => {
 
   return (
     <div className="w-full h-16 bg-transparent flex justify-center py-2 px-4">
-      <Chat />
+      {roomInfo?.RoomId && <Chat />}
       <button
         onClick={hdlSwitchConsole}
         className="ml-4 rounded-md flex items-center justify-center bg-transparent h-12 outline-none focus:outline-none"

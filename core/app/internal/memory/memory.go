@@ -289,7 +289,6 @@ func GetPopularRooms() ([]types.PopularRoomList, error) {
 
 		rooms = append(rooms, types.PopularRoomList{
 			RoomId:     types.RoomId(roomId),
-			RoomDesc:   "Qui nisi nostrud nostrud irure incididunt culpa ullamco.",
 			RoomName:   roomData.Name,
 			TotalConns: len(roomData.Users),
 		})

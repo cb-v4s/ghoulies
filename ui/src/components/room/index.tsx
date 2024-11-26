@@ -6,6 +6,7 @@ import { updatePosition } from "../wsHandler";
 import { RoomData } from "./roomData";
 import { debounce } from "../../lib/misc";
 import { FacingDirection } from "../../types";
+import { userIdAI } from "../../siteConfig";
 
 export const Room = () => {
   const [locations, setLocations] = useState<{ x: number; y: number }[]>([]);
@@ -95,29 +96,19 @@ export const Room = () => {
       }
     }
 
-    // TODO: kitten ai
-    drawCharacterAt(
-      ctx,
-      getImageResource(FacingDirection.frontLeft, "kitten"),
-      3,
-      3,
-      blockWidth + 240,
-      blockHeight + 110,
-      125,
-      85
-    );
-
     roomInfo.Users.forEach(({ Position, Direction, UserName }) => {
       drawCharacterAt(
         ctx,
-        getImageResource(Direction, "ghost"),
+        UserName === userIdAI
+          ? getImageResource(Direction, "kitten")
+          : getImageResource(Direction, "ghost"),
         Position.Row - 1,
         Position.Col - 1,
-        blockWidth + 90,
-        blockHeight + 20,
-        45,
-        0,
-        UserName
+        UserName === userIdAI ? blockWidth + 240 : blockWidth + 90,
+        UserName === userIdAI ? blockHeight + 110 : blockHeight + 20,
+        UserName === userIdAI ? 125 : 45,
+        UserName === userIdAI ? 85 : 0,
+        UserName === userIdAI ? null : UserName
       );
     });
   };

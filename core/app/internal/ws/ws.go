@@ -2,7 +2,6 @@ package ws
 
 import (
 	"core/config"
-	"core/internal/lib"
 	"core/internal/memory"
 	"core/internal/server/services"
 	"core/types"
@@ -13,16 +12,10 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
-
-type UpdateScene struct {
-	RoomId string       `json:"roomId"`
-	Users  []types.User `json:"users"`
-}
 
 // Upgrader is used to upgrade an HTTP connection to a WebSocket connection.
 var upgrader = websocket.Upgrader{
@@ -50,9 +43,6 @@ var (
 
 // HandleWebSocket handles incoming WebSocket connections.
 func HandleWebSocket(c *gin.Context) {
-	// ! Extract token from headers
-	token := c.Request.Header.Get("Authorization")
-	fmt.Printf("token ----------->; %v\n", token)
 
 	userConn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -81,14 +71,17 @@ func HandleWebSocket(c *gin.Context) {
 		ConnMu: sync.Mutex{},
 	}
 
-	go WritePump(messageClient)
+	// ! goroutines
+	go hdlClientMessages(messageClient)
+	// TODO:
+	// borrar salas vacias
 
 	// * Register the new client to Redis
 	activeConnections.Store(userId, client)
 	memory.AddClient(client)
 	log.Println("A user connected:", userConn.RemoteAddr())
 
-	// ! this rans when infinite loop breaks
+	// ! this rans when main loop breaks
 	defer func() {
 		user, err := memory.GetClient(userId)
 		if err != nil {
@@ -117,13 +110,6 @@ func HandleWebSocket(c *gin.Context) {
 		if err != nil {
 			fmt.Printf("Error reading JSON: %v", err)
 			fmt.Printf("User is leaving: %v", userId)
-
-			client, err := memory.GetClient(userId)
-			if err != nil {
-				fmt.Printf("client is not connected")
-			}
-
-			fmt.Printf("LEAVING CLIENT:::::%v, roomId:::::%v\n", client.ID, client.RoomId)
 
 			break
 		}
@@ -155,7 +141,7 @@ func HandleWebSocket(c *gin.Context) {
 			// ! Subscribe to the Redis channel for RoomId
 			go memory.UserSubscribe(messageClient, resData.RoomId)
 
-			updateSceneData := UpdateScene{
+			updateSceneData := types.UpdateScene{
 				RoomId: string(resData.RoomId),
 				Users:  resData.Users,
 			}
@@ -206,7 +192,7 @@ func HandleWebSocket(c *gin.Context) {
 			// ! Subscribe to the Redis channel for RoomId
 			go memory.UserSubscribe(messageClient, reqData.RoomId)
 
-			updateSceneData := UpdateScene{
+			updateSceneData := types.UpdateScene{
 				RoomId: string(reqData.RoomId),
 				Users:  resData.Users,
 			}
@@ -271,61 +257,7 @@ func HandleWebSocket(c *gin.Context) {
 				continue
 			}
 
-			fmt.Println("payload.Event =>", reqData)
-
-			roomData, exists := memory.GetRoom(reqData.RoomId)
-
-			if !exists {
-				fmt.Printf("room not found")
-				continue
-			}
-
-			userIdx := services.GetUserIdx(types.UserID(reqData.UserId), reqData.RoomId)
-			if userIdx == -1 {
-				fmt.Printf("user not found")
-				continue
-			}
-
-			currentPos := roomData.Users[userIdx].Position
-			posKey := fmt.Sprintf("%d,%d", currentPos.Row, currentPos.Col)
-
-			var destRow, destCol int
-			fmt.Sscanf(reqData.Dest, "%d,%d", &destRow, &destCol)
-
-			facingDirection := util.GetUserFacingDir(currentPos, lib.Position{Row: destRow, Col: destCol})
-
-			invalidPositions := roomData.UsersPositions
-
-			path := lib.FindPath(currentPos.Row, currentPos.Col, destRow, destCol, services.GridSize, invalidPositions)
-
-			if len(path) == 0 {
-				continue
-			}
-
-			for _, newPosition := range path {
-				roomData.UsersPositions = util.DeleteFromSlice(roomData.UsersPositions, posKey)
-
-				roomData.Users[userIdx].Position = newPosition
-				roomData.Users[userIdx].Direction = facingDirection
-				newPosKey := fmt.Sprintf("%d,%d", newPosition.Row, newPosition.Col)
-
-				roomData.UsersPositions = append(roomData.UsersPositions, newPosKey)
-				memory.UpdateRoom(reqData.RoomId, roomData)
-
-				updateSceneData := UpdateScene{
-					RoomId: string(reqData.RoomId),
-					Users:  roomData.Users,
-				}
-
-				memory.BroadcastRoom(reqData.RoomId, "updateScene", updateSceneData)
-
-				// Simulate movement delay
-				time.Sleep(time.Duration(services.SpeedUserMov) * time.Millisecond)
-
-				posKey = newPosKey
-			}
-
-			// fmt.Printf("Invalid positions: %v\n", invalidPositions)
+			services.UpdateUserPosition(reqData.RoomId, types.UserID(reqData.UserId), reqData.Dest)
 
 		case "leaveRoom":
 			var reqData types.UserLeave
@@ -372,7 +304,7 @@ func sendPayload(mc *types.MessageClient, payload map[string]interface{}) error 
 	return nil
 }
 
-func WritePump(mc *types.MessageClient) {
+func hdlClientMessages(mc *types.MessageClient) {
 	for {
 		select {
 		case msg := <-mc.Send:

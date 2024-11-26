@@ -6,15 +6,25 @@ import (
 	types "core/types"
 	"core/util"
 	"fmt"
-
-	"golang.org/x/exp/rand"
+	"sync"
+	"time"
 )
 
 const (
 	SpeedUserMov = 180
 	GridSize     = 10
 	RoomLimit    = 10
+	userIdAI     = "ghosty"
 )
+
+var (
+	roomManager = make(map[types.RoomId]*types.Room)
+)
+
+type RoomManager struct {
+	rooms map[types.RoomId]*types.Room
+	mu    sync.Mutex
+}
 
 // Check if the room is full
 func IsRoomFull(roomId types.RoomId) bool {
@@ -38,24 +48,6 @@ func GetUserIdx(userId types.UserID, roomId types.RoomId) types.UserIdx {
 	return userIdx
 }
 
-// Get a random position in the room
-func GetRandomEmptyPosition(occupiedPositions []string) (string, lib.Position) {
-	for {
-		row := rand.Intn(GridSize)
-		col := rand.Intn(GridSize)
-		var strPos string = fmt.Sprintf("%d,%d", row, col)
-
-		exists := util.Contains(
-			occupiedPositions,
-			strPos,
-		)
-
-		if !exists {
-			return strPos, lib.Position{Row: row, Col: col}
-		}
-	}
-}
-
 func RemoveUser(userId types.UserID, roomId types.RoomId) {
 	room, exists := memory.GetRoom(roomId)
 	if !exists {
@@ -70,7 +62,7 @@ func RemoveUser(userId types.UserID, roomId types.RoomId) {
 
 	// Remove position from UsersPositions
 	pos := room.Users[userIdx].Position
-	strPos := PositionToString(pos)
+	strPos := util.PositionToString(pos)
 	room.UsersPositions = util.DeleteFromSlice(room.UsersPositions, strPos)
 
 	// Replace the user with the last user for O(1) operation
@@ -85,6 +77,8 @@ func RemoveUser(userId types.UserID, roomId types.RoomId) {
 	// Remove the user from the index map
 	delete(room.UserIdxMap, userId)
 
+	fmt.Printf("Users in the room: %s total: %d\n", roomId, len(room.Users))
+
 	// Check if the room is empty
 	if len(room.Users) == 0 {
 		memory.DeleteRoom(roomId)
@@ -93,13 +87,88 @@ func RemoveUser(userId types.UserID, roomId types.RoomId) {
 	memory.UpdateRoom(roomId, room)
 }
 
-func PositionToString(p lib.Position) string {
-	return fmt.Sprintf("%d,%d", p.Row, p.Col)
-}
-
 type NewRoomResponse struct {
 	RoomId types.RoomId
 	Users  []types.User
+}
+
+func StopAI(room *types.Room) {
+	close(room.StopChan)
+}
+
+func UpdateUserPosition(roomId types.RoomId, userId types.UserID, dest string) {
+	roomData, exists := memory.GetRoom(roomId)
+
+	if !exists {
+		fmt.Printf("room not found")
+		return
+	}
+
+	userIdx := GetUserIdx(types.UserID(userId), roomId)
+	if userIdx == -1 {
+		fmt.Printf("user not found")
+		return
+	}
+
+	currentPos := roomData.Users[userIdx].Position
+	posKey := fmt.Sprintf("%d,%d", currentPos.Row, currentPos.Col)
+
+	var destRow, destCol int
+	fmt.Sscanf(dest, "%d,%d", &destRow, &destCol)
+
+	facingDirection := util.GetUserFacingDir(currentPos, lib.Position{Row: destRow, Col: destCol})
+
+	invalidPositions := roomData.UsersPositions
+
+	path := lib.FindPath(currentPos.Row, currentPos.Col, destRow, destCol, GridSize, invalidPositions)
+
+	if len(path) == 0 {
+		return
+	}
+
+	for _, newPosition := range path {
+		roomData.UsersPositions = util.DeleteFromSlice(roomData.UsersPositions, posKey)
+
+		roomData.Users[userIdx].Position = newPosition
+		roomData.Users[userIdx].Direction = facingDirection
+		newPosKey := fmt.Sprintf("%d,%d", newPosition.Row, newPosition.Col)
+
+		roomData.UsersPositions = append(roomData.UsersPositions, newPosKey)
+		memory.UpdateRoom(roomId, roomData)
+
+		updateSceneData := types.UpdateScene{
+			RoomId: string(roomId),
+			Users:  roomData.Users,
+		}
+
+		memory.BroadcastRoom(roomId, "updateScene", updateSceneData)
+
+		// Simulate movement delay
+		time.Sleep(time.Duration(SpeedUserMov) * time.Millisecond)
+
+		posKey = newPosKey
+	}
+
+	fmt.Printf("Invalid positions: %v\n", invalidPositions)
+}
+
+func aliveAI(room *types.Room, ai types.User) {
+	ticker := time.NewTicker(time.Second * 15)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			destPositionKey, _ := util.GetRandomEmptyPosition(room.Data.UsersPositions, GridSize-1)
+			fmt.Printf("AI %s moved to position: %s\n", ai.UserName, destPositionKey)
+
+			UpdateUserPosition(room.ID, userIdAI, destPositionKey)
+
+		case <-room.StopChan:
+			fmt.Printf("Stopping AI movement for room: %s\n", room.ID)
+			return
+		}
+	}
 }
 
 func NewRoom(userId types.UserID, data types.NewRoom) (*NewRoomResponse, error) {
@@ -115,7 +184,17 @@ func NewRoom(userId types.UserID, data types.NewRoom) (*NewRoomResponse, error) 
 		Direction: types.DefaultDirection,
 	}
 
-	fmt.Printf("Creating room: %s\n", data.RoomName)
+	// AI that moves around
+	occupiedPositions := []string{}
+	occupiedPositions = append(occupiedPositions, util.PositionToString(newPosition))
+	newAIPosStr, newAIPos := util.GetRandomEmptyPosition(occupiedPositions, GridSize-1)
+
+	newAI := types.User{
+		UserName: userIdAI,
+		UserID:   types.UserID(userIdAI),
+		RoomID:   data.RoomName,
+		Position: newAIPos,
+	}
 
 	roomData := types.RoomData{
 		Name:           data.RoomName,
@@ -124,11 +203,15 @@ func NewRoom(userId types.UserID, data types.NewRoom) (*NewRoomResponse, error) 
 		UserIdxMap:     make(map[types.UserID]types.UserIdx),
 	}
 
-	// Add user to the room
+	// Add new user data to the room
 	roomData.Users = append(roomData.Users, newUser)
-	roomData.UsersPositions = append(roomData.UsersPositions, PositionToString(newPosition))
-
+	roomData.UsersPositions = append(roomData.UsersPositions, util.PositionToString(newPosition))
 	roomData.UserIdxMap[userId] = 0
+
+	// Add AI data to the room
+	roomData.Users = append(roomData.Users, newAI)
+	roomData.UsersPositions = append(roomData.UsersPositions, newAIPosStr)
+	roomData.UserIdxMap[types.UserID(userIdAI)] = 1
 
 	for {
 		roomId, err := util.NewRoomId(data.RoomName)
@@ -142,6 +225,15 @@ func NewRoom(userId types.UserID, data types.NewRoom) (*NewRoomResponse, error) 
 				RoomId: *roomId,
 				Users:  roomData.Users,
 			}
+
+			room := &types.Room{
+				ID:       *roomId,
+				Data:     roomData,
+				StopChan: make(chan struct{}),
+			}
+
+			roomManager[*roomId] = room
+			go aliveAI(room, newAI)
 
 			memory.CreateRoom(data.RoomName, *roomId, roomData)
 			return response, nil
@@ -177,7 +269,7 @@ func JoinRoom(userId types.UserID, data types.JoinRoom) (*JoinRoomResponse, erro
 	}
 
 	fmt.Printf("Updating room: %s\n", data.RoomId)
-	newPositionStr, newPosition := GetRandomEmptyPosition(roomData.UsersPositions)
+	newPositionStr, newPosition := util.GetRandomEmptyPosition(roomData.UsersPositions, 9)
 	newUser.Position = newPosition
 
 	roomData.Users = append(roomData.Users, newUser)

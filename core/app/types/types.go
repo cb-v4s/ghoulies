@@ -9,6 +9,11 @@ import (
 
 type FacingDirection int
 
+type UpdateScene struct {
+	RoomId string `json:"roomId"`
+	Users  []User `json:"users"`
+}
+
 // Constants for FacingDirection
 const (
 	FrontRight FacingDirection = -1
@@ -36,7 +41,6 @@ type Client struct {
 	RoomId   RoomId
 	Username string
 	Conn     *websocket.Conn
-	ConnMu   sync.Mutex
 }
 
 type MessageClient struct {
@@ -46,8 +50,9 @@ type MessageClient struct {
 }
 
 type Room struct {
-	Name string
-	Id   string
+	ID       RoomId
+	Data     RoomData
+	StopChan chan struct{}
 }
 
 type Position struct {
@@ -108,6 +113,5 @@ type DirectMsg struct {
 type PopularRoomList struct {
 	RoomId     RoomId `json:"roomId"`
 	RoomName   string `json:"roomName"`
-	RoomDesc   string `json:"roomDesc"` // rooms description
 	TotalConns int    `json:"totalConns"`
 }
