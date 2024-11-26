@@ -6,7 +6,6 @@ import (
 	types "core/types"
 	"core/util"
 	"fmt"
-	"sync"
 	"time"
 )
 
@@ -16,15 +15,6 @@ const (
 	RoomLimit    = 10
 	userIdAI     = "ghosty"
 )
-
-var (
-	roomManager = make(map[types.RoomId]*types.Room)
-)
-
-type RoomManager struct {
-	rooms map[types.RoomId]*types.Room
-	mu    sync.Mutex
-}
 
 // Check if the room is full
 func IsRoomFull(roomId types.RoomId) bool {
@@ -152,25 +142,6 @@ func UpdateUserPosition(roomId types.RoomId, userId types.UserID, dest string) {
 	fmt.Printf("Invalid positions: %v\n", invalidPositions)
 }
 
-func aliveAI(room *types.Room, ai types.User) {
-	ticker := time.NewTicker(time.Second * 15)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			destPositionKey, _ := util.GetRandomEmptyPosition(room.Data.UsersPositions, GridSize-1)
-			fmt.Printf("AI %s moved to position: %s\n", ai.UserName, destPositionKey)
-
-			UpdateUserPosition(room.ID, userIdAI, destPositionKey)
-
-		case <-room.StopChan:
-			fmt.Printf("Stopping AI movement for room: %s\n", room.ID)
-			return
-		}
-	}
-}
-
 func NewRoom(userId types.UserID, data types.NewRoom) (*NewRoomResponse, error) {
 	// Set initial position
 	newPosition := lib.Position{Row: 0, Col: 0}
@@ -182,18 +153,6 @@ func NewRoom(userId types.UserID, data types.NewRoom) (*NewRoomResponse, error) 
 		RoomID:    data.RoomName,
 		Position:  newPosition,
 		Direction: types.DefaultDirection,
-	}
-
-	// AI that moves around
-	occupiedPositions := []string{}
-	occupiedPositions = append(occupiedPositions, util.PositionToString(newPosition))
-	newAIPosStr, newAIPos := util.GetRandomEmptyPosition(occupiedPositions, GridSize-1)
-
-	newAI := types.User{
-		UserName: userIdAI,
-		UserID:   types.UserID(userIdAI),
-		RoomID:   data.RoomName,
-		Position: newAIPos,
 	}
 
 	roomData := types.RoomData{
@@ -208,11 +167,6 @@ func NewRoom(userId types.UserID, data types.NewRoom) (*NewRoomResponse, error) 
 	roomData.UsersPositions = append(roomData.UsersPositions, util.PositionToString(newPosition))
 	roomData.UserIdxMap[userId] = 0
 
-	// Add AI data to the room
-	roomData.Users = append(roomData.Users, newAI)
-	roomData.UsersPositions = append(roomData.UsersPositions, newAIPosStr)
-	roomData.UserIdxMap[types.UserID(userIdAI)] = 1
-
 	for {
 		roomId, err := util.NewRoomId(data.RoomName)
 		if err != nil {
@@ -225,15 +179,6 @@ func NewRoom(userId types.UserID, data types.NewRoom) (*NewRoomResponse, error) 
 				RoomId: *roomId,
 				Users:  roomData.Users,
 			}
-
-			room := &types.Room{
-				ID:       *roomId,
-				Data:     roomData,
-				StopChan: make(chan struct{}),
-			}
-
-			roomManager[*roomId] = room
-			go aliveAI(room, newAI)
 
 			memory.CreateRoom(data.RoomName, *roomId, roomData)
 			return response, nil

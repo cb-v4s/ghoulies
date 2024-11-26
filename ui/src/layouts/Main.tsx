@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { Footer } from "../components/Footer";
+import { Footer } from "@components/Footer";
 
 interface Props {
   children: any;

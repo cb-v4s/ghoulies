@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { wsApiUrl } from "../siteConfig";
+import { wsApiUrl } from "@/siteConfig";
 import { useDispatch } from "react-redux";
-import { setRoomInfo, setRoomMessage, setUserId } from "../state/room.reducer";
+import { setRoomInfo, setRoomMessage, setUserId } from "@state/room.reducer";
 
 export var ws = new WebSocket(wsApiUrl);
 

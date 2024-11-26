@@ -1,12 +1,12 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 import { RoomState, User } from "../types";
-import { isExpired } from "../lib/misc";
+import { isExpired } from "@lib/misc";
 
 const initialState: RoomState = {
   userId: null,
   username: null,
-  displayConsole: false,
+  displayConsole: true,
   roomInfo: {
     RoomId: null,
     Users: [],

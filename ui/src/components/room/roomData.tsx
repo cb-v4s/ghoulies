@@ -1,5 +1,5 @@
 import { useSelector } from "react-redux";
-import { getRoomInfo, getUsername } from "../../state/room.reducer";
+import { getRoomInfo, getUsername } from "@state/room.reducer";
 
 export const RoomData = ({
   currentRow,

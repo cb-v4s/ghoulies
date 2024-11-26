@@ -1,4 +1,4 @@
-import { useIsAuthenticated } from "../../../hooks/useIsAuthenticated";
+import { useIsAuthenticated } from "@hooks/useIsAuthenticated";
 import { ProtectedSection } from "./Protected";
 
 export const Friends = () => {

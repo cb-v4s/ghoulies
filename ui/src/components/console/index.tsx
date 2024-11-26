@@ -1,7 +1,5 @@
 import { ReactNode, useEffect, useState } from "react";
-import { fetchRooms } from "../../apiHooks";
-import { RoomInfo } from "../../types";
-import { appName } from "../../siteConfig";
+import { appName } from "@/siteConfig";
 import { useDispatch, useSelector } from "react-redux";
 import {
   switchConsoleState,
@@ -9,31 +7,30 @@ import {
   getRoomInfo,
   setDefaultState,
   getUserId,
-} from "../../state/room.reducer";
-import { X } from "../../lib/icons";
+} from "@state/room.reducer";
+import { X } from "@lib/icons";
 import { RoomStudio } from "./sections/RoomStudio";
 import { Friends } from "./sections/Friends";
-import { capitalize, getRandomUsername } from "../../lib/misc";
-import { joinRoom, leaveRoom } from "../wsHandler";
-import { getAccessTokenPayload } from "../../lib/auth";
-import { Accordeon } from "../Accordeon";
+import { capitalize, getRandomUsername } from "@lib/misc";
+import { joinRoom, leaveRoom } from "@/components/wsHandler";
+import { getAccessTokenPayload } from "@lib/auth";
+import { Accordeon } from "@components/Accordeon";
+import { useFetch } from "@/lib/query";
+import { PopularRoomsResponse } from "@/types";
 
 export const Console = () => {
   const dispatch = useDispatch();
   const userId = useSelector(getUserId);
   const roomInfo = useSelector(getRoomInfo);
-  const [rooms, setRooms] = useState<RoomInfo[]>([]);
   const [selectedBtn, setSelectedBtn] = useState<number>(0);
 
-  const getData = async () => {
-    const rooms = await fetchRooms();
-    if (!rooms) {
-      console.error("couldnt fetch rooms");
-      return;
-    }
-
-    setRooms(rooms);
-  };
+  // queries
+  const {
+    data: roomsResponse,
+    isLoading: fetchRoomsLoading,
+    error: fetchRoomsError,
+  } = useFetch<PopularRoomsResponse>("/rooms");
+  const { rooms } = roomsResponse || { rooms: [] };
 
   const hdlSelectRoom = async (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
@@ -99,10 +96,6 @@ export const Console = () => {
     ));
   };
 
-  useEffect(() => {
-    getData();
-  }, []);
-
   const hdlCloseConsole = (e: any) => {
     e.preventDefault();
     dispatch(switchConsoleState());
@@ -160,7 +153,7 @@ export const Console = () => {
     const PublicRooms = () => {
       return (
         <table className="table-auto w-full border-separate border-spacing-y-3">
-          <tbody>{rooms && rooms.length ? <Rows /> : null}</tbody>
+          <tbody>{rooms.length ? <Rows /> : null}</tbody>
         </table>
       );
     };

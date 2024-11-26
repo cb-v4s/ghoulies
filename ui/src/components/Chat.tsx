@@ -1,8 +1,8 @@
 import React, { useRef, useState } from "react";
 import { broadcastMessage } from "./wsHandler";
 import { useSelector } from "react-redux";
-import { getRoomInfo, getUserId } from "../state/room.reducer";
-import { SendHorizontal } from "../lib/icons";
+import { getRoomInfo, getUserId } from "@state/room.reducer";
+import { SendHorizontal } from "@lib/icons";
 
 export const Chat: React.FC<any> = () => {
   const inputChatMessage = useRef<any>();

@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { registerSchema } from "../validations/auth.schema";
+import { registerSchema } from "@/validations/auth.schema";
 import { useNavigate, Link } from "react-router-dom";
-import { api } from "../lib/api";
-import { LoadingSpinner } from "../components/LoadingSpinner";
-import { ArrowRight, Eye, EyeOff } from "../lib/icons";
+import { api } from "@lib/api";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { ArrowRight, Eye, EyeOff } from "@lib/icons";
 import { ApiError } from "../types";
-import { apiRoutes } from "../siteConfig";
+import { apiRoutes } from "@/siteConfig";
 
 export const SignUp = () => {
   const [error, setError] = useState<string>("");

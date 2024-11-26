@@ -1,5 +1,5 @@
 import { jwtDecode } from "jwt-decode";
-import { ACCESS_TOKEN_IDENTIFIER_KEY } from "../siteConfig";
+import { ACCESS_TOKEN_IDENTIFIER_KEY } from "@/siteConfig";
 
 type JwtPayload = {
   exp: number;

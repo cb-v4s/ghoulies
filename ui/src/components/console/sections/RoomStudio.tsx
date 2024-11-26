@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
-import { SquareArrowOutUpRight } from "../../../lib/icons";
-import { newRoom, NewRoomData } from "../../wsHandler";
-import { getRandomUsername } from "../../../lib/misc";
-import { getAccessTokenPayload } from "../../../lib/auth";
+import { useState } from "react";
+import { SquareArrowOutUpRight } from "@lib/icons";
+import { newRoom, NewRoomData } from "@components/wsHandler";
+import { getRandomUsername } from "@lib/misc";
+import { getAccessTokenPayload } from "@lib/auth";
 import { useDispatch } from "react-redux";
-import { setUsername, switchConsoleState } from "../../../state/room.reducer";
+import { setUsername, switchConsoleState } from "@state/room.reducer";
 
 export const RoomStudio = () => {
   const dispatch = useDispatch();

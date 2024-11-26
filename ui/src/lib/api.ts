@@ -1,5 +1,5 @@
 import axios from "axios";
-import { coreApiUrl as baseURL } from "../siteConfig";
+import { coreApiUrl as baseURL } from "@/siteConfig";
 
 const cfg = { baseURL };
 const ctx = axios.create(cfg);

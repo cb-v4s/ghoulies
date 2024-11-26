@@ -1,5 +1,5 @@
 import React from "react";
-import { links, githubName } from "../siteConfig";
+import { links, githubName } from "@/siteConfig";
 
 export const Footer: React.FC<any> = () => {
   return (

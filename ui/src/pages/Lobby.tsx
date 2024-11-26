@@ -1,14 +1,14 @@
-import { Room } from "../components/room";
-import { Controls } from "../components/Controls.tsx";
-import { Console } from "../components/console";
+import { Room } from "@components/room";
+import { Controls } from "@components/Controls.tsx";
+import { Console } from "@components/console";
 import { useSelector, useDispatch } from "react-redux";
 import {
   getConsoleState,
   getMessages,
   cleanMessages,
-} from "../state/room.reducer";
-import { Chatbox } from "../components/chatbox";
-import useInterval from "../hooks/useInterval.tsx";
+} from "@state/room.reducer";
+import { Chatbox } from "@components/chatbox";
+import useInterval from "@hooks/useInterval.tsx";
 
 const Lobby = () => {
   const dispatch = useDispatch();

@@ -5,8 +5,13 @@ export type MessageT = {
 
 export type Todo = {};
 
+// TODO: rm this
 export interface ApiError {
   error: string;
+}
+
+export interface PopularRoomsResponse {
+  rooms: RoomInfo[];
 }
 
 export interface RoomInfo {

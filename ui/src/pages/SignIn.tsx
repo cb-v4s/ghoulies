@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
-import { loginSchema } from "../validations/auth.schema";
-import { ArrowRight, Eye, EyeOff } from "../lib/icons";
-import { LoadingSpinner } from "../components/LoadingSpinner";
-import { api } from "../lib/api";
+import { loginSchema } from "@validations/auth.schema";
+import { ArrowRight, Eye, EyeOff } from "@lib/icons";
+import { LoadingSpinner } from "@components/LoadingSpinner";
+import { api } from "@lib/api";
 import {
   apiRoutes,
   ACCESS_TOKEN_IDENTIFIER_KEY,
   REFRESH_TOKEN_IDENTIFIER_KEY,
-} from "../siteConfig";
+} from "@/siteConfig";
 import { ApiError } from "../types";
 
 export const SignIn = () => {

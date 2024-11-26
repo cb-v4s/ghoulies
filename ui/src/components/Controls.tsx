@@ -1,6 +1,6 @@
 import { Chat } from "./Chat";
 import { useDispatch, useSelector } from "react-redux";
-import { getRoomInfo, switchConsoleState } from "../state/room.reducer";
+import { getRoomInfo, switchConsoleState } from "@state/room.reducer";
 
 export const Controls = () => {
   const dispatch = useDispatch();
