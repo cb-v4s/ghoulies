@@ -53,7 +53,7 @@ export const RoomStudio = () => {
       </h2>
       <form onSubmit={handleSubmit}>
         <div className="space-y-2">
-          <div className="flex flex-col mt-2">
+          <div className="flex flex-col mt-2 space-y-2">
             <div className="flex">
               <label
                 className="w-[30%] pr-4 py-2 text-left text-slate-200"

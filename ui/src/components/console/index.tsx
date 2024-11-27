@@ -25,6 +25,12 @@ export const Console = () => {
   const userId = useSelector(getUserId);
   const roomInfo = useSelector(getRoomInfo);
   const [selectedBtn, setSelectedBtn] = useState<number>(0);
+  const opts: { [key: string]: () => ReactNode } = {
+    Lobby: () => <Rooms />,
+    Studio: () => <RoomStudio />,
+    Friends: () => <Friends />,
+  };
+  const optKeys = Object.keys(opts);
 
   // queries
   const {
@@ -119,35 +125,11 @@ export const Console = () => {
   }, []);
 
   const ConsoleContent = () => {
-    const opts: { [key: string]: () => ReactNode } = {
-      Lobby: () => <Rooms />,
-      Studio: () => <RoomStudio />,
-      Friends: () => <Friends />,
-    };
-
-    const optKeys = Object.keys(opts);
-    const baseBtnClass =
-      "px-4 py-0 rounded-md border-2 border-[#7d5edb] outline-none focus:outline-none w-full";
-    const selectedClass = baseBtnClass + " border-b-4 border-b-[#7d5edb]";
-
     return (
       <>
-        <div className="mt-2 pb-10 overflow-y-scroll console-scrollbar relative text-left bg-slate-900 h-5/6 border-2 border-green-200 text-lg">
-          {opts[optKeys[selectedBtn]]()}
-        </div>
-        <div className="mx-auto mt-4 text-slate-200 font-bold space-x-2 flex flex-row justify-center items-center">
-          {optKeys.map((title: string, idx: number) => (
-            <div className="flex flex-col w-[30%]" key={idx}>
-              <button
-                key={idx}
-                onClick={() => setSelectedBtn(idx)}
-                className={selectedBtn === idx ? selectedClass : baseBtnClass}
-              >
-                <span className="text-xs md:text-sm">{title}</span>
-              </button>
-            </div>
-          ))}
-        </div>
+        {/* SCREEN */}
+
+        {/* END SCREEN */}
       </>
     );
   };
@@ -180,28 +162,54 @@ export const Console = () => {
 
     return (
       <div className="my-4">
-        <Accordeon sections={sections} />;
+        <Accordeon sections={sections} />
       </div>
     );
   };
 
   return (
-    <div className="absolute w-full h-full flex items-center justify-center z-50">
+    <div className="absolute w-full h-full flex items-center justify-center">
       <div
         id="console"
-        className="w-[90%] md:w-4/5 lg:w-3/5 h-96 bg-[#A593F2] pt-3 pb-14 px-6 text-center relative shadow-xl select-none"
+        className="w-[90%] md:w-4/5 lg:w-3/5 h-[24rem] bg-[#A593F2] pt-3 pb-14 px-2 text-center relative shadow-xl select-none"
       >
-        <span className="text-[#7d5edb] font-bold text-sm">
-          {capitalize(appName)} Console
-        </span>
+        <div
+          id="dotted-grid"
+          className="w-[98%] h-10 top-[-10px] left-1 absolute rounded-t-3xl"
+        ></div>
+        <div className="bg-[#B096F9] px-1 py-0 absolute buttom-1 left-40 mt-[-6px]">
+          <span className="text-[#7d5edb] font-light text-sm">
+            {capitalize(appName)} Console
+          </span>
+        </div>
         <button
-          className="absolute top-0 right-2 outline-none focus:outline-none"
+          className="absolute top-0 right-2 outline-none focus:outline-none bg-[#B096F9]"
           onClick={hdlCloseConsole}
         >
-          <X className="w-5 h-5 text-[#7d5edb] hover:text-slate-300 transition duration-150 font-bold" />
+          <X className="w-5 h-5 text-slate-300 hover:text-slate-100 transition duration-150 font-bold" />
         </button>
 
-        {ConsoleContent()}
+        <div className="mt-5 h-[94%]">
+          <div className="overflow-y-scroll console-scrollbar relative text-left bg-sky-950 h-full border-8 border-slate-900 text-lg">
+            {opts[optKeys[selectedBtn]]()}
+          </div>
+        </div>
+
+        {/* BUTTONS SECTION */}
+        <div className="mx-auto mt-3 text-slate-200 font-bold space-x-2 flex flex-row justify-center items-center">
+          {optKeys.map((title: string, idx: number) => (
+            <div className="flex flex-col w-[30%]" key={idx}>
+              <button
+                id="pixel-button"
+                key={idx}
+                className="outline-none focus:outline-none"
+                onClick={() => setSelectedBtn(idx)}
+              >
+                <span className="text-xs md:text-sm">{title}</span>
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
