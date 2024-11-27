@@ -11,6 +11,7 @@ html {
 @font-face {
   font-family: "inter";
   src: url("/fonts/Inter.ttf") format("truetype");
+  /* src: url("/fonts/Ticketing.ttf") format("truetype"); */
   font-weight: normal;
   font-style: normal;
 }

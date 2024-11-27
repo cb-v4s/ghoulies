@@ -1,14 +1,19 @@
 import { api } from "./api";
 import {
-  // useMutation,
   useQuery,
   UseQueryOptions,
-  // useQueryClient,
+  useMutation,
+  useQueryClient,
   QueryFunction,
   QueryKey,
+  InvalidateQueryFilters,
+  QueryFilters,
+  UseMutationResult,
 } from "@tanstack/react-query";
 import { AxiosError, AxiosResponse } from "axios";
 
+const requestActions = ["post", "patch", "delete"] as const;
+type RequestActionsT = (typeof requestActions)[number];
 type QueryKeyT = [string, object | undefined];
 
 export const fetcher = async <T>({
@@ -26,7 +31,7 @@ export const useFetch = <T>(
   params?: object,
   config?: UseQueryOptions<T, AxiosError>
 ) => {
-  if (!url) throw new Error("URL must be provided");
+  if (!url) throw new Error("useFetch error: url must be provided");
 
   const context = useQuery<T, AxiosError>({
     queryKey: [url, params],
@@ -37,79 +42,61 @@ export const useFetch = <T>(
   return context;
 };
 
-// const useGenericMutation = <T, S>(
-//   func: (data: T | S) => Promise<AxiosResponse<S>>,
-//   url: string,
-//   params?: object,
-//   updater?: ((oldData: T, newData: S) => T) | undefined
-// ) => {
-//   const queryClient = useQueryClient();
+const useGenericMutation = <T, S>(
+  func: (data: T | S) => Promise<S>,
+  url: string,
+  params?: object,
+  updater?: ((oldData: T, newData: S) => T) | undefined
+): UseMutationResult<S, AxiosError, T | S> => {
+  const queryClient = useQueryClient();
 
-//   return useMutation<AxiosResponse, AxiosError, T | S>(func, {
-//     // Called before the mutation is executed.
-//     onMutate: async (data: any) => {
-//       // Cancels any ongoing queries for the same url and params
-//       await queryClient.cancelQueries([url!, params]);
+  return useMutation<S, AxiosError, T | S>({
+    mutationFn: func,
+    onMutate: async (data: T | S) => {
+      if (!url) throw new Error("useMutation error: url must be provided");
 
-//       // Get the previous stored data
-//       const previousData = queryClient.getQueryData([url!, params]);
+      // ! cancel any ongoing queries for the same key: [url, params]
+      await queryClient.cancelQueries([url, params] as QueryFilters);
 
-//       // Updates the query data in the cache using queryClient.setQueryData,
-//       // either by using the updater function or by replacing the data with the new data.
-//       queryClient.setQueryData<T>([url!, params], (oldData) => {
-//         return updater ? updater(oldData!, data as S) : (data as T);
-//       });
+      // ! get the previous stored data
+      const previousData = queryClient.getQueryData([url!, params]);
 
-//       return previousData;
-//     },
-//     // Called if the mutation fails.
-//     // It restores the previous data from the context passed from the onMutate callback.
-//     onError: (err, _, context) => {
-//       queryClient.setQueryData([url!, params], context);
-//     },
-//     // Called when the mutation is either successful or failed.
-//     // It invalidates the queries for the same url and params, forcing a refetch of the data.
-//     onSettled: () => {
-//       queryClient.invalidateQueries([url!, params]);
-//     },
-//   });
-// };
+      // Updates the query data in the cache using queryClient.setQueryData,
+      // either by using the updater function or by replacing the data with the new data.
+      queryClient.setQueryData<T>([url!, params], (oldData) => {
+        return updater ? updater(oldData!, data as S) : (data as T);
+      });
 
-// export const useDelete = <T>(
-//   url: string,
-//   params?: object,
-//   updater?: (oldData: T, id: string | number) => T
-// ) => {
-//   return useGenericMutation<T, string | number>(
-//     (id) => api.delete(`${url}/${id}`),
-//     url,
-//     params,
-//     updater
-//   );
-// };
+      return previousData;
+    },
+    onError: (_: AxiosError, __: any, context: any) => {
+      queryClient.setQueryData([url!, params], context);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries([url!, params] as InvalidateQueryFilters);
+    },
+  });
+};
 
-// export const usePost = <T, S>(
-//   url: string,
-//   params?: object,
-//   updater?: (oldData: T, newData: S) => T
-// ) => {
-//   return useGenericMutation<T, S>(
-//     (data) => api.post<S>(url, data),
-//     url,
-//     params,
-//     updater
-//   );
-// };
+export const useApiRequest = <T, S>(
+  requestAction: RequestActionsT,
+  url: string,
+  params?: object,
+  updater?: (oldData: T, newData: S) => T
+): UseMutationResult<S, AxiosError, T | S> => {
+  if (!requestActions.includes(requestAction)) {
+    throw new Error(
+      `error on useApiRequest. invalid requestAction: ${requestAction}`
+    );
+  }
 
-// export const useUpdate = <T, S>(
-//   url: string,
-//   params?: object,
-//   updater?: (oldData: T, newData: S) => T
-// ) => {
-//   return useGenericMutation<T, S>(
-//     (data) => api.patch<S>(url, data),
-//     url,
-//     params,
-//     updater
-//   );
-// };
+  return useGenericMutation<T, S>(
+    async (data) => {
+      const response: AxiosResponse<S> = await api[requestAction]<S>(url, data);
+      return response?.data;
+    },
+    url,
+    params,
+    updater
+  );
+};

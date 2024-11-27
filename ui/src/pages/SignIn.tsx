@@ -5,60 +5,57 @@ import { Link, useNavigate } from "react-router-dom";
 import { loginSchema } from "@validations/auth.schema";
 import { ArrowRight, Eye, EyeOff } from "@lib/icons";
 import { LoadingSpinner } from "@components/LoadingSpinner";
-import { api } from "@lib/api";
 import {
   apiRoutes,
   ACCESS_TOKEN_IDENTIFIER_KEY,
   REFRESH_TOKEN_IDENTIFIER_KEY,
 } from "@/siteConfig";
-import { ApiError } from "../types";
+import { useApiRequest } from "@/lib/query";
 
 export const SignIn = () => {
-  const [error, setError] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const formDefaultValues = {
+    email: "",
+    password: "",
+  };
+  const [error, setError] = useState<string | null>(null);
+  const {
+    mutate: doSignin,
+    error: doSigninError,
+    data,
+    isPending,
+    isError,
+  } = useApiRequest<any, any>("post", apiRoutes.login);
+
   const navigate = useNavigate();
   const [displayInputValue, setDisplayInputValue] = useState<boolean>(false);
   const form = useForm({
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: formDefaultValues,
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = form.handleSubmit(async (data: any) => {
-    setIsLoading(true);
-
-    try {
-      const response: any = await api.post(apiRoutes.login, data);
-
-      localStorage.setItem(
-        ACCESS_TOKEN_IDENTIFIER_KEY,
-        response.data.accessToken
-      );
-      localStorage.setItem(
-        REFRESH_TOKEN_IDENTIFIER_KEY,
-        response.data.refreshToken
-      );
-
-      navigate("/");
-    } catch (error: any) {
-      if (error?.name === "AxiosError") {
-        const apiError: ApiError = error.response?.data;
-
-        if (apiError?.error) {
-          setError(apiError.error);
-        } else {
-          setError("An unexpected error occurred.");
-        }
-      } else setError("Something went wrongdddd.");
-    } finally {
-      setIsLoading(false);
-    }
-  });
+  const onSubmit = form.handleSubmit(async (data: any) => await doSignin(data));
 
   useEffect(() => {
-    console.log(form.formState.errors);
+    if (!data) return;
+
+    localStorage.setItem(ACCESS_TOKEN_IDENTIFIER_KEY, data.accessToken);
+    localStorage.setItem(REFRESH_TOKEN_IDENTIFIER_KEY, data.refreshToken);
+    navigate("/");
+  }, [data]);
+
+  useEffect(() => {
+    const data: any = doSigninError?.response?.data;
+    if (!data) {
+      setError("Something went wrong");
+    } else {
+      setError(data.error);
+    }
+  }, [doSigninError]);
+
+  useEffect(() => {
+    if (Object.keys(form.formState.errors).length) {
+      console.log("signin form errors:", form.formState.errors);
+    }
   }, [form.formState.errors]);
 
   return (
@@ -68,7 +65,7 @@ export const SignIn = () => {
           Welcome back.
         </h2>
 
-        {error && (
+        {isError && (
           <div className="my-4 rounded-md border border-red-300 bg-red-100 px-4 py-2 text-red-600">
             {error}
           </div>
@@ -126,7 +123,7 @@ export const SignIn = () => {
             className="bg-sky-400 hover:bg-sky-500 flex w-full items-center justify-center rounded-xl px-4 py-2 font-semibold text-white dark:bg-background dark:text-primary dark:hover:bg-card mt-4"
           >
             <span className="mr-2 text-lg font-semibold">Continue</span>
-            {isLoading ? <LoadingSpinner size={3} /> : <ArrowRight size={20} />}
+            {isPending ? <LoadingSpinner size={3} /> : <ArrowRight size={20} />}
           </button>
         </form>
 

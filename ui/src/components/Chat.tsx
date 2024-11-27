@@ -35,7 +35,7 @@ export const Chat: React.FC<any> = () => {
   };
 
   return (
-    <div className="w-4/5 bg-transparent">
+    <div className="w-4/5 bg-transparent text-md">
       <form onSubmit={sendMessage}>
         <div className="relative flex focus:outline-none focus:placeholder-gray-400 bg-[#1f283b] rounded-full py-2 px-2 w-full">
           <span className="text-bold text-slate-200 ml-3 flex justify-center items-center select-none">

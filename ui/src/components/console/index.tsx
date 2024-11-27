@@ -18,6 +18,8 @@ import { Accordeon } from "@components/Accordeon";
 import { useFetch } from "@/lib/query";
 import { PopularRoomsResponse } from "@/types";
 
+import "./style.css";
+
 export const Console = () => {
   const dispatch = useDispatch();
   const userId = useSelector(getUserId);
@@ -69,7 +71,7 @@ export const Console = () => {
 
   const Rows = () => {
     return rooms.map(({ roomId, roomName, totalConns }, idx: number) => (
-      <tr className="text-slate-200 text-sm " key={idx}>
+      <tr className="text-slate-200" key={idx}>
         <td className="select-none">
           {roomName.length < 34 ? (
             <span>{roomName}</span>
@@ -119,18 +121,18 @@ export const Console = () => {
   const ConsoleContent = () => {
     const opts: { [key: string]: () => ReactNode } = {
       Lobby: () => <Rooms />,
-      "Room-o-matic": () => <RoomStudio />,
+      Studio: () => <RoomStudio />,
       Friends: () => <Friends />,
     };
 
     const optKeys = Object.keys(opts);
     const baseBtnClass =
-      "px-4 py-2 rounded-md border-2 border-[#7d5edb] outline-none focus:outline-none w-full";
+      "px-4 py-0 rounded-md border-2 border-[#7d5edb] outline-none focus:outline-none w-full";
     const selectedClass = baseBtnClass + " border-b-4 border-b-[#7d5edb]";
 
     return (
       <>
-        <div className="mt-2 pb-10 overflow-y-scroll console-scrollbar relative text-left bg-slate-900 h-5/6 border-2 border-green-200">
+        <div className="mt-2 pb-10 overflow-y-scroll console-scrollbar relative text-left bg-slate-900 h-5/6 border-2 border-green-200 text-lg">
           {opts[optKeys[selectedBtn]]()}
         </div>
         <div className="mx-auto mt-4 text-slate-200 font-bold space-x-2 flex flex-row justify-center items-center">
@@ -140,8 +142,9 @@ export const Console = () => {
                 key={idx}
                 onClick={() => setSelectedBtn(idx)}
                 className={selectedBtn === idx ? selectedClass : baseBtnClass}
-              ></button>
-              <span className="text-sm mt-2">{title}</span>
+              >
+                <span className="text-xs md:text-sm">{title}</span>
+              </button>
             </div>
           ))}
         </div>
@@ -186,13 +189,13 @@ export const Console = () => {
     <div className="absolute w-full h-full flex items-center justify-center z-50">
       <div
         id="console"
-        className="w-full md:w-4/5 lg:w-3/5 h-96 bg-[#A593F2] rounded-xl pt-3 pb-14 px-6 text-center relative shadow-xl border-2 border-[#7d5edb] select-none"
+        className="w-[90%] md:w-4/5 lg:w-3/5 h-96 bg-[#A593F2] pt-3 pb-14 px-6 text-center relative shadow-xl select-none"
       >
         <span className="text-[#7d5edb] font-bold text-sm">
           {capitalize(appName)} Console
         </span>
         <button
-          className="absolute top-2 right-2 outline-none focus:outline-none"
+          className="absolute top-0 right-2 outline-none focus:outline-none"
           onClick={hdlCloseConsole}
         >
           <X className="w-5 h-5 text-[#7d5edb] hover:text-slate-300 transition duration-150 font-bold" />
