@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema } from "@/validations/auth.schema";
@@ -6,51 +6,62 @@ import { useNavigate, Link } from "react-router-dom";
 import { api } from "@lib/api";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ArrowRight, Eye, EyeOff } from "@lib/icons";
-import { ApiError } from "../types";
+import { useApiRequest } from "@/lib/query";
 import { apiRoutes } from "@/siteConfig";
 
 export const SignUp = () => {
-  const [error, setError] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [displayPassword, setDisplayPassword] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const [displayConfirmPassword, setDisplayConfirmPassword] =
     useState<boolean>(false);
   const navigate = useNavigate();
+  const {
+    data,
+    error: doSignupError,
+    isError,
+    isPending,
+  } = useApiRequest<any, any>("post", apiRoutes.signup);
+  const signupDefaultValues = {
+    email: "",
+    username: "",
+    password: "",
+    confirmPassword: "",
+  };
   const form = useForm({
-    defaultValues: {
-      email: "",
-      username: "",
-      password: "",
-      confirmPassword: "",
-    },
+    defaultValues: signupDefaultValues,
     resolver: zodResolver(registerSchema),
   });
 
   const onSubmit = form.handleSubmit(async (data: any) => {
-    setIsLoading(true);
+    const { email, username, password } = data;
 
-    try {
-      await api.post(apiRoutes.signup, {
-        email: data.email,
-        username: data.username,
-        password: data.password,
-      });
-
-      navigate("/signin");
-    } catch (error: any) {
-      if (error?.name === "AxiosError") {
-        const apiError: ApiError = error.response?.data;
-
-        if (apiError?.error) {
-          setError(apiError.error);
-        } else {
-          setError("An unexpected error occurred.");
-        }
-      } else setError("Something went wrongdddd.");
-    } finally {
-      setIsLoading(false);
-    }
+    await api.post(apiRoutes.signup, {
+      email,
+      username,
+      password,
+    });
   });
+
+  useEffect(() => {
+    if (!data) return;
+
+    navigate("/");
+  }, [data]);
+
+  useEffect(() => {
+    const data: any = doSignupError?.response?.data;
+    if (!data) {
+      setError("Something went wrong");
+    } else {
+      setError(data.error);
+    }
+  }, [doSignupError]);
+
+  useEffect(() => {
+    if (Object.keys(form.formState.errors).length) {
+      console.log("signup form errors:", form.formState.errors);
+    }
+  }, [form.formState.errors]);
 
   return (
     <div className="flex min-h-screen items-center justify-center">
@@ -59,7 +70,7 @@ export const SignUp = () => {
           Let&apos;s get started!
         </h2>
 
-        {error && (
+        {isError && (
           <div className="my-4 rounded-md border border-red-300 bg-red-100 px-4 py-2 text-red-600">
             {error}
           </div>
@@ -163,14 +174,14 @@ export const SignUp = () => {
             className="bg-sky-400 hover:bg-sky-500 flex w-full items-center justify-center rounded-xl px-4 py-2 font-semibold text-white dark:bg-background dark:text-primary dark:hover:bg-card mt-4"
           >
             <span className="mr-2 text-lg font-semibold">Continue</span>
-            {isLoading ? <LoadingSpinner size={3} /> : <ArrowRight size={20} />}
+            {isPending ? <LoadingSpinner size={3} /> : <ArrowRight size={20} />}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm">
           Already a member?
           <span className="ml-1 text-sky-400 underline">
-            <Link to="/signin">Log in</Link>
+            <Link to="/login">Log in</Link>
           </span>
         </p>
       </div>
