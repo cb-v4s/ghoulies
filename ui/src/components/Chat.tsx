@@ -46,7 +46,7 @@ export const Chat: React.FC<any> = () => {
       if (!roomInfo.RoomId || !userId) return;
 
       updateTyping(roomId, userId, state);
-    }, 600),
+    }, 200),
     []
   );
 

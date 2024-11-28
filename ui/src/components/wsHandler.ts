@@ -181,7 +181,6 @@ export const WsHandler = () => {
 
       switch (event) {
         case ResponseEvents.UpdateScene:
-          console.log("data ================+>", data);
           dispatch(setRoomInfo(data));
 
           break;

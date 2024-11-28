@@ -20,12 +20,14 @@ const Lobby = () => {
   }, 1000);
 
   return (
-    <div className="relative w-full h-full">
-      <Chatbox messages={messages} />
+    <>
       {displayConsole && <Console />}
-      <Room />
-      <Controls />
-    </div>
+      <div className="relative w-full h-full">
+        <Chatbox messages={messages} />
+        <Room />
+        <Controls />
+      </div>
+    </>
   );
 };
 
