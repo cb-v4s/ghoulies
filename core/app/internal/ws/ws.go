@@ -124,7 +124,7 @@ func HandleWebSocket(c *gin.Context) {
 
 			// ! remove a user from a room if connected
 			user, _ := memory.GetClient(types.UserID(userId))
-			if user != nil {
+			if len(user.RoomId) > 0 {
 				services.RemoveUser(user.ID, user.RoomId)
 			}
 
@@ -168,9 +168,9 @@ func HandleWebSocket(c *gin.Context) {
 				fmt.Printf("Error: %s\n", err)
 			}
 
-			// ! remove a user from a room if connected
+			// ! TODO: remove a user from a room if connected
 			user, _ := memory.GetClient(types.UserID(userId))
-			if user != nil {
+			if len(user.RoomId) > 0 {
 				services.RemoveUser(user.ID, user.RoomId)
 			}
 
@@ -236,6 +236,8 @@ func HandleWebSocket(c *gin.Context) {
 				Msg:  reqData.Msg,
 				From: user.Username,
 			}
+
+			fmt.Println("sending message:", reqData.Msg)
 
 			// ! limit max text size
 			if len(reqData.Msg) > maxLenMsg {

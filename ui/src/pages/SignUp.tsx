@@ -3,7 +3,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema } from "@/validations/auth.schema";
 import { useNavigate, Link } from "react-router-dom";
-import { api } from "@lib/api";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ArrowRight, Eye, EyeOff } from "@lib/icons";
 import { useApiRequest } from "@/lib/query";
@@ -16,6 +15,7 @@ export const SignUp = () => {
     useState<boolean>(false);
   const navigate = useNavigate();
   const {
+    mutate: doSignup,
     data,
     error: doSignupError,
     isError,
@@ -35,7 +35,7 @@ export const SignUp = () => {
   const onSubmit = form.handleSubmit(async (data: any) => {
     const { email, username, password } = data;
 
-    await api.post(apiRoutes.signup, {
+    await doSignup({
       email,
       username,
       password,
@@ -49,7 +49,9 @@ export const SignUp = () => {
   }, [data]);
 
   useEffect(() => {
+    console.log("useEffect ~ data:", doSignupError);
     const data: any = doSignupError?.response?.data;
+
     if (!data) {
       setError("Something went wrong");
     } else {

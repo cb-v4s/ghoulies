@@ -1,3 +1,6 @@
+import { resources } from "@/components/room/resources";
+import { FacingDirection } from "@/types";
+
 export const capitalize = (s: string) => {
   const firstLetter = s[0].toUpperCase();
   return firstLetter + s.slice(1, s.length);
@@ -59,3 +62,6 @@ export const getRandomUsername = () => {
 
   return randomNames[Math.floor(Math.random() * randomNames.length)];
 };
+
+export const getImageResource = (fd: FacingDirection, imgKey: string) =>
+  resources.images[`${imgKey}.${fd}`].imgElem;

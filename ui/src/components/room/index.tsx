@@ -4,8 +4,7 @@ import { useSelector } from "react-redux";
 import { getRoomInfo, getUserId } from "@state/room.reducer";
 import { updatePosition } from "@components/wsHandler";
 import { RoomData } from "./roomData";
-import { debounce } from "@lib/misc";
-import { FacingDirection } from "../../types";
+import { debounce, getImageResource } from "@lib/misc";
 
 export const Room = () => {
   const [locations, setLocations] = useState<{ x: number; y: number }[]>([]);
@@ -109,9 +108,6 @@ export const Room = () => {
       );
     });
   };
-
-  const getImageResource = (fd: FacingDirection, imgKey: string) =>
-    resources.images[`${imgKey}.${fd}`].imgElem;
 
   const limit = (value: number, min: number, max: number) => {
     return Math.max(min, Math.min(value, max));

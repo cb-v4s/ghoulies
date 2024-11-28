@@ -3,9 +3,6 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
-      fontFamily: {
-        custom: ["Press Start 2P", "cursive"],
-      },
       screens: {
         'sm': '640px',
         'md': '768px',
@@ -38,9 +35,12 @@ export default {
         "100v": "100vh",
       },
       colors: {
-        "light-purple": "#8770c4",
-        "dark-purple": "#2b2542",
-        background: ""
+        console: {
+          100: "#AC97F3",
+          200: "#B096F9",
+          300: "#7d5edb"
+        },
+        "background": "#769ec1"
       },
     },
   },

@@ -28,30 +28,31 @@ func Authenticate(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.AbortWithStatus(http.StatusUnauthorized)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		c.Abort()
+		return
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
 		// * Validate token expiration
-		var userData = claims["sub"].(float64)
+		var userId = claims["sub"].(float64)
 		var currentTime = float64(time.Now().Unix())
 		var expDate = claims["exp"].(float64)
 
 		if currentTime > expDate {
-			c.AbortWithStatus(http.StatusUnauthorized)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token has expired"})
+			c.Abort()
+			return
 		}
 
 		// * Find user
 		var user models.User
-		result := db.DbCtx.Select("id, username, email").First(&user, userData)
+		result := db.DbCtx.Select("id, username, email").First(&user, userId)
 		if result.Error != nil {
-			fmt.Printf("Failed to get user from database")
-			c.AbortWithStatus(http.StatusUnauthorized)
-		}
-
-		if user.ID == 0 {
-			fmt.Printf("Failed to get user from database")
-			c.Status(http.StatusUnauthorized)
+			fmt.Printf("Failed to get user from database for userId: %v\n", userId)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+			c.Abort()
+			return
 		}
 
 		// * Attach user data to cookie
@@ -59,6 +60,7 @@ func Authenticate(c *gin.Context) {
 
 		c.Next()
 	} else {
-		c.AbortWithStatus(http.StatusUnauthorized)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		c.Abort()
 	}
 }
