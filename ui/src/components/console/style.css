@@ -1,7 +1,7 @@
 :root {
-  --pixel-bg: #b096f9; /* Inner background color */
+  --pixel-bg: theme("colors.console.100"); /* Inner background color */
   --pixel-border: black; /* Inner border color: */
-  --pixel-border-2: #7d5edb; /* Middle border color: */
+  --pixel-border-2: theme(colors.console.300); /* Middle border color: */
   --pixel-border-3: var(--pixel-border); /* Outer border color */
   --pixel: 0.125rem; /* Pixel size */
 }
@@ -82,8 +82,8 @@
 
 #pixel-button {
   border-radius: 10px;
-  border: 2px solid #7d5edb;
-  box-shadow: 3px 3px #7d5edb;
+  border: 2px solid theme("colors.console.300");
+  box-shadow: 3px 3px theme("colors.console.300");
 }
 
 #pixel-button:active {

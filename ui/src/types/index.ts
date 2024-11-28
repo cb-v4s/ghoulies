@@ -38,6 +38,7 @@ export type User = {
   RoomID: string;
   UserID: string;
   UserName: string;
+  IsTyping: boolean;
 };
 
 export type Message = {
@@ -48,7 +49,7 @@ export type Message = {
 };
 
 interface Room {
-  RoomId: string | null;
+  RoomId: string;
   Users: User[];
   Messages: Message[];
 }
@@ -58,4 +59,5 @@ export interface RoomState {
   roomInfo: Room;
   userId: string | null;
   username: string | null;
+  isTyping: boolean | null;
 }

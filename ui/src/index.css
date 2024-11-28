@@ -1,11 +1,9 @@
-/* styles/index.css */
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 @font-face {
   font-family: "inter";
   src: url("/fonts/Inter.ttf") format("truetype");
-  /* src: url("/fonts/Ticketing.ttf") format("truetype"); */
   font-weight: normal;
   font-style: normal;
 }
@@ -46,7 +44,7 @@ body {
       rgba(0, 0, 255, 0.06)
     );
   z-index: 2;
-  background-size: 100% 2px, 3px 100%;
+  background-size: 100% 3px, 3px 100%;
   pointer-events: none;
 }
 

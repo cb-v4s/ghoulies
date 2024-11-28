@@ -23,6 +23,7 @@ enum RequestEvents {
   CreateRoom = "newRoom",
   JoinRoom = "joinRoom",
   UpdatePosition = "updatePosition",
+  UpdateTyping = "updateTyping",
   BroadcastMessage = "broadcastMessage",
   LeaveRoom = "leaveRoom",
 }
@@ -119,6 +120,33 @@ interface UpdatePositionData {
   userId: string;
 }
 
+interface UpdateTyping {
+  roomId: string;
+  userId: string;
+  isTyping: boolean;
+}
+
+export const updateTyping = (
+  roomId: string,
+  userId: string,
+  isTyping: boolean
+) => {
+  const payload: {
+    Event: string;
+    Data: UpdateTyping;
+  } = {
+    Event: RequestEvents.UpdateTyping,
+    Data: {
+      roomId,
+      userId,
+      isTyping,
+    },
+  };
+
+  console.log("sentttt", payload);
+  ws.send(JSON.stringify(payload));
+};
+
 export const updatePosition = (
   roomId: string,
   userId: string,
@@ -153,6 +181,7 @@ export const WsHandler = () => {
 
       switch (event) {
         case ResponseEvents.UpdateScene:
+          console.log("data ================+>", data);
           dispatch(setRoomInfo(data));
 
           break;

@@ -23,6 +23,7 @@ func IsRoomFull(roomId types.RoomId) bool {
 }
 
 // Get the user index in the specified room
+// ! WTF REMOVE THIS
 func GetUserIdx(userId types.UserID, roomId types.RoomId) types.UserIdx {
 
 	room, exists := memory.GetRoom(roomId)
@@ -82,8 +83,31 @@ type NewRoomResponse struct {
 	Users  []types.User
 }
 
-func StopAI(room *types.Room) {
-	close(room.StopChan)
+func UpdateUserTyping(roomId types.RoomId, userId types.UserID, isTyping bool) {
+	roomData, exists := memory.GetRoom(roomId)
+
+	if !exists {
+		fmt.Printf("room not found")
+		return
+	}
+
+	userIdx := GetUserIdx(userId, roomId)
+	if userIdx == -1 {
+		fmt.Printf("user not found")
+		return
+	}
+
+	if roomData.Users[userIdx].IsTyping != isTyping {
+		roomData.Users[userIdx].IsTyping = isTyping
+		memory.UpdateRoom(roomId, roomData)
+
+		updateSceneData := types.UpdateScene{
+			RoomId: string(roomId),
+			Users:  roomData.Users,
+		}
+
+		memory.BroadcastRoom(roomId, "updateScene", updateSceneData)
+	}
 }
 
 func UpdateUserPosition(roomId types.RoomId, userId types.UserID, dest string) {
@@ -94,6 +118,7 @@ func UpdateUserPosition(roomId types.RoomId, userId types.UserID, dest string) {
 		return
 	}
 
+	// ! WTF XD
 	userIdx := GetUserIdx(types.UserID(userId), roomId)
 	if userIdx == -1 {
 		fmt.Printf("user not found")
@@ -105,6 +130,10 @@ func UpdateUserPosition(roomId types.RoomId, userId types.UserID, dest string) {
 
 	var destRow, destCol int
 	fmt.Sscanf(dest, "%d,%d", &destRow, &destCol)
+
+	if currentPos.Row == destRow && currentPos.Col == destCol {
+		return
+	}
 
 	facingDirection := util.GetUserFacingDir(currentPos, lib.Position{Row: destRow, Col: destCol})
 
@@ -153,6 +182,7 @@ func NewRoom(userId types.UserID, data types.NewRoom) (*NewRoomResponse, error) 
 		RoomID:    data.RoomName,
 		Position:  newPosition,
 		Direction: types.DefaultDirection,
+		IsTyping:  false,
 	}
 
 	roomData := types.RoomData{
@@ -211,6 +241,7 @@ func JoinRoom(userId types.UserID, data types.JoinRoom) (*JoinRoomResponse, erro
 		RoomID:    string(data.RoomId),
 		Position:  newPosition,
 		Direction: types.DefaultDirection,
+		IsTyping:  false,
 	}
 
 	fmt.Printf("Updating room: %s\n", data.RoomId)

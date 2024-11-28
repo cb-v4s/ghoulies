@@ -42,7 +42,7 @@ export const Lobby = () => {
             <span>You are here</span>
           ) : (
             <button
-              className="text-blue-500 hover:underline"
+              className="underline"
               onClick={(e) => hdlSelectRoom(e, roomId)}
             >
               Join Room
@@ -98,11 +98,11 @@ export const Lobby = () => {
 
   const sections = [
     {
-      title: "Public rooms",
+      title: "PUBLIC ROOMS",
       content: () => <PublicRooms />,
     },
     {
-      title: "Events",
+      title: "MY ROOMS",
       content: () => (
         <p className="text-slate-200">Looks like there is nothing here yet.</p>
       ),
@@ -110,7 +110,7 @@ export const Lobby = () => {
   ];
 
   return (
-    <div className="my-4">
+    <div className="pt-2 px-4">
       <Accordeon sections={sections} />
     </div>
   );

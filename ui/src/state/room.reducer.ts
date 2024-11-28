@@ -7,6 +7,7 @@ const initialState: RoomState = {
   userId: null,
   username: null,
   displayConsole: true,
+  isTyping: false,
   roomInfo: {
     RoomId: null,
     Users: [],
@@ -20,6 +21,9 @@ export const roomSlice = createSlice({
   reducers: {
     switchConsoleState: (state) => {
       state.displayConsole = !state.displayConsole;
+    },
+    setIsTyping: (state, action: PayloadAction<boolean>) => {
+      state.isTyping = action.payload;
     },
     setRoomInfo: (
       state,
@@ -95,6 +99,7 @@ export const {
   setUsername,
   cleanMessages,
   setDefaultState,
+  setIsTyping,
 } = roomSlice.actions;
 
 export const getConsoleState = (state: RootState) => state.room.displayConsole;
@@ -102,5 +107,6 @@ export const getRoomInfo = (state: RootState) => state.room.roomInfo;
 export const getUserId = (state: RootState) => state.room.userId;
 export const getUsername = (state: RootState) => state.room.username;
 export const getMessages = (state: RootState) => state.room.roomInfo.Messages;
+export const getIsTyping = (state: RootState) => state.room.isTyping;
 
 export default roomSlice.reducer;

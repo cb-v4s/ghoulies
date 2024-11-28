@@ -251,6 +251,7 @@ func HandleWebSocket(c *gin.Context) {
 
 			memory.BroadcastRoom(reqData.RoomId, "broadcastMessage", payload)
 
+		// TODO: solo recibir jwtJoken, de ahi obtienes el userId y roomId
 		case "updatePosition":
 			var reqData types.UpdateUserPos
 			err := util.ParsePayload(payload.Data, &reqData)
@@ -260,6 +261,17 @@ func HandleWebSocket(c *gin.Context) {
 			}
 
 			services.UpdateUserPosition(reqData.RoomId, types.UserID(reqData.UserId), reqData.Dest)
+
+		case "updateTyping":
+			var reqData types.UpdateUserTyping
+			err := util.ParsePayload(payload.Data, &reqData)
+			if err != nil {
+				fmt.Printf("Error: %s", err)
+				continue
+			}
+
+			fmt.Printf("updating typing ... %v\n", reqData)
+			services.UpdateUserTyping(types.RoomId(reqData.RoomId), types.UserID(reqData.UserId), reqData.IsTyping)
 
 		case "leaveRoom":
 			var reqData types.UserLeave

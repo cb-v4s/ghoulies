@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { resources } from "./resources";
 import { useSelector } from "react-redux";
-import { getRoomInfo, getUserId } from "@state/room.reducer";
+import { getRoomInfo, getUserId, getIsTyping } from "@state/room.reducer";
 import { updatePosition } from "@components/wsHandler";
 import { RoomData } from "./roomData";
 import { debounce, getImageResource } from "@lib/misc";
@@ -94,18 +94,19 @@ export const Room = () => {
       }
     }
 
-    roomInfo.Users.forEach(({ Position, Direction, UserName }) => {
-      drawCharacterAt(
+    roomInfo.Users.forEach(({ Position, Direction, UserName, IsTyping }) => {
+      drawCharacterAt({
         ctx,
-        getImageResource(Direction, "ghost"),
-        Position.Row - 1,
-        Position.Col - 1,
-        blockWidth + 90,
-        blockHeight + 20,
-        45,
-        0,
-        UserName
-      );
+        img: getImageResource(Direction, "ghost"),
+        x: Position.Row - 1,
+        y: Position.Col - 1,
+        blockWidth: blockWidth + 90,
+        blockHeight: blockHeight + 20,
+        XPosPadding: 45,
+        YPosPadding: 0,
+        username: UserName,
+        isTyping: IsTyping,
+      });
     });
   };
 
@@ -165,18 +166,29 @@ export const Room = () => {
     return { x: screenX, y: screenY };
   };
 
-  const drawCharacterAt = (
-    ctx: any,
-    img: HTMLImageElement,
-    x: number,
-    y: number,
-    blockWidth: number,
-    blockHeight: number,
-    // * for some resources where dimensions are differente
-    XPosPadding: number,
-    YPosPadding: number,
-    username: string | null = null
-  ) => {
+  const drawCharacterAt = ({
+    ctx,
+    img,
+    x,
+    y,
+    blockWidth,
+    blockHeight,
+    XPosPadding,
+    YPosPadding,
+    username = null,
+    isTyping = false,
+  }: {
+    ctx: CanvasRenderingContext2D;
+    img: HTMLImageElement;
+    x: number;
+    y: number;
+    blockWidth: number;
+    blockHeight: number;
+    XPosPadding: number;
+    YPosPadding: number;
+    username: string | null;
+    isTyping: boolean;
+  }) => {
     if (!ctx) return;
 
     const characterX = x;
@@ -204,6 +216,21 @@ export const Room = () => {
       blockWidth,
       blockHeight
     );
+
+    if (isTyping) {
+      const imgResource = resources.images.chatBubble.imgElem;
+      ctx.drawImage(
+        imgResource,
+        srcX,
+        srcY,
+        imgResource.width,
+        imgResource.height,
+        destX + 45,
+        destY - 12,
+        45,
+        36
+      );
+    }
 
     if (username) {
       ctx.font = "600 14px arial";

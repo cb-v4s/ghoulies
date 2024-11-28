@@ -34,6 +34,7 @@ type User struct {
 	RoomID    string
 	Position  lib.Position
 	Direction FacingDirection
+	IsTyping  bool
 }
 
 type Client struct {
@@ -78,6 +79,12 @@ type UpdateUserPos struct {
 	UserId string `json:"userId"`
 	Dest   string `json:"dest"`   // "row,col" => e.g. "3,4", "1,3", ...
 	RoomId RoomId `json:"roomId"` // ! TODO: remove this RoomName for security
+}
+
+type UpdateUserTyping struct {
+	UserId   string `json:"userId"`
+	RoomId   string `json:"roomId"`
+	IsTyping bool   `json:"isTyping"`
 }
 
 type UpdateUserFacingDir struct {

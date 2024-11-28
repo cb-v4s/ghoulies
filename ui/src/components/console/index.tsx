@@ -17,7 +17,7 @@ export const Console = () => {
   const opts: { [key: string]: () => ReactNode } = {
     Lobby: () => <Lobby />,
     Studio: () => <RoomStudio />,
-    Friends: () => <Account />,
+    Account: () => <Account />,
   };
   const optKeys = Object.keys(opts);
 
@@ -54,7 +54,7 @@ export const Console = () => {
           </span>
         </div>
         <button
-          className="absolute top-0 right-2 outline-none focus:outline-none bg-console-dark1"
+          className="absolute top-0 right-2 outline-none focus:outline-none bg-console-200"
           onClick={hdlCloseConsole}
         >
           <X className="w-5 h-5 text-slate-300 hover:text-slate-100 transition duration-150 font-bold" />

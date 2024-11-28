@@ -48,8 +48,8 @@ export const RoomStudio = () => {
 
   return (
     <div className="pt-4 px-4">
-      <h2 className="text-md font-semibold text-slate-200 lext-left mt-2 mb-6">
-        Create a new room
+      <h2 className="text-md font-semibold text-slate-200 lext-left mt-2 mb-6 uppercase">
+        new room
       </h2>
       <form onSubmit={handleSubmit}>
         <div className="space-y-2">
@@ -63,7 +63,7 @@ export const RoomStudio = () => {
               </label>
 
               <input
-                className="w-[70%] rounded-sm border-2 border-slate-800 outline-none focus:outline-none bg-transparent text-slate-200 px-4 py-2"
+                className="w-[70%] rounded-sm border-2 border-slate-200 outline-none focus:outline-none bg-transparent text-slate-200 px-4 py-2"
                 name="roomName"
                 value={formData.roomName}
                 onChange={updateFormData}
@@ -80,7 +80,7 @@ export const RoomStudio = () => {
               </label>
 
               <input
-                className="w-[70%] rounded-sm border-2 border-slate-800 outline-none focus:outline-none bg-transparent text-slate-200 px-4 py-2"
+                className="w-[70%] rounded-sm border-2 border-slate-200 outline-none focus:outline-none bg-transparent text-slate-200 px-4 py-2"
                 name="userName"
                 value={formData.userName}
                 onChange={updateFormData}
@@ -90,18 +90,18 @@ export const RoomStudio = () => {
             </div>
           </div>
 
-          <div className="pt-2 pb-4 flex flex-row items-center justify-center border-t-2 border-slate-800">
+          <div className="pt-2 pb-4 flex flex-row items-center justify-center border-t-2 border-slate-200">
             <div className="text-sm text-slate-300">
               <span>Learn about </span>
-              <span className="border-b border-blue-500">
-                <a className="text-blue-500 inline-block select-none">
+              <span className="border-b underline">
+                <a className="inline-block select-none">
                   Conduct guidelines
                   <SquareArrowOutUpRight className="inline-block w-4 h-4 ml-1 mt-[-3px]" />
                 </a>
               </span>
             </div>
             <button
-              className="bg-slate-800 text-slate-200 px-4 py-1 block ml-auto outline-none focus:outline-none"
+              className="text-slate-200 px-4 py-1 block ml-auto outline-none focus:outline-none underline"
               type="submit"
             >
               Join room

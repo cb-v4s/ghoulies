@@ -1,10 +1,17 @@
-import React, { useRef, useState } from "react";
-import { broadcastMessage } from "./wsHandler";
-import { useSelector } from "react-redux";
-import { getRoomInfo, getUserId } from "@state/room.reducer";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { broadcastMessage, updateTyping } from "./wsHandler";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  getIsTyping,
+  getRoomInfo,
+  getUserId,
+  setIsTyping,
+} from "@state/room.reducer";
 import { SendHorizontal } from "@lib/icons";
+import { debounce } from "@/lib/misc";
 
 export const Chat: React.FC<any> = () => {
+  const dispatch = useDispatch();
   const inputChatMessage = useRef<any>();
   const [targetUserId, _] = useState<string | null>(null);
   const [message, setMessage] = useState<string>("");
@@ -33,6 +40,25 @@ export const Chat: React.FC<any> = () => {
       }
     }
   };
+
+  const updateTypingDebounce = useCallback(
+    debounce((roomId: string, userId: string, state: boolean) => {
+      if (!roomInfo.RoomId || !userId) return;
+
+      updateTyping(roomId, userId, state);
+    }, 600),
+    []
+  );
+
+  useEffect(() => {
+    if (message.length) {
+      dispatch(setIsTyping(true));
+      updateTypingDebounce(roomInfo.RoomId as string, userId as string, true);
+    } else {
+      dispatch(setIsTyping(false));
+      updateTypingDebounce(roomInfo.RoomId as string, userId as string, false);
+    }
+  }, [message]);
 
   return (
     <div className="w-4/5 bg-transparent text-md">

@@ -12,6 +12,7 @@ export class Resources {
   constructor() {
     this.imgSrcList = {
       tileMap: "/sprites/tilemap.png",
+      chatBubble: "/chatBubble.png",
 
       ghost: {
         [FacingDirection.frontLeft]: "/sprites/ghost/frontLeft.png",
