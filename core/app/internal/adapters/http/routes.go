@@ -1,9 +1,9 @@
 package routes
 
 import (
-	"core/internal/middleware"
-	"core/internal/server/controllers"
-	"core/internal/ws"
+	"core/internal/adapters/http/controllers"
+	"core/internal/adapters/http/middleware"
+	"core/internal/adapters/ws"
 
 	"github.com/gin-gonic/gin"
 

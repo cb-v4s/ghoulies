@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"core/config"
-	db "core/internal/database"
-	"core/internal/database/models"
+	db "core/internal/adapters/database"
+	"core/internal/adapters/database/models"
 	"fmt"
 	"net/http"
 	"time"

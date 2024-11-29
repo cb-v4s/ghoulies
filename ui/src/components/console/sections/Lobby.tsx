@@ -10,8 +10,10 @@ import {
   setDefaultState,
   getUserId,
   switchConsoleState,
+  setEmptyChatbox,
 } from "@/state/room.reducer";
 import { getRandomUsername } from "@/lib/misc";
+import { Users as UsersIcon } from "@/lib/icons";
 
 export const Lobby = () => {
   const dispatch = useDispatch();
@@ -26,7 +28,7 @@ export const Lobby = () => {
 
   const Rows = () => {
     return rooms.map(({ roomId, roomName, totalConns }, idx: number) => (
-      <tr className="text-slate-200" key={idx}>
+      <tr className="text-slate-200 odd:bg-sky-900" key={idx}>
         <td className="select-none">
           {roomName.length < 34 ? (
             <span>{roomName}</span>
@@ -34,7 +36,8 @@ export const Lobby = () => {
             <span>{roomName.slice(0, 31) + "..."}</span>
           )}
         </td>
-        <td className="text-right">
+        <td className="text-right flex items-center justify-center">
+          <UsersIcon className="w-4 h-4 text-slate-300 mr-1" />
           <span>{totalConns}/50</span>
         </td>
         <td className="text-right">
@@ -75,6 +78,7 @@ export const Lobby = () => {
 
       dispatch(switchConsoleState());
       dispatch(setUsername({ username: username }));
+      dispatch(setEmptyChatbox());
     } catch (err) {
       console.error("couldn't join room", err);
     }
@@ -90,8 +94,8 @@ export const Lobby = () => {
 
   const PublicRooms = () => {
     return (
-      <table className="table-auto w-full border-separate border-spacing-y-3">
-        <tbody>{rooms.length ? <Rows /> : null}</tbody>
+      <table className="table-auto w-full border-separate border-spacing-y-2">
+        <tbody>{rooms.length && <Rows />}</tbody>
       </table>
     );
   };

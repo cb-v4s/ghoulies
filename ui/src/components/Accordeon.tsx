@@ -34,14 +34,14 @@ export const Accordeon = ({ sections }: { sections: Section[] }) => {
   };
 
   return (
-    <div id="accordion-collapse" data-accordion="collapse">
+    <div className="mt-3" id="accordion-collapse" data-accordion="collapse">
       {sections && sections.length
         ? sections.map(({ title, content }, idx: number) => (
             <div key={idx}>
               <h2 id="accordion-collapse-heading-1">
                 <button
                   type="button"
-                  className="flex items-center justify-between w-full py-3 font-medium rtl:text-right text-slate-200 hover:text-slate-300 focus:ring-none outline-none focus:outline-none gap-3 border-b-2 border-slate-300"
+                  className="flex items-center justify-between w-full py-1 font-medium rtl:text-right text-sky-700 hover:text-slate-300 focus:ring-none outline-none focus:outline-none gap-3 border-b-2 border-sky-900"
                   data-accordion-target={`#accordion-collapse-body-${idx}`}
                   aria-expanded={idx === expandedIndex}
                   aria-controls={`accordion-collapse-body-${idx}`}

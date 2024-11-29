@@ -5,4 +5,5 @@ export {
   X,
   SquareArrowOutUpRight,
   SendHorizontal,
+  Users,
 } from "lucide-react";

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { resources } from "./resources";
 import { useSelector } from "react-redux";
-import { getRoomInfo, getUserId, getIsTyping } from "@state/room.reducer";
+import { getRoomInfo, getUserId } from "@state/room.reducer";
 import { updatePosition } from "@components/wsHandler";
 import { RoomData } from "./roomData";
 import { debounce, getImageResource } from "@lib/misc";

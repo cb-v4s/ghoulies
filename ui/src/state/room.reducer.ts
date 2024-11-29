@@ -78,6 +78,9 @@ export const roomSlice = createSlice({
 
       state.roomInfo.Messages = updatedMessages;
     },
+    setEmptyChatbox: (state) => {
+      state.roomInfo.Messages = [];
+    },
     setDefaultState: (state) => {
       state.userId = null;
       state.username = null;
@@ -100,6 +103,7 @@ export const {
   cleanMessages,
   setDefaultState,
   setIsTyping,
+  setEmptyChatbox,
 } = roomSlice.actions;
 
 export const getConsoleState = (state: RootState) => state.room.displayConsole;

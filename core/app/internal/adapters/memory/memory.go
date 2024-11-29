@@ -172,7 +172,7 @@ func DeleteClient(clientID types.UserID) error {
 	return nil
 }
 
-func UpdateUser(clientID types.UserID, data map[string]string) error {
+func UpdateUser(clientID types.UserID, updateData *types.UpdateUser) error {
 	ctx, cancelCtx := NewContextWithTimeout(10 * time.Second)
 	defer cancelCtx()
 
@@ -191,12 +191,12 @@ func UpdateUser(clientID types.UserID, data map[string]string) error {
 		ID: client.ID,
 	}
 
-	if roomId, ok := data["roomId"]; ok {
-		newClientData.RoomId = types.RoomId(roomId)
+	if updateData.RoomId != nil {
+		newClientData.RoomId = types.RoomId(*updateData.RoomId)
 	}
 
-	if userName, ok := data["userName"]; ok {
-		newClientData.Username = userName
+	if updateData.UserName != nil {
+		newClientData.Username = *updateData.UserName
 	}
 
 	// Marshal the updated client data back to JSON

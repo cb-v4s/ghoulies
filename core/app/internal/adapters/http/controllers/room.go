@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"core/internal/memory"
+	"core/internal/adapters/memory"
 	"fmt"
 	"net/http"
 

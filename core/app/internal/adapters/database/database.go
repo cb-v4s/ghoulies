@@ -2,7 +2,7 @@ package db
 
 import (
 	"core/config"
-	"core/internal/database/models"
+	"core/internal/adapters/database/models"
 	"fmt"
 
 	"gorm.io/driver/postgres"

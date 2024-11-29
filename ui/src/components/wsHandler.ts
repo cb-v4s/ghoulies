@@ -48,6 +48,7 @@ interface BroadcastMessageData {
 export interface NewRoomData {
   roomName: string;
   userName: string;
+  password: string;
 }
 
 export interface LeaveRoomData {

@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema } from "@/validations/auth.schema";
 import { useNavigate, Link } from "react-router-dom";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { LoadingSpinner } from "@/components/icons/LoadingSpinner";
 import { ArrowRight, Eye, EyeOff } from "@lib/icons";
 import { useApiRequest } from "@/lib/query";
 import { apiRoutes } from "@/siteConfig";
@@ -45,7 +45,7 @@ export const SignUp = () => {
   useEffect(() => {
     if (!data) return;
 
-    navigate("/");
+    navigate("/login");
   }, [data]);
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export const SignUp = () => {
 
         <form onSubmit={onSubmit}>
           <input
-            className="mt-2 flex w-full items-center justify-center rounded-xl border-2 border-gray-100 bg-secondary px-4 py-2 text-muted-foreground outline-none focus-within:border-gray-200 focus-within:bg-white hover:border-gray-200 dark:border-secondary dark:bg-background dark:focus-within:bg-secondary"
+            className="mt-2 flex w-full items-center justify-center rounded-xl border-2 border-gray-100 bg-secondary px-4 py-2 text-muted-foreground outline-none focus-within:border-gray-200 focus-within:bg-white hover:border-gray-200 dark:border-secondary dark:focus-within:bg-secondary"
             type="text"
             title="Email"
             placeholder="Email"
@@ -95,7 +95,7 @@ export const SignUp = () => {
           )}
 
           <input
-            className="mt-2 flex w-full items-center justify-center rounded-xl border-2 border-gray-100 bg-secondary px-4 py-2 text-muted-foreground outline-none focus-within:border-gray-200 focus-within:bg-white hover:border-gray-200 dark:border-secondary dark:bg-background dark:focus-within:bg-secondary"
+            className="mt-2 flex w-full items-center justify-center rounded-xl border-2 border-gray-100 bg-secondary px-4 py-2 text-muted-foreground outline-none focus-within:border-gray-200 focus-within:bg-white hover:border-gray-200 dark:border-secondary dark:focus-within:bg-secondary"
             type="text"
             title="Username"
             placeholder="Username"
@@ -109,7 +109,7 @@ export const SignUp = () => {
             </div>
           )}
 
-          <div className="mt-2 flex w-full items-center justify-center rounded-xl border-2 border-gray-100 bg-secondary px-4 py-2 text-muted-foreground outline-none focus-within:border-gray-200 focus-within:bg-white hover:border-gray-200 dark:border-secondary dark:bg-background dark:focus-within:bg-secondary">
+          <div className="mt-2 flex w-full items-center justify-center rounded-xl border-2 border-gray-100 bg-secondary px-4 py-2 text-muted-foreground outline-none focus-within:border-gray-200 focus-within:bg-white hover:border-gray-200 dark:border-secondary dark:focus-within:bg-secondary">
             <input
               type={displayPassword ? "text" : "password"}
               spellCheck={false}
@@ -140,7 +140,7 @@ export const SignUp = () => {
             </div>
           )}
 
-          <div className="mt-2 flex w-full items-center justify-center rounded-xl border-2 border-gray-100 bg-secondary px-4 py-2 text-muted-foreground outline-none focus-within:border-gray-200 focus-within:bg-white hover:border-gray-200 dark:border-secondary dark:bg-background dark:focus-within:bg-secondary">
+          <div className="mt-2 flex w-full items-center justify-center rounded-xl border-2 border-gray-100 bg-secondary px-4 py-2 text-muted-foreground outline-none focus-within:border-gray-200 focus-within:bg-white hover:border-gray-200 dark:border-secondary dark:focus-within:bg-secondary">
             <input
               type={displayConfirmPassword ? "text" : "password"}
               spellCheck={false}
@@ -173,7 +173,7 @@ export const SignUp = () => {
 
           <button
             type="submit"
-            className="bg-sky-400 hover:bg-sky-500 flex w-full items-center justify-center rounded-xl px-4 py-2 font-semibold text-white dark:bg-background dark:text-primary dark:hover:bg-card mt-4"
+            className="bg-sky-400 hover:bg-sky-500 flex w-full items-center justify-center rounded-xl px-4 py-2 font-semibold text-white dark:text-primary dark:hover:bg-card mt-4"
           >
             <span className="mr-2 text-lg font-semibold">Continue</span>
             {isPending ? <LoadingSpinner size={3} /> : <ArrowRight size={20} />}

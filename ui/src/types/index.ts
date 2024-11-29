@@ -49,7 +49,7 @@ export type Message = {
 };
 
 interface Room {
-  RoomId: string;
+  RoomId: string | null;
   Users: User[];
   Messages: Message[];
 }

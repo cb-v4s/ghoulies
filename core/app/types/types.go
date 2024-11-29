@@ -1,7 +1,6 @@
 package types
 
 import (
-	"core/internal/lib"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -32,7 +31,7 @@ type User struct {
 	UserName  string
 	UserID    UserID
 	RoomID    string
-	Position  lib.Position
+	Position  Position
 	Direction FacingDirection
 	IsTyping  bool
 }
@@ -75,6 +74,11 @@ type RoomData struct {
 	UserIdxMap     map[UserID]UserIdx
 }
 
+type UpdateUser struct {
+	RoomId   *string
+	UserName *string
+}
+
 type UpdateUserPos struct {
 	UserId string `json:"userId"`
 	Dest   string `json:"dest"`   // "row,col" => e.g. "3,4", "1,3", ...
@@ -102,8 +106,9 @@ type JoinRoom struct {
 }
 
 type WsPayload struct {
-	Event string      `json:"event"`
-	Data  interface{} `json:"data"`
+	Event         string      `json:"Event"`
+	Authorization string      `json:"Authorization"`
+	Data          interface{} `json:"Data"`
 }
 
 type Msg struct {
@@ -121,4 +126,12 @@ type PopularRoomList struct {
 	RoomId     RoomId `json:"roomId"`
 	RoomName   string `json:"roomName"`
 	TotalConns int    `json:"totalConns"`
+}
+
+type ApiResponse map[string]any
+
+func ApiError(message any) ApiResponse {
+	return ApiResponse{
+		"error": message,
+	}
 }

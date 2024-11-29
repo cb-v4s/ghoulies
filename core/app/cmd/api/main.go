@@ -2,9 +2,9 @@ package main
 
 import (
 	"core/config"
-	db "core/internal/database"
-	"core/internal/memory"
-	"core/internal/routes"
+	db "core/internal/adapters/database"
+	routes "core/internal/adapters/http"
+	"core/internal/adapters/memory"
 	"fmt"
 	"log"
 	"strings"

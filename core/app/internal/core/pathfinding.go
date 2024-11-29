@@ -1,15 +1,11 @@
-package lib
+package core
 
 import (
+	"core/types"
 	"fmt"
 	"math"
 	"sort"
 )
-
-type Position struct {
-	Row int
-	Col int
-}
 
 type Cell struct {
 	Row     int
@@ -25,18 +21,18 @@ func calculateManhattanDistance(rowA, colA, rowB, colB int) int {
 	return int(math.Abs(float64(rowA-rowB))) + int(math.Abs(float64(colA-colB)))
 }
 
-func isValidCell(row, col, numRows, numCols int, invalidPositions map[Position]struct{}) bool {
+func isValidCell(row, col, numRows, numCols int, invalidPositions map[types.Position]struct{}) bool {
 	if row < 0 || row >= numRows || col < 0 || col >= numCols {
 		return false // Out of bounds
 	}
 
-	pos := Position{Row: row, Col: col}
+	pos := types.Position{Row: row, Col: col}
 	_, exists := invalidPositions[pos]
 	return !exists
 }
 
-func getNeighbors(cell *Cell, cells [][]Cell, invalidPositions map[Position]struct{}) []*Cell {
-	directions := []Position{
+func getNeighbors(cell *Cell, cells [][]Cell, invalidPositions map[types.Position]struct{}) []*Cell {
+	directions := []types.Position{
 		{-1, 0},  // Top
 		{1, 0},   // Bottom
 		{0, -1},  // Left
@@ -60,19 +56,19 @@ func getNeighbors(cell *Cell, cells [][]Cell, invalidPositions map[Position]stru
 	return neighbors
 }
 
-func calculatePath(endCell *Cell) []Position {
-	path := []Position{}
+func calculatePath(endCell *Cell) []types.Position {
+	path := []types.Position{}
 	currentCell := endCell
 
 	for currentCell != nil {
-		path = append([]Position{{currentCell.Row, currentCell.Col}}, path...)
+		path = append([]types.Position{{currentCell.Row, currentCell.Col}}, path...)
 		currentCell = currentCell.Parent
 	}
 
 	return path
 }
 
-func FindPath(startRow, startCol, endRow, endCol, gridSize int, invalidPositions []string) []Position {
+func FindPath(startRow, startCol, endRow, endCol, gridSize int, invalidPositions []string) []types.Position {
 	numRows := gridSize
 	numCols := gridSize
 
@@ -94,11 +90,11 @@ func FindPath(startRow, startCol, endRow, endCol, gridSize int, invalidPositions
 	}
 
 	// Create a map for invalid positions
-	invalidPosMap := make(map[Position]struct{})
+	invalidPosMap := make(map[types.Position]struct{})
 	for _, pos := range invalidPositions {
 		var row, col int
 		fmt.Sscanf(pos, "%d,%d", &row, &col)
-		invalidPosMap[Position{
+		invalidPosMap[types.Position{
 			Row: row,
 			Col: col,
 		}] = struct{}{}
