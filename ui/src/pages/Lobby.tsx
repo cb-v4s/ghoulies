@@ -9,6 +9,7 @@ import {
 } from "@state/room.reducer";
 import { Chatbox } from "@components/chatbox";
 import useInterval from "@hooks/useInterval.tsx";
+import MainLayout from "@/layouts/Main";
 
 const Lobby = () => {
   const dispatch = useDispatch();
@@ -20,14 +21,14 @@ const Lobby = () => {
   }, 1000);
 
   return (
-    <>
+    <MainLayout>
       {displayConsole && <Console />}
       <div className="relative w-full h-full">
         <Chatbox messages={messages} />
         <Room />
         <Controls />
       </div>
-    </>
+    </MainLayout>
   );
 };
 
