@@ -2,7 +2,7 @@ package services
 
 import (
 	"core/internal/adapters/memory"
-	lib "core/internal/core"
+	"core/internal/core"
 	util "core/internal/utils"
 	types "core/types"
 	"encoding/json"
@@ -204,7 +204,7 @@ func UpdateUserPosition(roomId types.RoomId, userId types.UserID, dest string) {
 
 	invalidPositions := room.UsersPositions
 
-	path := lib.FindPath(currentPos.Row, currentPos.Col, destRow, destCol, GridSize, invalidPositions)
+	path := core.FindPath(currentPos.Row, currentPos.Col, destRow, destCol, GridSize, invalidPositions)
 
 	if len(path) == 0 {
 		return
@@ -362,7 +362,7 @@ func BroadcastMessage(reqData types.Msg, messageClient *types.MessageClient, use
 	}
 
 	// ! filter bad words
-	// filter := lib.TextFilter()
+	// filter := core.TextFilter()
 	// cleanMsg := filter.CleanText(payload.Msg)
 	// payload.Msg = cleanMsg
 

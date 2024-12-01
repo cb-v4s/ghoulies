@@ -1,13 +1,4 @@
-/* Usage:
-
-filter := TextFilter()
-text := "This is a test with \"f u c k f.uc.k f-u-c-k fUCK Fuck\" and sh!t s h 1 t."
-cleanedText := filter.cleanText(text)
-fmt.Println("Cleaned text:", cleanedText) // Expected output: **** **** **** **** ****" and **** ****
-
-*/
-
-package lib
+package core
 
 import (
 	"regexp"
@@ -15,16 +6,28 @@ import (
 )
 
 type TextContentFilter struct {
-	cussWords       []string
+	words           []string
 	evasionPatterns []struct {
 		pattern     *regexp.Regexp
 		replacement string
 	}
 }
 
-func TextFilter() *TextContentFilter {
+func TextFilter(words []string) *TextContentFilter {
+	// * this is how you pass words
+	// words := []string{}
+	// utils.ReadFileLines("./lang/en.txt", func(encodedStr string) {
+	// 	plainStr, err := base64.StdEncoding.DecodeString(encodedStr)
+	// 	if err != nil {
+	// 		fmt.Printf("failed to decode string", err)
+	// 		return
+	// 	}
+
+	// 	words = append(words, plainStr)
+	// })
+
 	return &TextContentFilter{
-		cussWords: []string{"fuck", "shit"}, // TODO: add es, en
+		words: words,
 		evasionPatterns: []struct {
 			pattern     *regexp.Regexp
 			replacement string
@@ -63,7 +66,7 @@ func (filter *TextContentFilter) CleanText(text string) string {
 	cleanedText = strings.ReplaceAll(cleanedText, ";", "")
 
 	// Handle spaces between letters
-	for _, cussWord := range filter.cussWords {
+	for _, cussWord := range filter.words {
 		wordRegexStr := strings.Join(strings.Split(cussWord, ""), "\\s*")
 		wordRegex := regexp.MustCompile(wordRegexStr)
 

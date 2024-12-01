@@ -2,8 +2,7 @@ package middleware
 
 import (
 	"core/config"
-	db "core/internal/adapters/database"
-	"core/internal/adapters/database/models"
+	repositories "core/internal/ports"
 	"fmt"
 	"net/http"
 	"time"
@@ -12,7 +11,17 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func Authenticate(c *gin.Context) {
+type AuthMiddleware struct {
+	userRepo *repositories.UserRepoContext
+}
+
+func NewAuthMiddleware(userRepo *repositories.UserRepoContext) *AuthMiddleware {
+	return &AuthMiddleware{
+		userRepo: userRepo,
+	}
+}
+
+func (ctx *AuthMiddleware) Authenticate(c *gin.Context) {
 	tokenString := c.Request.Header.Get("Authorization")
 
 	if tokenString == "" {
@@ -46,9 +55,8 @@ func Authenticate(c *gin.Context) {
 		}
 
 		// * Find user
-		var user models.User
-		result := db.DbCtx.Select("id, username, email").First(&user, userId)
-		if result.Error != nil {
+		user, err := ctx.userRepo.GetById(userId)
+		if err != nil {
 			fmt.Printf("Failed to get user from database for userId: %v\n", userId)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 			c.Abort()

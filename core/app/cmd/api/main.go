@@ -4,62 +4,63 @@ import (
 	"core/config"
 	db "core/internal/adapters/database"
 	routes "core/internal/adapters/http"
+	"core/internal/adapters/http/controllers"
+	"core/internal/adapters/http/middleware"
 	"core/internal/adapters/memory"
+	"core/internal/core/services"
+	ports "core/internal/ports"
 	"fmt"
 	"log"
-	"strings"
 
-	"github.com/gin-contrib/cors"
 	gin "github.com/gin-gonic/gin"
 
 	godotenv "github.com/joho/godotenv"
 )
 
-type UserData struct {
-	RoomName string `json:"roomName"`
-	UserName string `json:"userName"`
-	AvatarId int    `json:"avatarId"`
-}
-
 func main() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatalf("Something went wrong trying to load .env file: %s", err)
+	if err := godotenv.Load(".env"); err != nil {
+		log.Fatalf("Failed to load .env file: %v", err)
 	}
 
-	fmt.Printf("App mode: %s\n", config.GinMode)
+	db, err := db.New()
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v\n", err)
+		return
+	}
 
-	db.New()
-	memory.New()
+	if err := memory.New(); err != nil {
+		log.Fatalf("Failed to initialize redis: %v\n", err)
+		return
+	}
 
 	gin.SetMode(config.GinMode)
-	r := gin.New()
-
-	// TODO: mover toda la conf de cors, creacion de servidor a otro lugar
-	corsCfg := cors.DefaultConfig()
-
-	if config.GinMode == gin.DebugMode {
-		corsCfg.AllowOrigins = []string{"*"}
-	} else {
-		allowedOrigins := strings.Split(config.AllowOrigins, ",")
-
-		for _, origin := range allowedOrigins {
-			fmt.Printf("Allowed origin: %s\n", origin)
-		}
-
-		corsCfg.AllowOrigins = allowedOrigins
+	server := gin.New()
+	globalMiddlewares := []gin.HandlerFunc{
+		config.SetupCors(),
 	}
 
-	corsCfg.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Content-Security-Policy", "Access-Control-Allow-Origin"}
-	corsCfg.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
-	corsCfg.AllowCredentials = true
+	// * initialize ports/repositories
+	repos, err := ports.InitializeRepositories(db)
+	if err != nil {
+		log.Fatalf("Failed to initialize dependencies")
+	}
 
-	r.Use(cors.New(corsCfg))
+	// * initialize services
+	userService := services.NewUserService(&repos.User)
 
-	routes.SetupRoutes(r)
+	// * initialize controllers
+	userController := controllers.NewUserController(userService)
 
-	if err := r.Run(":" + config.PORT); err != nil {
+	// * initialize middlewares
+	authMiddleware := middleware.NewAuthMiddleware(&repos.User)
+
+	server.Use(globalMiddlewares...)
+	routes.SetupRoutes(server, userController, authMiddleware.Authenticate)
+
+	if err := server.Run(":" + config.PORT); err != nil {
 		log.Fatal("Failed to serve", err)
 		return
 	}
+
+	fmt.Printf("Server mode: %s\n", config.GinMode)
 }

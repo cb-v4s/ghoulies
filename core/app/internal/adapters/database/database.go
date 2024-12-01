@@ -9,26 +9,31 @@ import (
 	"gorm.io/gorm"
 )
 
-var DbCtx *gorm.DB
-
-func New() {
+func New() (*gorm.DB, error) {
 	var err error
 	sslMode := "disable"
-	if config.Database.SSL {
+	if config.Database.UseSSL {
 		sslMode = "require"
 	}
 
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s", config.Database.Host, config.Database.User, config.Database.Password, config.Database.Database, config.Database.Port, sslMode)
 
-	DbCtx, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	dbCtx, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		fmt.Printf("Something went wrong trying to established a db connection: %v", err)
-		return
+		return nil, fmt.Errorf("something went wrong trying to established a db connection: %v", err)
 	}
 
 	fmt.Printf("Database connection established sslmode=%s\n", sslMode)
 
-	// sync database models
-	DbCtx.AutoMigrate(&models.User{})
+	dbModels := []interface{}{&models.User{}}
 
+	fmt.Printf("Auto-migrating database models")
+
+	if err := dbCtx.AutoMigrate(dbModels...); err != nil {
+		return nil, fmt.Errorf("failed to auto-migrate models")
+	}
+
+	fmt.Printf("Auto-migrate database models success")
+
+	return dbCtx, nil
 }

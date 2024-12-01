@@ -9,6 +9,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type UserController struct {
+	User *services.UserService
+	// ... add more if needed
+}
+
+func NewUserController(userService *services.UserService) *UserController {
+	return &UserController{
+		User: userService,
+	}
+}
+
 type SignupSuccessResponse struct {
 	Success bool `json:"success" example:"true"`
 }
@@ -49,7 +60,7 @@ type RefreshTokenErrorResponse struct {
 // @Success      201  {object}  SignupSuccessResponse "Success response"
 // @Failure      400  {object}  SignupErrorResponse "Failed response"
 // @Router /api/v1/user/signup [post]
-func Signup(c *gin.Context) {
+func (services *UserController) Signup(c *gin.Context) {
 	// * 1. Get email, username and password from request body
 	var reqBody struct {
 		Email    string
@@ -62,7 +73,7 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-	code, response := services.Signup(reqBody.Email, reqBody.Username, reqBody.Password)
+	code, response := services.User.Signup(reqBody.Email, reqBody.Username, reqBody.Password)
 	c.JSON(code, response)
 }
 
@@ -76,7 +87,7 @@ func Signup(c *gin.Context) {
 // @Success      200  {object}  LoginSuccessResponse "Success response"
 // @Failure      400  {object}  LoginErrorResponse "Failed response"
 // @Router /api/v1/user/login [post]
-func Login(c *gin.Context) {
+func (services *UserController) Login(c *gin.Context) {
 	// * Get email and password from req
 	var reqBody struct {
 		Email    string
@@ -91,7 +102,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	httpCode, response := services.Login(reqBody.Email, reqBody.Password)
+	httpCode, response := services.User.Login(reqBody.Email, reqBody.Password)
 	c.JSON(httpCode, response)
 }
 
@@ -104,11 +115,11 @@ func Login(c *gin.Context) {
 // @Success      200  {object}  RefreshTokenSuccessResponse "Success response"
 // @Failure      400  {object}  RefreshTokenErrorResponse "Failed response"
 // @Router /api/v1/user/refresh  [get]
-func Refresh(c *gin.Context) {
+func (services *UserController) Refresh(c *gin.Context) {
 	user, _ := c.Get("user")
 	var userData models.User = user.(models.User)
 
-	code, response := services.RefreshToken(userData)
+	code, response := services.User.RefreshToken(userData)
 	c.JSON(code, response)
 }
 

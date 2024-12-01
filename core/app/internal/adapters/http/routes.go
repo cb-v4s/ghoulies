@@ -2,7 +2,6 @@ package routes
 
 import (
 	"core/internal/adapters/http/controllers"
-	"core/internal/adapters/http/middleware"
 	"core/internal/adapters/ws"
 
 	"github.com/gin-gonic/gin"
@@ -13,37 +12,33 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func SetupRoutes(r *gin.Engine) {
+func SetupRoutes(r *gin.Engine, userController *controllers.UserController, authMiddleware gin.HandlerFunc) {
+	// WebSocket API
+	r.GET("/ws", ws.HandleWebSocket)
+	r.POST("/ws", ws.HandleWebSocket)
 
 	// REST API
 	apiv1 := r.Group("/api/v1")
 	{
 		userGroup := apiv1.Group("/user")
 		{
-			userGroup.POST("/signup", controllers.Signup)
-			userGroup.POST("/login", controllers.Login)
-			userGroup.GET("/refresh", middleware.Authenticate, controllers.Refresh)
-			userGroup.GET("/protected", middleware.Authenticate, controllers.Protected) // ! this is a mock ep
+			userGroup.POST("/signup", userController.Signup)
+			userGroup.POST("/login", userController.Login)
+			userGroup.GET("/refresh", authMiddleware, userController.Refresh)
+			userGroup.GET("/protected", authMiddleware, controllers.Protected) // ! testing ep
 		}
 
 		roomGroup := apiv1.Group("/rooms")
 		{
 			roomGroup.GET("", controllers.GetRooms)
 		}
-
 	}
 
-	// Docs WebSocket API
-	r.GET("/ws", ws.HandleWebSocket)
-	r.POST("/ws", ws.HandleWebSocket)
-
-	// WebSocket API Docs
-	r.Static("/wsdocs", "./wsdocs")
-
-	// Docs REST API
+	// DOCS
 	docs.SwaggerInfo.Title = "Ghosties"
 	docs.SwaggerInfo.Description = "REST API Documentation"
 	docs.SwaggerInfo.Version = "1.0"
 
+	r.Static("/wsdocs", "./wsdocs")
 	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }

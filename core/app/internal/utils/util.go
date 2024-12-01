@@ -1,14 +1,15 @@
 package util
 
 import (
+	"bufio"
 	"core/types"
 	"crypto/rand"
-	"encoding/json"
 	"fmt"
 	"math/big"
+	"os"
+	"sync"
 )
 
-// Function to convert UsersPositions map to a slice of Position
 func ConvertMapToSlice(usersPositions []string) []types.Position {
 	positions := []types.Position{}
 
@@ -30,16 +31,36 @@ func GetRandomId() (string, error) {
 	return rId.String(), nil
 }
 
-func ParsePayload(data interface{}, dest interface{}) error {
-	jsonData, err := json.Marshal(data)
+func ReadFileLines(src string, callback func(string)) error {
+	file, err := os.Open(src)
 	if err != nil {
-		return fmt.Errorf("failed marshaling data: %w", err)
+		return fmt.Errorf("failed to open file source: %s", src)
 	}
 
-	err = json.Unmarshal(jsonData, dest)
-	if err != nil {
-		return fmt.Errorf("failed unmarshaling data: %w", err)
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	var wg sync.WaitGroup
+	lineChannel := make(chan string)
+
+	go func() {
+		for line := range lineChannel {
+			callback(line)
+			wg.Done()
+		}
+	}()
+
+	for scanner.Scan() {
+		wg.Add(1)
+		lineChannel <- scanner.Text()
 	}
 
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	close(lineChannel)
+
+	wg.Wait()
 	return nil
 }

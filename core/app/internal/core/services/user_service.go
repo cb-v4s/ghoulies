@@ -2,8 +2,8 @@ package services
 
 import (
 	"core/config"
-	db "core/internal/adapters/database"
 	"core/internal/adapters/database/models"
+	repositories "core/internal/ports"
 	"core/types"
 	"net/http"
 	"time"
@@ -16,16 +16,27 @@ const (
 	BcryptCharacterLimit = 72
 )
 
-func Login(email string, password string) (int, types.ApiResponse) {
-	// * Verify password
-	var user models.User
-	db.DbCtx.First(&user, "email = ?", email)
+type UserService struct {
+	userRepo *repositories.UserRepoContext
+}
+
+func NewUserService(userRepo *repositories.UserRepoContext) *UserService {
+	return &UserService{
+		userRepo: userRepo,
+	}
+}
+
+func (ctx *UserService) Login(email string, password string) (int, types.ApiResponse) {
+	user, err := ctx.userRepo.GetByEmail(email)
+	if err != nil {
+		return http.StatusBadRequest, types.ApiError("Email is not registered")
+	}
 
 	if user.ID == 0 {
 		return http.StatusBadRequest, types.ApiError("Invalid Email and/or Password")
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
 		return http.StatusBadRequest, types.ApiError("Invalid Email and/or Password")
 	}
@@ -60,20 +71,19 @@ func Login(email string, password string) (int, types.ApiResponse) {
 	}
 }
 
-func Signup(email string, username string, password string) (int, types.ApiResponse) {
+func (ctx *UserService) Signup(email string, username string, password string) (int, types.ApiResponse) {
 	if len(password) > BcryptCharacterLimit {
 		return http.StatusBadRequest, types.ApiError("Password must be no longer than 72 characters.")
 	}
 
 	// * 2. Check if Email or Username is already stored
-	var count int64
-	db.DbCtx.Model(&models.User{}).Where("email = ?", email).Count(&count)
-	if count > 0 {
+	exists := ctx.userRepo.ExistsEmail(email)
+	if exists {
 		return http.StatusBadRequest, types.ApiError("Email already exists.")
 	}
 
-	db.DbCtx.Model(&models.User{}).Where("username = ?", username).Count(&count)
-	if count > 0 {
+	exists = ctx.userRepo.ExistsUsername(username)
+	if exists {
 		return http.StatusBadRequest, types.ApiError("Username already exists.")
 	}
 
@@ -90,8 +100,7 @@ func Signup(email string, username string, password string) (int, types.ApiRespo
 		Password: string(passwordHash),
 	}
 
-	saveResult := db.DbCtx.Create(&user)
-	if saveResult.Error != nil {
+	if _, err := ctx.userRepo.Save(user); err != nil {
 		return http.StatusBadRequest, types.ApiError("Failed to save user")
 	}
 
@@ -101,7 +110,7 @@ func Signup(email string, username string, password string) (int, types.ApiRespo
 	}
 }
 
-func RefreshToken(user models.User) (int, types.ApiResponse) {
+func (ctx *UserService) RefreshToken(user models.User) (int, types.ApiResponse) {
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":      user.ID,
 		"username": user.Username,

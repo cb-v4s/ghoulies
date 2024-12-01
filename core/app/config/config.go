@@ -5,20 +5,19 @@ import (
 	"strconv"
 )
 
-type Postgres struct {
+type databaseConfig struct {
 	Database string
 	Host     string
 	Port     string
 	User     string
 	Password string
-	SSL      bool
+	UseSSL   bool
 }
 
 var (
 	GinMode            = os.Getenv("GIN_MODE") // server debug/prod mode
 	AllowOrigins       = os.Getenv("ALLOWED_ORIGINS")
 	PORT               = os.Getenv("PORT")
-	KafkaBrokers       = os.Getenv("KAFKA_BROKERS")
 	JwtSecret          = os.Getenv("JWT_SECRET")
 	ChatbotName        = os.Getenv("CHATBOT_NAME")
 	WelcomeRoomName    = os.Getenv("WELCOME_ROOM_NAME")
@@ -26,14 +25,14 @@ var (
 	RedisPassword      = os.Getenv("REDIS_PASSWORD")
 	WsConnectionsLimit = os.Getenv("WSCONN_LIMIT")
 
-	ssl, _ = strconv.ParseBool(os.Getenv("SSL"))
+	sslFlag, _ = strconv.ParseBool(os.Getenv("SSL"))
 
-	Database = Postgres{
+	Database = databaseConfig{
 		Database: os.Getenv("POSTGRES_DATABASE"),
 		Host:     os.Getenv("POSTGRES_HOST"),
 		Port:     os.Getenv("POSTGRES_PORT"),
 		User:     os.Getenv("POSTGRES_USER"),
 		Password: os.Getenv("POSTGRES_PASS"),
-		SSL:      ssl,
+		UseSSL:   sslFlag,
 	}
 )

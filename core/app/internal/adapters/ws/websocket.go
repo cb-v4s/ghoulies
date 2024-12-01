@@ -6,6 +6,7 @@ import (
 	"core/internal/core/services"
 	util "core/internal/utils"
 	"core/types"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -116,7 +117,7 @@ func HandleWebSocket(c *gin.Context) {
 		switch payload.Event {
 		case "newRoom":
 			var reqData types.NewRoom
-			err := util.ParsePayload(payload.Data, &reqData)
+			err := parsePayload(payload.Data, &reqData)
 			if err != nil {
 				fmt.Printf("Error: %s\n", err)
 			}
@@ -125,7 +126,7 @@ func HandleWebSocket(c *gin.Context) {
 
 		case "joinRoom":
 			var reqData types.JoinRoom
-			err := util.ParsePayload(payload.Data, &reqData)
+			err := parsePayload(payload.Data, &reqData)
 			if err != nil {
 				fmt.Printf("Error: %s\n", err)
 			}
@@ -134,7 +135,7 @@ func HandleWebSocket(c *gin.Context) {
 
 		case "broadcastMessage":
 			var reqData types.Msg
-			err := util.ParsePayload(payload.Data, &reqData)
+			err := parsePayload(payload.Data, &reqData)
 			if err != nil {
 				fmt.Printf("Error: %s\n", err)
 				continue
@@ -145,7 +146,7 @@ func HandleWebSocket(c *gin.Context) {
 		// TODO: solo recibir jwtJoken, de ahi obtienes el userId y roomId
 		case "updatePosition":
 			var reqData types.UpdateUserPos
-			err := util.ParsePayload(payload.Data, &reqData)
+			err := parsePayload(payload.Data, &reqData)
 			if err != nil {
 				fmt.Printf("Error: %s", err)
 				continue
@@ -155,7 +156,7 @@ func HandleWebSocket(c *gin.Context) {
 
 		case "updateTyping":
 			var reqData types.UpdateUserTyping
-			err := util.ParsePayload(payload.Data, &reqData)
+			err := parsePayload(payload.Data, &reqData)
 			if err != nil {
 				fmt.Printf("Error: %s", err)
 				continue
@@ -165,7 +166,7 @@ func HandleWebSocket(c *gin.Context) {
 
 		case "leaveRoom":
 			var reqData types.UserLeave
-			err := util.ParsePayload(payload.Data, &reqData)
+			err := parsePayload(payload.Data, &reqData)
 			if err != nil {
 				fmt.Printf("Error: %s", err)
 				continue
@@ -192,4 +193,18 @@ func hdlClientMessages(mc *types.MessageClient) {
 			}
 		}
 	}
+}
+
+func parsePayload(data interface{}, dest interface{}) error {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("failed marshaling data: %w", err)
+	}
+
+	err = json.Unmarshal(jsonData, dest)
+	if err != nil {
+		return fmt.Errorf("failed unmarshaling data: %w", err)
+	}
+
+	return nil
 }
