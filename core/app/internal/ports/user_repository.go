@@ -2,9 +2,15 @@ package repositories
 
 import (
 	"core/internal/adapters/database/models"
-	"fmt"
+	"errors"
 
 	"gorm.io/gorm"
+)
+
+var (
+	ErrorEmailNotFound  = errors.New("email not found")
+	ErrorUserIdNotFound = errors.New("user id not found")
+	ErrorFailedSave     = errors.New("failed saving")
 )
 
 type UserRepo interface {
@@ -29,7 +35,7 @@ func (ctx *UserRepoContext) GetById(id float64) (*models.User, error) {
 	var user models.User
 	result := ctx.db.First(&user, "id = ?", id)
 	if result.Error != nil {
-		return nil, fmt.Errorf("user id not found")
+		return nil, ErrorUserIdNotFound
 	}
 
 	return &user, nil
@@ -39,7 +45,7 @@ func (ctx *UserRepoContext) GetByEmail(email string) (*models.User, error) {
 	var user models.User
 	result := ctx.db.First(&user, "email = ?", email)
 	if result.Error != nil {
-		return nil, fmt.Errorf("email not found")
+		return nil, ErrorEmailNotFound
 	}
 
 	return &user, nil
@@ -58,9 +64,9 @@ func (ctx *UserRepoContext) ExistsUsername(username string) bool {
 }
 
 func (ctx *UserRepoContext) Save(user models.User) (*models.User, error) {
-	saveResult := ctx.db.Create(&user)
-	if saveResult.Error != nil {
-		return nil, fmt.Errorf("something failed saving user %v", saveResult.Error)
+	result := ctx.db.Create(&user)
+	if result.Error != nil {
+		return nil, ErrorFailedSave
 	}
 
 	return &user, nil

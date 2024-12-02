@@ -116,10 +116,19 @@ func (services *UserController) Login(c *gin.Context) {
 // @Failure      400  {object}  RefreshTokenErrorResponse "Failed response"
 // @Router /api/v1/user/refresh  [get]
 func (services *UserController) Refresh(c *gin.Context) {
-	user, _ := c.Get("user")
-	var userData models.User = user.(models.User)
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, types.ApiError("Something went wrong"))
+		return
+	}
 
-	code, response := services.User.RefreshToken(userData)
+	userPtr, ok := user.(*models.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, types.ApiError("Invalid user type"))
+		return
+	}
+
+	code, response := services.User.RefreshToken(*userPtr)
 	c.JSON(code, response)
 }
 

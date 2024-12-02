@@ -5,6 +5,7 @@ import { getRoomInfo, getUserId } from "@state/room.reducer";
 import { updatePosition } from "@components/wsHandler";
 import { RoomData } from "./roomData";
 import { debounce, getImageResource } from "@lib/misc";
+import { Canvas } from "./Canvas";
 
 export const Room = () => {
   const [locations, setLocations] = useState<{ x: number; y: number }[]>([]);
@@ -348,53 +349,22 @@ export const Room = () => {
     setCanvasSize({ width: newWidth, height: newHeight });
   };
 
-  useEffect(() => {
-    updateCanvasSize();
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    canvas.height = canvasSize.height;
-    canvas.width = canvasSize.width;
-
-    const ctx = canvas?.getContext("2d");
-
-    canvas.addEventListener("mouseup", (e) => hdlMouseUp(e, canvas));
-    canvas.addEventListener("mousedown", (e) => hdlMouseDown(e, canvas));
-    window.addEventListener("resize", updateCanvasSize);
-
-    if (ctx) draw(ctx, resources.images.tileMap.imgElem);
-
-    return () => {
-      canvas.removeEventListener("mouseup", (e) => hdlMouseUp(e, canvas));
-      canvas.removeEventListener("mousedown", (e) => hdlMouseDown(e, canvas));
-      window.removeEventListener("resize", updateCanvasSize);
-    };
-  }, []);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    canvas.height = canvasSize.height;
-    canvas.width = canvasSize.width;
-    updateMapOffset(mapOffset.x, mapOffset.y);
-
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      const drawFrame = () => {
-        draw(ctx, resources.images.tileMap.imgElem);
-        requestAnimationFrame(drawFrame);
-      };
-
-      drawFrame();
-    }
-  }, [locations, mapOffset, userId, roomInfo]);
-
   return (
     <div className="flex items-center justify-center">
       <RoomData currentRow={currentRow} currentCol={currentCol} />
-      <canvas ref={canvasRef} />
+      <Canvas
+        userId={userId}
+        roomInfo={roomInfo}
+        canvasSize={canvasSize}
+        draw={draw}
+        locations={locations}
+        mapOffset={mapOffset}
+        onMouseDown={hdlMouseDown}
+        onMouseUp={hdlMouseUp}
+        resources={resources} // Pass any resources needed for drawing
+        updateMapOffset={updateMapOffset}
+        updateCanvasSize={updateCanvasSize}
+      />
     </div>
   );
 };
