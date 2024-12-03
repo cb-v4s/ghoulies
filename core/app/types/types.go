@@ -3,6 +3,7 @@ package types
 import (
 	"sync"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
@@ -67,6 +68,14 @@ type UserLeave struct {
 	UserId string `json:"userId"`
 }
 
+// type Controllers struct {
+// 	User *
+// }
+
+type Middlewares struct {
+	Auth gin.HandlerFunc
+}
+
 type RoomData struct {
 	Name           string
 	Users          []User
@@ -77,6 +86,7 @@ type RoomData struct {
 type UpdateUser struct {
 	RoomId   *string
 	UserName *string
+	Password *string
 }
 
 type UpdateUserPos struct {
@@ -98,11 +108,13 @@ type UpdateUserFacingDir struct {
 type NewRoom struct {
 	UserName string `json:"userName"`
 	RoomName string `json:"roomName"`
+	Password string `json:"password"`
 }
 
 type JoinRoom struct {
 	RoomId   RoomId `json:"roomId"`
 	UserName string `json:"userName"`
+	Password string `json:"password"`
 }
 
 type WsPayload struct {
@@ -130,8 +142,8 @@ type PopularRoomList struct {
 
 type ApiResponse map[string]any
 
-func ApiError(message any) ApiResponse {
+func ApiError(err error) ApiResponse {
 	return ApiResponse{
-		"error": message,
+		"error": err.Error(),
 	}
 }

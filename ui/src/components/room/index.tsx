@@ -234,7 +234,7 @@ export const Room = () => {
     }
 
     if (username) {
-      ctx.font = "600 14px arial";
+      ctx.font = "600 15px arial";
       ctx.textAlign = "center";
       ctx.fillStyle = "#DCDCE4";
 

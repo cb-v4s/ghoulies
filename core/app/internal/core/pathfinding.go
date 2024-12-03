@@ -1,7 +1,7 @@
 package core
 
 import (
-	"core/types"
+	types "core/types"
 	"fmt"
 	"math"
 	"sort"

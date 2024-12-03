@@ -1,10 +1,10 @@
-![gosty](./ui/public/cover.png)
+![cover](./ui/public/cover.png)
 
-# ghosties
+# ghoulies
 
 ### Overview
 
-This is a web-based platform that enables users to host and join virtual meetups in a game-like environment allowing them to interact with others through text chat.
+Web app that enables users to host and join chatrooms in a game-like environment allowing them to interact with others through text chat.
 
 View Live [localhost](http://localhost/)  
 REST API Docs [:8000/docs/index.html](http://localhost:8000/docs/index.html)  

@@ -64,7 +64,7 @@ export const Console = () => {
   const Body = () => {
     return (
       <div className="h-[76%] w-full">
-        <div className="overflow-y-scroll console-scrollbar relative text-left bg-sky-950 h-full border-8 border-slate-900 text-md">
+        <div className="overflow-y-scroll console-scrollbar relative text-left bg-sky-950 h-full border-8 border-slate-800 text-md">
           {opts[optKeys[selectedBtn]]()}
         </div>
       </div>

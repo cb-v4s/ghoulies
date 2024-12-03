@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"core/internal/adapters/database/models"
+	"core/types"
 	"errors"
 
 	"gorm.io/gorm"
@@ -61,6 +62,28 @@ func (ctx *UserRepoContext) ExistsUsername(username string) bool {
 	var count int64
 	ctx.db.Model(&models.User{}).Where("username = ?", username).Count(&count)
 	return count > 0
+}
+
+func (ctx *UserRepoContext) Update(id uint, userUpdates types.UpdateUser) (*models.User, error) {
+	var user models.User
+	result := ctx.db.First(&user, "id = ?", id)
+	if result.Error != nil {
+		return nil, ErrorUserIdNotFound
+	}
+
+	if userUpdates.Password != nil {
+		user.Password = *userUpdates.Password
+	}
+
+	if userUpdates.UserName != nil {
+		user.Username = *userUpdates.UserName
+	}
+
+	if err := ctx.db.Save(&user).Error; err != nil {
+		return nil, ErrorFailedSave
+	}
+
+	return &user, nil
 }
 
 func (ctx *UserRepoContext) Save(user models.User) (*models.User, error) {

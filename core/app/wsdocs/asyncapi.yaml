@@ -1,6 +1,6 @@
 asyncapi: "2.0.0"
 info:
-  title: Ghosties
+  title: Ghoulies
   version: "1.0.0"
   description: WebSocket API Docs
 servers:

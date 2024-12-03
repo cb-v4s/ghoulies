@@ -2,7 +2,7 @@ package util
 
 import (
 	"bufio"
-	"core/types"
+	types "core/types"
 	"crypto/rand"
 	"fmt"
 	"math/big"

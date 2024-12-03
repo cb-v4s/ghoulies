@@ -4,14 +4,16 @@ import { api } from "@lib/api";
 import {
   REFRESH_TOKEN_IDENTIFIER_KEY,
   ACCESS_TOKEN_IDENTIFIER_KEY,
+  apiRoutes,
 } from "@/siteConfig";
+import { getCookie } from "@/lib/misc";
 
 export const useIsAuthenticated = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   const checkAuth = async () => {
-    const token = localStorage.getItem(ACCESS_TOKEN_IDENTIFIER_KEY);
-    const refreshToken = localStorage.getItem(REFRESH_TOKEN_IDENTIFIER_KEY);
+    const token = getCookie(ACCESS_TOKEN_IDENTIFIER_KEY);
+    const refreshToken = getCookie(REFRESH_TOKEN_IDENTIFIER_KEY);
     if (!token?.length || !refreshToken?.length) {
       setIsAuthenticated(false);
       return;
@@ -23,17 +25,10 @@ export const useIsAuthenticated = () => {
 
     if (tokenExp < now) {
       try {
-        const res: any = await api.get("/user/refresh", {
-          headers: {
-            Authorization: localStorage.getItem(REFRESH_TOKEN_IDENTIFIER_KEY),
-          },
-        });
+        // * cookies are sent automagically
+        const res: any = await api.get(apiRoutes.refresh);
 
         if (res.status === 200) {
-          localStorage.setItem(
-            ACCESS_TOKEN_IDENTIFIER_KEY,
-            res.data?.accessToken
-          );
           setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);

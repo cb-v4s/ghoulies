@@ -26,36 +26,6 @@ export const Lobby = () => {
   } = useFetch<PopularRoomsResponse>("/rooms");
   const { rooms } = roomsResponse || { rooms: [] };
 
-  const Rows = () => {
-    return rooms.map(({ roomId, roomName, totalConns }, idx: number) => (
-      <tr className="text-slate-200 odd:bg-sky-900" key={idx}>
-        <td className="select-none">
-          {roomName.length < 34 ? (
-            <span>{roomName}</span>
-          ) : (
-            <span>{roomName.slice(0, 31) + "..."}</span>
-          )}
-        </td>
-        <td className="text-right flex items-center justify-center">
-          <UsersIcon className="w-4 h-4 text-slate-300 mr-1" />
-          <span>{totalConns}/50</span>
-        </td>
-        <td className="text-right">
-          {roomInfo?.RoomId === roomId ? (
-            <span>You are here</span>
-          ) : (
-            <button
-              className="underline"
-              onClick={(e) => hdlSelectRoom(e, roomId)}
-            >
-              Join Room
-            </button>
-          )}
-        </td>
-      </tr>
-    ));
-  };
-
   const hdlSelectRoom = async (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
     roomId: string
@@ -93,9 +63,39 @@ export const Lobby = () => {
   };
 
   const PublicRooms = () => {
+    if (!rooms.length) <>No rooms</>;
+
     return (
       <table className="table-auto w-full border-separate border-spacing-y-2">
-        <tbody>{rooms.length && <Rows />}</tbody>
+        <tbody>
+          {rooms.map(({ roomId, roomName, totalConns }, idx: number) => (
+            <tr className="text-slate-200 odd:bg-sky-900" key={idx}>
+              <td className="select-none">
+                {roomName.length < 34 ? (
+                  <span>{roomName}</span>
+                ) : (
+                  <span>{roomName.slice(0, 31) + "..."}</span>
+                )}
+              </td>
+              <td className="text-right flex items-center justify-center">
+                <UsersIcon className="w-4 h-4 text-slate-300 mr-1" />
+                <span>{totalConns}/50</span>
+              </td>
+              <td className="text-right">
+                {roomInfo?.RoomId === roomId ? (
+                  <span>You are here</span>
+                ) : (
+                  <button
+                    className="underline"
+                    onClick={(e) => hdlSelectRoom(e, roomId)}
+                  >
+                    Join Room
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
       </table>
     );
   };
@@ -104,12 +104,6 @@ export const Lobby = () => {
     {
       title: "PUBLIC ROOMS",
       content: () => <PublicRooms />,
-    },
-    {
-      title: "MY ROOMS",
-      content: () => (
-        <p className="text-slate-200">Looks like there is nothing here yet.</p>
-      ),
     },
   ];
 

@@ -16,7 +16,7 @@ export const isExpired = (timestamp: number): boolean => {
   return false;
 };
 
-export const debounce = <T extends (...args: any[]) => void>(
+export const debounce = <T extends (...args: Function[]) => void>(
   func: T,
   delay: number
 ): ((...args: Parameters<T>) => void) => {
@@ -65,3 +65,14 @@ export const getRandomUsername = () => {
 
 export const getImageResource = (fd: FacingDirection, imgKey: string) =>
   resources.images[`${imgKey}.${fd}`].imgElem;
+
+export const getCookie = (name: string): string | undefined => {
+  return document.cookie
+    .split("; ")
+    .find((row: string) => row.startsWith(`${name}=`))
+    ?.split("=")[1];
+};
+
+export const clearCookies = (): void => {
+  document.cookie = "";
+};

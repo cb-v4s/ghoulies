@@ -3,7 +3,7 @@ package memory
 import (
 	"context"
 	"core/config"
-	"core/types"
+	types "core/types"
 	"encoding/json"
 	"fmt"
 	"log"

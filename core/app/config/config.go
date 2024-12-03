@@ -15,6 +15,7 @@ type databaseConfig struct {
 }
 
 var (
+	AppName            = "ghoulies"
 	GinMode            = os.Getenv("GIN_MODE") // server debug/prod mode
 	AllowOrigins       = os.Getenv("ALLOWED_ORIGINS")
 	PORT               = os.Getenv("PORT")

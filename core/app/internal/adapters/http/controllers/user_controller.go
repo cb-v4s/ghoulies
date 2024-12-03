@@ -2,8 +2,11 @@ package controllers
 
 import (
 	"core/internal/adapters/database/models"
+	core "core/internal/core"
 	"core/internal/core/services"
 	"core/types"
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -51,6 +54,16 @@ type RefreshTokenErrorResponse struct {
 	Error string `json:"error" example:"something went wrong"`
 }
 
+var (
+	ErrorInvalidUser        = errors.New("invalid user")
+	ErrorSomethingWentWrong = errors.New("something went wrong")
+	ErrorMissingParameters  = errors.New("invalid/missing params")
+)
+
+func setAuthCookie(c *gin.Context, key string, value string, exp int) {
+	c.SetCookie(key, value, exp, "/", "localhost", false, false)
+}
+
 // User Signup
 // @Summary      Create a user account
 //
@@ -69,12 +82,16 @@ func (services *UserController) Signup(c *gin.Context) {
 	}
 
 	if c.Bind(&reqBody) != nil {
-		c.JSON(http.StatusBadRequest, types.ApiError("Invalid/missing parameters"))
+		c.JSON(http.StatusBadRequest, types.ApiError(ErrorMissingParameters))
 		return
 	}
 
-	code, response := services.User.Signup(reqBody.Email, reqBody.Username, reqBody.Password)
-	c.JSON(code, response)
+	err := services.User.Signup(reqBody.Email, reqBody.Username, reqBody.Password)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ApiError(err))
+	}
+
+	c.Status(http.StatusOK)
 }
 
 // User Login
@@ -95,15 +112,21 @@ func (services *UserController) Login(c *gin.Context) {
 	}
 
 	if c.Bind(&reqBody) != nil {
-		c.JSON(http.StatusBadRequest, map[string]any{
-			"error": "Invalid/missing parameters",
-		})
-
+		c.JSON(http.StatusBadRequest, types.ApiError(ErrorSomethingWentWrong))
 		return
 	}
 
-	httpCode, response := services.User.Login(reqBody.Email, reqBody.Password)
-	c.JSON(httpCode, response)
+	authTokens, err := services.User.Login(reqBody.Email, reqBody.Password)
+	if err != nil {
+		fmt.Printf("Error: %s", err)
+		c.JSON(http.StatusBadRequest, types.ApiError(err))
+		return
+	}
+
+	setAuthCookie(c, core.CookieAccessToken, authTokens.AccessToken, 3600)
+	setAuthCookie(c, core.CookieRefreshToken, authTokens.RefreshToken, 3600)
+
+	c.Status(http.StatusOK)
 }
 
 // Refresh Token
@@ -118,36 +141,54 @@ func (services *UserController) Login(c *gin.Context) {
 func (services *UserController) Refresh(c *gin.Context) {
 	user, exists := c.Get("user")
 	if !exists {
-		c.JSON(http.StatusInternalServerError, types.ApiError("Something went wrong"))
+		c.JSON(http.StatusInternalServerError, types.ApiError(ErrorSomethingWentWrong))
 		return
 	}
 
 	userPtr, ok := user.(*models.User)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, types.ApiError("Invalid user type"))
+		c.JSON(http.StatusInternalServerError, types.ApiError(ErrorInvalidUser))
 		return
 	}
 
-	code, response := services.User.RefreshToken(*userPtr)
-	c.JSON(code, response)
+	response, err := services.User.RefreshToken(*userPtr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	setAuthCookie(c, core.CookieAccessToken, response.AccessToken, 3600)
+
+	c.Status(http.StatusOK)
 }
 
-// Protected Route
-// @Summary Example protected route
-//
-//	@Tags         user
-//
-// @Param        Authorization header  string  true  "Access token"  example("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
-// @Success      200  {object}  any "Success response"
-// @Failure      400  {object}  any "Failed response"
-// @Router /api/v1/user/protected  [get]
-func Protected(c *gin.Context) {
+func (services *UserController) UpdateUser(c *gin.Context) {
 	user, exists := c.Get("user")
-	if exists {
-		c.JSON(http.StatusOK, gin.H{
-			"user": user,
-		})
-	} else {
+	if !exists {
 		c.Status(http.StatusUnauthorized)
 	}
+
+	userPtr, ok := user.(*models.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, types.ApiError(ErrorInvalidUser))
+		return
+	}
+
+	var reqBody types.UpdateUser
+
+	if c.ShouldBindJSON(&reqBody) != nil {
+		c.JSON(http.StatusBadRequest, types.ApiError(ErrorMissingParameters))
+		return
+	}
+
+	response, err := services.User.Update(userPtr.ID, reqBody)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ApiError(err))
+		return
+	}
+
+	setAuthCookie(c, core.CookieAccessToken, response.AccessToken, 3600)
+	setAuthCookie(c, core.CookieAccessToken, response.AccessToken, 3600)
+
+	c.Status(http.StatusOK)
 }

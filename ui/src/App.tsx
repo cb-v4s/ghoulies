@@ -8,14 +8,15 @@ import { Dashboard } from "./pages/Dashboard";
 // components
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Lobby from "./pages/Lobby";
+import { clearCookies } from "./lib/misc";
 
 const Logout = () => {
-  localStorage.clear();
+  clearCookies();
   return <Navigate to="/login" />;
 };
 
 const RegisterAndLogout = () => {
-  localStorage.clear();
+  clearCookies();
   return <SignUp />;
 };
 

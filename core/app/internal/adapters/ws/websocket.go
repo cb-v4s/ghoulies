@@ -3,6 +3,7 @@ package ws
 import (
 	"core/config"
 	"core/internal/adapters/memory"
+	"core/internal/core"
 	"core/internal/core/services"
 	util "core/internal/utils"
 	"core/types"
@@ -114,6 +115,19 @@ func HandleWebSocket(c *gin.Context) {
 			break
 		}
 
+		var username string
+		authorization := payload.Authorization
+		if authorization != "" {
+			user, err := core.DecodeToken(authorization)
+			fmt.Printf("user %v\n", user)
+
+			if err != nil {
+				fmt.Printf("unauthorized")
+			}
+
+			username = user.Username
+		}
+
 		switch payload.Event {
 		case "newRoom":
 			var reqData types.NewRoom
@@ -129,6 +143,10 @@ func HandleWebSocket(c *gin.Context) {
 			err := parsePayload(payload.Data, &reqData)
 			if err != nil {
 				fmt.Printf("Error: %s\n", err)
+			}
+
+			if username != "" {
+				reqData.UserName = username
 			}
 
 			services.JoinRoom(reqData, messageClient, userId)

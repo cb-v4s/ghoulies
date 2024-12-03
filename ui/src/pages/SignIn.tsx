@@ -5,11 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { loginSchema } from "@validations/auth.schema";
 import { ArrowRight, Eye, EyeOff } from "@lib/icons";
 import { LoadingSpinner } from "@/components/icons/LoadingSpinner";
-import {
-  apiRoutes,
-  ACCESS_TOKEN_IDENTIFIER_KEY,
-  REFRESH_TOKEN_IDENTIFIER_KEY,
-} from "@/siteConfig";
+import { apiRoutes } from "@/siteConfig";
 import { useApiRequest } from "@/lib/query";
 
 export const SignIn = () => {
@@ -21,7 +17,7 @@ export const SignIn = () => {
   const {
     mutate: doSignin,
     error: doSigninError,
-    data,
+    isSuccess,
     isPending,
     isError,
   } = useApiRequest<any, any>("post", apiRoutes.login);
@@ -36,12 +32,10 @@ export const SignIn = () => {
   const onSubmit = form.handleSubmit(async (data: any) => await doSignin(data));
 
   useEffect(() => {
-    if (!data) return;
+    if (!isSuccess) return;
 
-    localStorage.setItem(ACCESS_TOKEN_IDENTIFIER_KEY, data.accessToken);
-    localStorage.setItem(REFRESH_TOKEN_IDENTIFIER_KEY, data.refreshToken);
     navigate("/");
-  }, [data]);
+  }, [isSuccess]);
 
   useEffect(() => {
     const data: any = doSigninError?.response?.data;
@@ -120,6 +114,7 @@ export const SignIn = () => {
 
           <button
             type="submit"
+            disabled={isPending}
             className="bg-sky-400 hover:bg-sky-500 flex w-full items-center justify-center rounded-xl px-4 py-2 font-semibold text-white dark:text-primary dark:hover:bg-card mt-4"
           >
             <span className="mr-2 text-lg font-semibold">Continue</span>

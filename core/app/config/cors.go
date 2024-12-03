@@ -12,7 +12,7 @@ func SetupCors() gin.HandlerFunc {
 	corsCfg := cors.DefaultConfig()
 
 	if GinMode == gin.DebugMode {
-		corsCfg.AllowOrigins = []string{"*"}
+		corsCfg.AllowOrigins = []string{"http://localhost:3000", "http://localhost:3001"} // *
 	} else {
 		allowedOrigins := strings.Split(AllowOrigins, ",")
 
@@ -23,8 +23,8 @@ func SetupCors() gin.HandlerFunc {
 		corsCfg.AllowOrigins = allowedOrigins
 	}
 
-	corsCfg.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Content-Security-Policy", "Access-Control-Allow-Origin"}
-	corsCfg.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+	corsCfg.AllowHeaders = []string{"Origin", "Content-Type", "X-Requested-With", "Content-Security-Policy", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"}
+	corsCfg.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD"}
 	corsCfg.AllowCredentials = true
 
 	return cors.New(corsCfg)

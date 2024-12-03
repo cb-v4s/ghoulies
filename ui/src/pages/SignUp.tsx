@@ -173,6 +173,7 @@ export const SignUp = () => {
 
           <button
             type="submit"
+            disabled={isPending}
             className="bg-sky-400 hover:bg-sky-500 flex w-full items-center justify-center rounded-xl px-4 py-2 font-semibold text-white dark:text-primary dark:hover:bg-card mt-4"
           >
             <span className="mr-2 text-lg font-semibold">Continue</span>

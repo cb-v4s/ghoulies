@@ -1,8 +1,10 @@
 package routes
 
 import (
+	"core/config"
 	"core/internal/adapters/http/controllers"
 	"core/internal/adapters/ws"
+	"core/types"
 
 	"github.com/gin-gonic/gin"
 
@@ -12,7 +14,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func SetupRoutes(r *gin.Engine, userController *controllers.UserController, authMiddleware gin.HandlerFunc) {
+func SetupRoutes(r *gin.Engine, userController *controllers.UserController, middlewares types.Middlewares) {
 	// WebSocket API
 	r.GET("/ws", ws.HandleWebSocket)
 	r.POST("/ws", ws.HandleWebSocket)
@@ -24,8 +26,8 @@ func SetupRoutes(r *gin.Engine, userController *controllers.UserController, auth
 		{
 			userGroup.POST("/signup", userController.Signup)
 			userGroup.POST("/login", userController.Login)
-			userGroup.GET("/refresh", authMiddleware, userController.Refresh)
-			userGroup.GET("/protected", authMiddleware, controllers.Protected) // ! testing ep
+			userGroup.GET("/refresh", middlewares.Auth, userController.Refresh)
+			userGroup.GET("/update", middlewares.Auth, userController.UpdateUser)
 		}
 
 		roomGroup := apiv1.Group("/rooms")
@@ -35,7 +37,7 @@ func SetupRoutes(r *gin.Engine, userController *controllers.UserController, auth
 	}
 
 	// DOCS
-	docs.SwaggerInfo.Title = "Ghosties"
+	docs.SwaggerInfo.Title = config.AppName
 	docs.SwaggerInfo.Description = "REST API Documentation"
 	docs.SwaggerInfo.Version = "1.0"
 
