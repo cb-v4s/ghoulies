@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
-import { appName } from "@/siteConfig";
+import { appName, CONSOLE_STATE_IDENTIFIER_KEY } from "@/siteConfig";
+import { useIsAuthenticated } from "@hooks/useIsAuthenticated";
 import { useDispatch } from "react-redux";
 import { switchConsoleState } from "@state/room.reducer";
 import { X } from "@lib/icons";
@@ -10,15 +11,29 @@ import { capitalize } from "@lib/misc";
 import "./style.css";
 import { Lobby } from "./sections/Lobby";
 import Draggable from "react-draggable";
+import { ProtectedSection } from "./sections/Protected";
+
+type ConsoleState = 0 | 1 | 2;
+
+const getConsoleState = (): ConsoleState => {
+  const consoleState = localStorage.getItem(CONSOLE_STATE_IDENTIFIER_KEY);
+  if (consoleState?.length) {
+    return parseInt(consoleState) as ConsoleState;
+  }
+
+  return 0;
+};
 
 export const Console = () => {
   const dispatch = useDispatch();
-
-  const [selectedBtn, setSelectedBtn] = useState<number>(0);
+  const isAuthenticated = useIsAuthenticated();
+  const [selectedBtn, setSelectedBtn] = useState<ConsoleState>(
+    getConsoleState()
+  );
   const opts: { [key: string]: () => ReactNode } = {
     Lobby: () => <Lobby />,
     Studio: () => <RoomStudio />,
-    Account: () => <Account />,
+    Account: () => (isAuthenticated ? <Account /> : <ProtectedSection />),
   };
   const optKeys = Object.keys(opts);
 
@@ -26,6 +41,10 @@ export const Console = () => {
     e.preventDefault();
     dispatch(switchConsoleState());
   };
+
+  useEffect(() => {
+    localStorage.setItem(CONSOLE_STATE_IDENTIFIER_KEY, selectedBtn.toString());
+  }, [selectedBtn]);
 
   useEffect(() => {
     const handleClickOutside = (event: any) => {
@@ -80,7 +99,7 @@ export const Console = () => {
               id="pixel-button"
               key={idx}
               className="outline-none focus:outline-none text-md md:text-xl uppercase cursor-pointer"
-              onClick={() => setSelectedBtn(idx)}
+              onClick={() => setSelectedBtn(idx as ConsoleState)}
             >
               <span className="text-xs md:text-sm">{title}</span>
             </button>
@@ -95,7 +114,7 @@ export const Console = () => {
       <Draggable handle=".handle">
         <div
           id="console"
-          className="w-[90%] md:w-4/5 lg:w-[460px] h-[24rem] px-2 text-center shadow-xl select-none"
+          className="w-[90%] md:w-4/5 lg:w-[490px] h-[26rem] px-2 text-center shadow-xl select-none"
         >
           <div className="relative w-full h-full flex flex-col items-center justify-center">
             <Header />

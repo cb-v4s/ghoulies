@@ -2,14 +2,20 @@ package controllers
 
 import (
 	"core/internal/adapters/database/models"
+	"core/internal/adapters/http/middleware"
 	core "core/internal/core"
 	"core/internal/core/services"
 	"core/types"
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+)
+
+const (
+	DefaultSameSiteAttr = http.SameSiteLaxMode // * GET, HEAD or OPTIONS only
 )
 
 type UserController struct {
@@ -61,7 +67,13 @@ var (
 )
 
 func setAuthCookie(c *gin.Context, key string, value string, exp int) {
+	c.SetSameSite(DefaultSameSiteAttr)
 	c.SetCookie(key, value, exp, "/", "localhost", false, false)
+}
+
+func setCsrfCookie(c *gin.Context, token string) {
+	c.SetSameSite(DefaultSameSiteAttr)
+	c.SetCookie(middleware.CSRFCookieKey, token, int(core.RefreshTokenExpTime.Seconds()), "/", "localhost", false, false)
 }
 
 // User Signup
@@ -123,8 +135,15 @@ func (services *UserController) Login(c *gin.Context) {
 		return
 	}
 
-	setAuthCookie(c, core.CookieAccessToken, authTokens.AccessToken, 3600)
-	setAuthCookie(c, core.CookieRefreshToken, authTokens.RefreshToken, 3600)
+	setAuthCookie(c, core.CookieAccessToken, authTokens.AccessToken, int((time.Hour * 24).Seconds()))
+	setAuthCookie(c, core.CookieRefreshToken, authTokens.RefreshToken, int((time.Hour * 24).Seconds()))
+
+	token, err := middleware.GetCSRFToken()
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+	}
+
+	setCsrfCookie(c, *token)
 
 	c.Status(http.StatusOK)
 }
@@ -134,14 +153,13 @@ func (services *UserController) Login(c *gin.Context) {
 //
 //	@Tags         user
 //
-// @Param        Authorization header  string  true  "Access token"  example("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
 // @Success      200  {object}  RefreshTokenSuccessResponse "Success response"
 // @Failure      400  {object}  RefreshTokenErrorResponse "Failed response"
 // @Router /api/v1/user/refresh  [get]
 func (services *UserController) Refresh(c *gin.Context) {
 	user, exists := c.Get("user")
 	if !exists {
-		c.JSON(http.StatusInternalServerError, types.ApiError(ErrorSomethingWentWrong))
+		c.JSON(http.StatusInternalServerError, types.ApiError(fmt.Errorf("something went wrong 1 %v, %v", user, exists)))
 		return
 	}
 
@@ -157,9 +175,37 @@ func (services *UserController) Refresh(c *gin.Context) {
 		return
 	}
 
-	setAuthCookie(c, core.CookieAccessToken, response.AccessToken, 3600)
+	token, err := middleware.GetCSRFToken()
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+	}
+
+	setCsrfCookie(c, *token)
+	setAuthCookie(c, core.CookieAccessToken, response.AccessToken, int((time.Hour * 24).Seconds()))
 
 	c.Status(http.StatusOK)
+}
+
+func (services *UserController) GetUserProfile(c *gin.Context) {
+	user, exists := c.Get("user")
+	if !exists {
+		c.Status(http.StatusUnauthorized)
+	}
+
+	userPtr, ok := user.(*models.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, types.ApiError(ErrorInvalidUser))
+		return
+	}
+
+	user, err := services.User.GetProfile(userPtr.ID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ApiError(err))
+	}
+
+	c.JSON(http.StatusOK, types.ApiResponse{
+		"user": user,
+	})
 }
 
 func (services *UserController) UpdateUser(c *gin.Context) {
@@ -181,14 +227,21 @@ func (services *UserController) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	response, err := services.User.Update(userPtr.ID, reqBody)
+	authTokens, err := services.User.Update(userPtr.ID, reqBody)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, types.ApiError(err))
 		return
 	}
 
-	setAuthCookie(c, core.CookieAccessToken, response.AccessToken, 3600)
-	setAuthCookie(c, core.CookieAccessToken, response.AccessToken, 3600)
+	setAuthCookie(c, core.CookieAccessToken, authTokens.AccessToken, int((time.Hour * 24).Seconds()))
+	setAuthCookie(c, core.CookieRefreshToken, authTokens.RefreshToken, int((time.Hour * 24).Seconds()))
+
+	token, err := middleware.GetCSRFToken()
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+	}
+
+	setCsrfCookie(c, *token)
 
 	c.Status(http.StatusOK)
 }

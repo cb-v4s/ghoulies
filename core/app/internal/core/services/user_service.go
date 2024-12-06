@@ -6,7 +6,12 @@ import (
 	repositories "core/internal/ports"
 	"core/types"
 	"errors"
+	"fmt"
 	"strings"
+)
+
+const (
+	minPasswordLen = 6
 )
 
 var (
@@ -17,7 +22,9 @@ var (
 	ErrorUsernameAlreadyRegistered = errors.New("username already exists")
 	ErrorFailedToHashPassword      = errors.New("failed to hash password")
 	ErrorPasswordLenExceeded       = errors.New("password must be no longer than 72 characters")
+	ErrorInvalidPasswordLen        = fmt.Errorf("password must be at least %d characters long", minPasswordLen)
 	ErrorSaveFailed                = errors.New("failed to save")
+	ErrorUserNotFound              = errors.New("user not found")
 )
 
 type UserService struct {
@@ -66,6 +73,10 @@ func (ctx *UserService) Signup(email string, username string, password string) e
 		return ErrorPasswordLenExceeded
 	}
 
+	if len(password) < minPasswordLen {
+		return ErrorInvalidPasswordLen
+	}
+
 	// * 2. Check if Email or Username is already stored
 	exists := ctx.userRepo.ExistsEmail(email)
 	if exists {
@@ -108,6 +119,14 @@ func (ctx *UserService) RefreshToken(user models.User) (*RefreshTokenResponse, e
 }
 
 func (ctx *UserService) Update(userId uint, updateUser types.UpdateUser) (*core.AuthTokensResponse, error) {
+	if updateUser.Password != nil && len(*updateUser.Password) < minPasswordLen {
+		return nil, ErrorInvalidPasswordLen
+	}
+
+	if updateUser.UserName != nil && ctx.userRepo.ExistsUsername(*updateUser.UserName) {
+		return nil, repositories.ErrorUsernameExists
+	}
+
 	user, err := ctx.userRepo.Update(userId, updateUser)
 	if err != nil {
 		return nil, ErrorSaveFailed
@@ -119,4 +138,25 @@ func (ctx *UserService) Update(userId uint, updateUser types.UpdateUser) (*core.
 	}
 
 	return authTokens, nil
+}
+
+type GetUserProfile struct {
+	UserID    uint   `json:"userId"`
+	Email     string `json:"email"`
+	Username  string `json:"username"`
+	CreatedAt int64  `json:"createdAt"` // timestamp
+}
+
+func (ctx *UserService) GetProfile(userId uint) (*GetUserProfile, error) {
+	user, err := ctx.userRepo.GetById(float64(userId))
+	if err != nil {
+		return nil, ErrorUserNotFound
+	}
+
+	return &GetUserProfile{
+		UserID:    user.ID,
+		Email:     user.Email,
+		Username:  user.Username,
+		CreatedAt: user.CreatedAt.Unix(),
+	}, nil
 }

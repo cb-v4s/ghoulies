@@ -6,6 +6,7 @@ import (
 	util "core/internal/utils"
 	types "core/types"
 	"encoding/json"
+	"errors"
 	"fmt"
 	mathRand "math/rand"
 	"sync"
@@ -15,6 +16,12 @@ import (
 const (
 	GridSize  = 10
 	RoomLimit = 10
+)
+
+var (
+	ErrorRoomIsFull      = errors.New("room is full")
+	ErrorInvalidPassword = errors.New("invalid password")
+	ErrorRoomNotExists   = errors.New("room does not exist")
 )
 
 type JoinRoomResponse struct {
@@ -31,7 +38,7 @@ func deleteFromSlice(target []string, value string) []string {
 	return target
 }
 
-func Contains(target []string, value string) bool {
+func inSlice(target []string, value string) bool {
 	for _, v := range target {
 		if v == value {
 			return true
@@ -54,9 +61,8 @@ func newRoomId(roomName string) (*types.RoomId, error) {
 }
 
 // Check if the room is full
-func IsRoomFull(roomId types.RoomId) bool {
-	roomData, exists := memory.GetRoom(roomId)
-	return exists && len(roomData.Users) >= RoomLimit
+func IsRoomFull(room types.RoomData) bool {
+	return len(room.Users) >= RoomLimit
 }
 
 func RemoveUser(userId types.UserID, roomId types.RoomId) {
@@ -245,7 +251,7 @@ func getRandomEmptyPosition(occupiedPositions []string, max int) (string, types.
 		col := mathRand.Intn(max)
 		var strPos string = fmt.Sprintf("%d,%d", row, col)
 
-		exists := Contains(
+		exists := inSlice(
 			occupiedPositions,
 			strPos,
 		)
@@ -256,22 +262,26 @@ func getRandomEmptyPosition(occupiedPositions []string, max int) (string, types.
 	}
 }
 
-func JoinRoom(reqData types.JoinRoom, messageClient *types.MessageClient, userId types.UserID) {
+func JoinRoom(reqData types.JoinRoom, messageClient *types.MessageClient, userId types.UserID) error {
 	// ! TODO: remove a user from a room if connected
 	user, _ := memory.GetClient(types.UserID(userId))
 	if len(user.RoomId) > 0 {
 		RemoveUser(user.ID, user.RoomId)
 	}
 
-	if IsRoomFull(reqData.RoomId) {
-		fmt.Println("error_room_full")
-		return
-	}
-
 	// Check if the room already exists
 	roomData, exists := memory.GetRoom(reqData.RoomId)
+	if !exists {
+		return ErrorRoomNotExists
+	}
 
-	fmt.Printf("roomData: %v, exists: %v\n", roomData, exists)
+	if IsRoomFull(*roomData) {
+		return ErrorRoomIsFull
+	}
+
+	if roomData.Password != reqData.Password {
+		return ErrorInvalidPassword
+	}
 
 	// Set initial position
 	newPosition := types.Position{Row: 0, Col: 0}
@@ -334,6 +344,8 @@ func JoinRoom(reqData types.JoinRoom, messageClient *types.MessageClient, userId
 		Event: "setUserId",
 		Data:  setUserData,
 	})
+
+	return nil
 }
 
 func BroadcastMessage(reqData types.Msg, messageClient *types.MessageClient, userId types.UserID) {
@@ -391,6 +403,7 @@ func NewRoom(reqData types.NewRoom, messageClient *types.MessageClient, userId t
 
 	roomData := types.RoomData{
 		Name:           reqData.RoomName,
+		Password:       reqData.Password,
 		Users:          []types.User{},
 		UsersPositions: []string{},
 		UserIdxMap:     make(map[types.UserID]types.UserIdx),

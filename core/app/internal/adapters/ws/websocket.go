@@ -161,7 +161,6 @@ func HandleWebSocket(c *gin.Context) {
 
 			services.BroadcastMessage(reqData, messageClient, userId)
 
-		// TODO: solo recibir jwtJoken, de ahi obtienes el userId y roomId
 		case "updatePosition":
 			var reqData types.UpdateUserPos
 			err := parsePayload(payload.Data, &reqData)

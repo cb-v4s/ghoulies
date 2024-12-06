@@ -15,10 +15,11 @@ const Lobby = () => {
   const dispatch = useDispatch();
   const displayConsole = useSelector(getConsoleState);
   const messages = useSelector(getMessages);
+  const cleanMessagesEveryMs = 1000;
 
   useInterval(() => {
     dispatch(cleanMessages());
-  }, 1000);
+  }, cleanMessagesEveryMs);
 
   return (
     <MainLayout>

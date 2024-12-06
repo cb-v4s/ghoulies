@@ -74,19 +74,21 @@ type UserLeave struct {
 
 type Middlewares struct {
 	Auth gin.HandlerFunc
+	CSRF gin.HandlerFunc
 }
 
 type RoomData struct {
 	Name           string
+	Password       *string
 	Users          []User
 	UsersPositions []string // * e.g. "Row, Col" => "1,2", "3,4", ...
 	UserIdxMap     map[UserID]UserIdx
 }
 
 type UpdateUser struct {
-	RoomId   *string
-	UserName *string
-	Password *string
+	RoomId   *string `json:"roomId"`
+	UserName *string `json:"username"`
+	Password *string `json:"password"`
 }
 
 type UpdateUserPos struct {
@@ -106,15 +108,15 @@ type UpdateUserFacingDir struct {
 }
 
 type NewRoom struct {
-	UserName string `json:"userName"`
-	RoomName string `json:"roomName"`
-	Password string `json:"password"`
+	UserName string  `json:"userName"`
+	RoomName string  `json:"roomName"`
+	Password *string `json:"password"`
 }
 
 type JoinRoom struct {
-	RoomId   RoomId `json:"roomId"`
-	UserName string `json:"userName"`
-	Password string `json:"password"`
+	RoomId   RoomId  `json:"roomId"`
+	UserName string  `json:"userName"`
+	Password *string `json:"password"`
 }
 
 type WsPayload struct {

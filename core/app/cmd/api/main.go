@@ -51,12 +51,13 @@ func main() {
 	userController := controllers.NewUserController(userService)
 	// ... add more
 
-	// * initialize middlewares
-	authMiddleware := middleware.NewAuthMiddleware(&repos.User)
-	// ... add more
-
-	middlewares := types.Middlewares{Auth: authMiddleware.Authenticate}
 	// controllers := types.Controllers{User: userController, Room: roomController}
+
+	// * initialize middlewares
+	middlewares := types.Middlewares{
+		Auth: middleware.NewAuthMiddleware(&repos.User).Authenticate,
+		CSRF: middleware.ValidateCSRFToken(),
+	}
 
 	gin.SetMode(config.GinMode)
 	server := gin.New()

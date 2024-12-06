@@ -14,6 +14,17 @@ export interface PopularRoomsResponse {
   rooms: RoomInfo[];
 }
 
+type UserProfile = {
+  userId: string;
+  email: string;
+  username: string;
+  createdAt: number;
+};
+
+export interface UserProfileResponse {
+  user: UserProfile;
+}
+
 export interface RoomInfo {
   roomId: string;
   roomName: string;

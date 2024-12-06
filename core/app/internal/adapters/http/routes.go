@@ -24,10 +24,11 @@ func SetupRoutes(r *gin.Engine, userController *controllers.UserController, midd
 	{
 		userGroup := apiv1.Group("/user")
 		{
-			userGroup.POST("/signup", userController.Signup)
 			userGroup.POST("/login", userController.Login)
+			userGroup.POST("/signup", userController.Signup)
 			userGroup.GET("/refresh", middlewares.Auth, userController.Refresh)
-			userGroup.GET("/update", middlewares.Auth, userController.UpdateUser)
+			userGroup.POST("/update", middlewares.Auth, middlewares.CSRF, userController.UpdateUser)
+			userGroup.GET("/profile", middlewares.Auth, userController.GetUserProfile)
 		}
 
 		roomGroup := apiv1.Group("/rooms")

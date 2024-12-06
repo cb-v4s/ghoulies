@@ -3,7 +3,6 @@ package middleware
 import (
 	"core/internal/core"
 	repositories "core/internal/ports"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -21,7 +20,6 @@ func NewAuthMiddleware(userRepo *repositories.UserRepoContext) *AuthMiddleware {
 
 func (ctx *AuthMiddleware) Authenticate(c *gin.Context) {
 	tokenString, _ := c.Cookie(core.CookieAccessToken)
-	fmt.Printf("incoming cookie token %s\n", tokenString)
 
 	userData, err := core.DecodeToken(tokenString)
 	if err != nil {

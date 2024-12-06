@@ -16,7 +16,7 @@ export const SignUp = () => {
   const navigate = useNavigate();
   const {
     mutate: doSignup,
-    data,
+    isSuccess,
     error: doSignupError,
     isError,
     isPending,
@@ -43,10 +43,10 @@ export const SignUp = () => {
   });
 
   useEffect(() => {
-    if (!data) return;
+    if (!isSuccess) return;
 
     navigate("/login");
-  }, [data]);
+  }, [isSuccess]);
 
   useEffect(() => {
     console.log("useEffect ~ data:", doSignupError);

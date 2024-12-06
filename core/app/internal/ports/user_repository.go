@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"core/internal/adapters/database/models"
+	"core/internal/core"
 	"core/types"
 	"errors"
 
@@ -12,6 +13,7 @@ var (
 	ErrorEmailNotFound  = errors.New("email not found")
 	ErrorUserIdNotFound = errors.New("user id not found")
 	ErrorFailedSave     = errors.New("failed saving")
+	ErrorUsernameExists = errors.New("username already exists")
 )
 
 type UserRepo interface {
@@ -72,10 +74,19 @@ func (ctx *UserRepoContext) Update(id uint, userUpdates types.UpdateUser) (*mode
 	}
 
 	if userUpdates.Password != nil {
-		user.Password = *userUpdates.Password
+		password, err := core.GenPasswordHash(*userUpdates.Password)
+		if err != nil {
+			return nil, err
+		}
+
+		user.Password = string(*password)
 	}
 
 	if userUpdates.UserName != nil {
+		if ctx.ExistsUsername(*userUpdates.UserName) {
+			return nil, ErrorUsernameExists
+		}
+
 		user.Username = *userUpdates.UserName
 	}
 
