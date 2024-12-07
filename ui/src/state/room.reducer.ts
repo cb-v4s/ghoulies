@@ -1,7 +1,23 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RootState } from "../store";
-import { RoomState, User } from "../types";
+import { RootState } from "@/store";
+import { Position, RoomState, User } from "../types";
 import { isExpired } from "@lib/misc";
+
+const processUpdateQueue = (state: RoomState) => {
+  while (state.updateQueue.length > 0) {
+    const nextUpdate = state.updateQueue.shift(); // Get the next update from the queue
+    if (!nextUpdate) continue; // Safety check
+
+    const { roomId, users } = nextUpdate;
+
+    // Update the room info
+    state.roomInfo = { ...state.roomInfo, RoomId: roomId, Users: users };
+    console.log("state.roomInfo =>", state.roomInfo.Users);
+  }
+
+  // Reset the updating flag
+  state.isUpdating = false; // Reset when done
+};
 
 const initialState: RoomState = {
   userId: null,
@@ -13,6 +29,8 @@ const initialState: RoomState = {
     Users: [],
     Messages: [],
   },
+  updateQueue: [],
+  isUpdating: false,
 };
 
 export const roomSlice = createSlice({
@@ -25,12 +43,32 @@ export const roomSlice = createSlice({
     setIsTyping: (state, action: PayloadAction<boolean>) => {
       state.isTyping = action.payload;
     },
+    setUserPosition: (
+      state,
+      action: PayloadAction<{ userId: string; position: Position }>
+    ) => {
+      const { userId, position } = action.payload;
+      const userIdx = state.roomInfo.Users.findIndex(
+        (user: User) => user.UserID === userId
+      );
+      if (userIdx === undefined) return;
+
+      state.roomInfo.Users[userIdx].Position = position;
+    },
     setRoomInfo: (
       state,
       action: PayloadAction<{ roomId: string; users: User[] }>
     ) => {
       const { roomId, users } = action.payload;
-      state.roomInfo = { ...state.roomInfo, RoomId: roomId, Users: users };
+
+      // Add the update to the queue
+      state.updateQueue.push({ roomId, users });
+
+      // Process the queue if not already updating
+      if (!state.isUpdating) {
+        state.isUpdating = true; // Set the updating flag
+        processUpdateQueue(state);
+      }
     },
     setUserId: (state, action: PayloadAction<{ userId: string }>) => {
       const { userId } = action.payload;
@@ -104,6 +142,7 @@ export const {
   setDefaultState,
   setIsTyping,
   setEmptyChatbox,
+  setUserPosition,
 } = roomSlice.actions;
 
 export const getConsoleState = (state: RootState) => state.room.displayConsole;

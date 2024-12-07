@@ -30,14 +30,16 @@ func UserSubscribe(mc *types.MessageClient, roomId types.RoomId) {
 	pubsub := redisClient.Subscribe(ctx, string(roomId))
 	defer pubsub.Close()
 
-	for {
-		msg, err := pubsub.ReceiveMessage(ctx)
-		if err != nil {
-			log.Printf("Error receiving message: %v", err)
-			break
-		}
+	controlCh := pubsub.Channel()
 
-		mc.Send <- []byte(msg.Payload)
+	for {
+		select {
+		case msg := <-controlCh:
+			mc.Send <- []byte(msg.Payload)
+		case <-ctx.Done():
+			log.Println("Context canceled, exiting subscribe loop.")
+			return
+		}
 	}
 }
 
@@ -48,6 +50,8 @@ func BroadcastRoom(roomId types.RoomId, event string, data interface{}) {
 	payload := make(map[string]interface{})
 	payload["Event"] = event
 	payload["Data"] = data
+
+	fmt.Printf("Broadcasting payload: %v\n", payload["Data"])
 
 	// serialize payload to json so that redis accepts it
 	JSONPayload, err := json.Marshal(payload)

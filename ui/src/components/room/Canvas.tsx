@@ -1,31 +1,25 @@
-import React, { useEffect, useRef } from "react";
+import { CanvasDimensions, MapOffset, Room } from "@/types";
+import { useEffect, useRef } from "react";
 
 export const Canvas = ({
-  userId,
   roomInfo,
   canvasSize,
   draw,
-  locations,
   mapOffset,
   onMouseDown,
-  onMouseUp,
-  resources,
   updateMapOffset,
   updateCanvasSize,
 }: {
-  userId: any;
-  roomInfo: any;
-  canvasSize: any;
-  draw: any;
-  locations: any;
-  mapOffset: any;
-  onMouseDown: any;
-  onMouseUp: any;
-  resources: any;
-  updateMapOffset: any;
-  updateCanvasSize: any;
+  roomInfo: Room;
+  canvasSize: CanvasDimensions;
+  draw: (ctx: CanvasRenderingContext2D) => void;
+  mapOffset: MapOffset;
+  onMouseDown: (e: MouseEvent, canvas: HTMLCanvasElement) => void;
+  updateMapOffset: (x: number, y: number) => void;
+  updateCanvasSize: () => void;
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     updateCanvasSize();
@@ -36,39 +30,55 @@ export const Canvas = ({
     canvas.height = canvasSize.height;
     canvas.width = canvasSize.width;
 
-    const ctx = canvas?.getContext("2d");
+    // Create off-screen canvas
+    const offscreenCanvas = document.createElement("canvas");
+    offscreenCanvas.width = canvasSize.width;
+    offscreenCanvas.height = canvasSize.height;
+    offscreenCanvasRef.current = offscreenCanvas;
 
-    canvas.addEventListener("mouseup", (e) => onMouseUp(e, canvas));
-    canvas.addEventListener("mousedown", (e) => onMouseDown(e, canvas));
-    window.addEventListener("resize", updateCanvasSize);
-
-    if (ctx) draw(ctx, resources.images.tileMap.imgElem);
+    canvas.addEventListener("mousedown", (e: MouseEvent) =>
+      onMouseDown(e, canvas)
+    );
+    window.addEventListener("resize", () => updateCanvasSize());
 
     return () => {
-      canvas.removeEventListener("mouseup", (e) => onMouseUp(e, canvas));
       canvas.removeEventListener("mousedown", (e) => onMouseDown(e, canvas));
-      window.removeEventListener("resize", updateCanvasSize);
+      window.removeEventListener("resize", () => updateCanvasSize());
     };
   }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const offscreenCanvas = offscreenCanvasRef.current;
+
+    if (!canvas || !offscreenCanvas) return;
 
     canvas.height = canvasSize.height;
     canvas.width = canvasSize.width;
     updateMapOffset(mapOffset.x, mapOffset.y);
 
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      const drawFrame = () => {
-        draw(ctx, resources.images.tileMap.imgElem);
-        requestAnimationFrame(drawFrame);
-      };
+    const ctx = offscreenCanvas.getContext("2d");
+    if (!ctx) return;
 
-      drawFrame();
-    }
-  }, [locations, mapOffset, userId, roomInfo]);
+    const drawFrame = () => {
+      // Clear the offscreen canvas
+      ctx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+
+      // Draw to the offscreen canvas
+      draw(ctx);
+
+      // Draw the offscreen canvas to the main canvas
+      const mainCtx = canvas.getContext("2d");
+      if (mainCtx) {
+        mainCtx.clearRect(0, 0, canvas.width, canvas.height); // Clear the main canvas
+        mainCtx.drawImage(offscreenCanvas, 0, 0);
+      }
+
+      requestAnimationFrame(drawFrame);
+    };
+
+    drawFrame();
+  }, [mapOffset, roomInfo]); // Only depend on necessary state
 
   return <canvas ref={canvasRef} />;
 };

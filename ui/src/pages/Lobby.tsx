@@ -18,7 +18,7 @@ const Lobby = () => {
   const cleanMessagesEveryMs = 1000;
 
   useInterval(() => {
-    dispatch(cleanMessages());
+    if (messages.length) dispatch(cleanMessages());
   }, cleanMessagesEveryMs);
 
   return (

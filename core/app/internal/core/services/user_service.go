@@ -29,11 +29,13 @@ var (
 
 type UserService struct {
 	userRepo *repositories.UserRepoContext
+	logger   core.LoggerI
 }
 
-func NewUserService(userRepo *repositories.UserRepoContext) *UserService {
+func NewUserService(logger core.LoggerI, userRepo *repositories.UserRepoContext) *UserService {
 	return &UserService{
 		userRepo: userRepo,
+		logger:   logger,
 	}
 }
 

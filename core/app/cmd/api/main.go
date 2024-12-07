@@ -7,6 +7,7 @@ import (
 	"core/internal/adapters/http/controllers"
 	"core/internal/adapters/http/middleware"
 	"core/internal/adapters/memory"
+	"core/internal/core"
 	"core/internal/core/services"
 	ports "core/internal/ports"
 	"core/types"
@@ -43,8 +44,11 @@ func main() {
 		log.Fatalf("Failed to initialize dependencies")
 	}
 
+	// * initialize logger
+	loggerService := core.NewLogger()
+
 	// * initialize services
-	userService := services.NewUserService(&repos.User)
+	userService := services.NewUserService(loggerService, &repos.User)
 	// ... add more
 
 	// * initialize controllers

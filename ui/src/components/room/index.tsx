@@ -1,25 +1,116 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { resources } from "./resources";
 import { useSelector } from "react-redux";
 import { getRoomInfo, getUserId } from "@state/room.reducer";
 import { updatePosition } from "@components/wsHandler";
 import { RoomData } from "./roomData";
-import { debounce, getImageResource } from "@lib/misc";
+import { debounce, getImageResource, sleep } from "@lib/misc";
 import { Canvas } from "./Canvas";
+import {
+  CanvasDimensions,
+  MapOffset,
+  Room as RoomType,
+  RoomInfo,
+  FacingDirection,
+} from "@/types";
+import useInterval from "@/hooks/useInterval";
 
 export const Room = () => {
-  const [locations, setLocations] = useState<{ x: number; y: number }[]>([]);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [canvasSize, setCanvasSize] = useState({ width: 740, height: 710 });
-  const roomInfo = useSelector(getRoomInfo);
-  const userId = useSelector(getUserId);
+  const [canvasSize, setCanvasSize] = useState<CanvasDimensions>({
+    width: 740,
+    height: 710,
+  });
   const [currentRow, setCurrentRow] = useState<number>(0);
   const [currentCol, setCurrentCol] = useState<number>(0);
 
+  const roomInfo = useSelector(getRoomInfo);
+  // const [roomInfo, setRoomInfo] = useState<RoomType>({
+  //   RoomId: null,
+  //   Users: [
+  //     {
+  //       Position: { Row: 0, Col: 0 },
+  //       Direction: FacingDirection.frontLeft,
+  //       RoomID: "keep the block hot",
+  //       UserID: "206617",
+  //       UserName: "alice",
+  //       IsTyping: false,
+  //     },
+  //     {
+  //       Position: { Row: 0, Col: 9 },
+  //       Direction: FacingDirection.frontLeft,
+  //       RoomID: "keep the block hot",
+  //       UserID: "206612",
+  //       UserName: "owl",
+  //       IsTyping: false,
+  //     },
+  //   ],
+  //   Messages: [],
+  // });
+
+  // async function animate() {
+  //   for (;;) {
+  //     const path0 = [
+  //       { Row: 0, Col: 0 },
+  //       { Row: 1, Col: 1 },
+  //       { Row: 2, Col: 2 },
+  //       { Row: 3, Col: 3 },
+  //       { Row: 4, Col: 4 },
+  //       { Row: 5, Col: 5 },
+  //       { Row: 6, Col: 6 },
+  //       { Row: 7, Col: 7 },
+  //       { Row: 8, Col: 8 },
+  //       { Row: 9, Col: 9 },
+  //     ];
+
+  //     const path1 = [
+  //       { Row: 0, Col: 9 },
+  //       { Row: 1, Col: 8 },
+  //       { Row: 2, Col: 7 },
+  //       { Row: 3, Col: 6 },
+  //       { Row: 4, Col: 5 },
+  //       { Row: 5, Col: 4 },
+  //       { Row: 6, Col: 3 },
+  //       { Row: 7, Col: 2 },
+  //       { Row: 8, Col: 1 },
+  //       { Row: 9, Col: 0 },
+  //     ];
+
+  //     for (let i = 0; i < path1.length; i++) {
+  //       const usersCopy = roomInfo.Users;
+
+  //       usersCopy[1] = {
+  //         ...usersCopy[1],
+  //         Position: path1[i],
+  //       };
+
+  //       setRoomInfo({
+  //         ...roomInfo,
+  //         Users: usersCopy,
+  //       });
+
+  //       usersCopy[0] = {
+  //         ...usersCopy[0],
+  //         Position: path0[i],
+  //       };
+
+  //       setRoomInfo({
+  //         ...roomInfo,
+  //         Users: usersCopy,
+  //       });
+
+  //       await sleep(200);
+  //     }
+  //   }
+  // }
+
+  // useEffect(() => {
+  //   animate();
+  // }, []);
+
+  const userId = useSelector(getUserId);
+
   let mapOffsetX = 0;
   let mapOffsetY = 0;
-  let isDragging = false;
-  let mouseDown = false;
   let mouseScreenX = 0;
   let mouseScreenY = 0;
   let mouseTileX = 0;
@@ -56,14 +147,36 @@ export const Room = () => {
     [3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
   ];
 
-  const [mapOffset, setMapOffset] = useState<{ x: number; y: number }>({
+  const [mapOffset, setMapOffset] = useState<MapOffset>({
     x: 320,
     y: 180,
   });
 
-  const draw = (ctx: any, imageRef: any) => {
+  const draw = (ctx: CanvasRenderingContext2D) => {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // Clear the canvas
 
+    drawMap(ctx);
+    drawCharacters(ctx);
+  };
+
+  const drawCharacters = (ctx: CanvasRenderingContext2D) => {
+    roomInfo.Users.forEach(({ Position, Direction, UserName, IsTyping }) => {
+      drawCharacterAt({
+        ctx,
+        img: getImageResource(Direction, "ghost"),
+        x: Position.Row - 1,
+        y: Position.Col - 1,
+        blockWidth: blockWidth + 90,
+        blockHeight: blockHeight + 20,
+        XPosPadding: 45,
+        YPosPadding: 0,
+        username: UserName,
+        isTyping: IsTyping,
+      });
+    });
+  };
+
+  const drawMap = (ctx: CanvasRenderingContext2D) => {
     for (var x = renderStartX; x <= renderFinishX; x++) {
       for (var y = renderStartY; y <= renderFinishY; y++) {
         var drawTile = tileMap[x][y];
@@ -82,7 +195,7 @@ export const Room = () => {
         var destHeight = blockHeight;
 
         ctx.drawImage(
-          imageRef,
+          resources.images.tileMap.imgElem,
           srcX,
           srcY,
           blockWidth,
@@ -94,24 +207,9 @@ export const Room = () => {
         );
       }
     }
-
-    roomInfo.Users.forEach(({ Position, Direction, UserName, IsTyping }) => {
-      drawCharacterAt({
-        ctx,
-        img: getImageResource(Direction, "ghost"),
-        x: Position.Row - 1,
-        y: Position.Col - 1,
-        blockWidth: blockWidth + 90,
-        blockHeight: blockHeight + 20,
-        XPosPadding: 45,
-        YPosPadding: 0,
-        username: UserName,
-        isTyping: IsTyping,
-      });
-    });
   };
 
-  const limit = (value: number, min: number, max: number) => {
+  const tileLimit = (value: number, min: number, max: number) => {
     return Math.max(min, Math.min(value, max));
   };
 
@@ -123,13 +221,13 @@ export const Room = () => {
     let maxTileY =
       Array.isArray(tileMap) && tileMap.length > 0 ? tileMap[0].length - 1 : 0;
 
-    let tileX = limit(Math.round(mappedX + mappedY) - 1, 0, maxTileX);
-    let tileY = limit(Math.round(-mappedX + mappedY), 0, maxTileY);
+    let tileX = tileLimit(Math.round(mappedX + mappedY) - 1, 0, maxTileX);
+    let tileY = tileLimit(Math.round(-mappedX + mappedY), 0, maxTileY);
 
     return { x: tileX, y: tileY };
   };
 
-  const updateMapOffset = (deltaX: number, deltaY: number) => {
+  const updateMapOffset = (deltaX: number, deltaY: number): void => {
     mapOffsetX += deltaX;
     mapOffsetY += deltaY;
 
@@ -233,24 +331,31 @@ export const Room = () => {
       );
     }
 
-    if (username) {
-      ctx.font = "600 15px arial";
-      ctx.textAlign = "center";
-      ctx.fillStyle = "#DCDCE4";
-
-      const textX = destX + blockWidth / 2;
-      const textY = destY + blockHeight;
-
-      ctx.fillText(username, textX, textY);
-    }
+    if (username)
+      drawText(ctx, username, destX, destY, blockWidth, blockHeight);
   };
 
-  const hdlMouseDown = (e: any, canvas: any) => {
+  const drawText = (
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    destX: number,
+    destY: number,
+    blockWidth: number,
+    blockHeight: number
+  ) => {
+    ctx.font = "600 15px arial";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#DCDCE4";
+
+    const textX = destX + blockWidth / 2;
+    const textY = destY + blockHeight;
+
+    ctx.fillText(text, textX, textY);
+  };
+
+  const hdlMouseDown = (e: MouseEvent, canvas: HTMLCanvasElement) => {
     // * left mouse button is pressed
     if (e.button !== 0) return false;
-
-    mouseDown = true;
-    isDragging = false;
 
     let rect = canvas.getBoundingClientRect();
 
@@ -285,47 +390,6 @@ export const Room = () => {
     }
   }, [currentRow, currentCol]);
 
-  const getDestination = (canvas: HTMLCanvasElement, e: any) => {
-    if (!Array.isArray(tileMap) || tileMap.length < 1 || tileMap[0].length < 1)
-      return;
-
-    let rect = canvas.getBoundingClientRect();
-    let newX = e.clientX - rect.left;
-    let newY = e.clientY - rect.top;
-
-    let mouseTilePos = convertScreenToTile(
-      newX - mapOffset.x,
-      newY - mapOffset.y
-    );
-
-    const maxTileX = tileMap.length - 1;
-    const maxTileY = tileMap[0].length - 1;
-
-    if (
-      mouseTilePos.x < 0 ||
-      mouseTilePos.x > maxTileX ||
-      mouseTilePos.y < 0 ||
-      mouseTilePos.y > maxTileY
-    ) {
-      return null; // Out of bounds
-    }
-
-    return { x: mouseTilePos.x, y: mouseTilePos.y };
-  };
-
-  const hdlMouseUp = (e: any, canvas: any) => {
-    if (mouseDown && !isDragging && e.button === 0) {
-      const dest = getDestination(canvas, e);
-      if (dest) {
-        setLocations([{ x: dest.x, y: dest.y }]);
-      }
-    }
-
-    mouseDown = false; // Reset mouseDown state
-    isDragging = false; // Reset dragging flag
-    return false;
-  };
-
   const updateCanvasSize = () => {
     const width = window.innerWidth;
     let newWidth, newHeight;
@@ -338,8 +402,8 @@ export const Room = () => {
     } else if (width >= 500) {
       setMapOffset({ x: 210, y: 80 });
       // Medium screens
-      newWidth = 560; // Example size for medium
-      newHeight = 960; // Example size for medium
+      newWidth = 560;
+      newHeight = 960;
     } else {
       setMapOffset({ x: 140, y: 0 });
       newWidth = 360;
@@ -352,19 +416,17 @@ export const Room = () => {
   return (
     <div className="flex items-center justify-center">
       <RoomData currentRow={currentRow} currentCol={currentCol} />
-      <Canvas
-        userId={userId}
-        roomInfo={roomInfo}
-        canvasSize={canvasSize}
-        draw={draw}
-        locations={locations}
-        mapOffset={mapOffset}
-        onMouseDown={hdlMouseDown}
-        onMouseUp={hdlMouseUp}
-        resources={resources} // Pass any resources needed for drawing
-        updateMapOffset={updateMapOffset}
-        updateCanvasSize={updateCanvasSize}
-      />
+      {roomInfo && (
+        <Canvas
+          roomInfo={roomInfo}
+          canvasSize={canvasSize}
+          draw={draw}
+          mapOffset={mapOffset}
+          onMouseDown={hdlMouseDown}
+          updateMapOffset={updateMapOffset}
+          updateCanvasSize={updateCanvasSize}
+        />
+      )}
     </div>
   );
 };

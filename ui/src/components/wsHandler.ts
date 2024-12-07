@@ -1,7 +1,12 @@
 import { useEffect } from "react";
 import { wsApiUrl } from "@/siteConfig";
 import { useDispatch } from "react-redux";
-import { setRoomInfo, setRoomMessage, setUserId } from "@state/room.reducer";
+import {
+  setRoomInfo,
+  setRoomMessage,
+  setUserId,
+  setUserPosition,
+} from "@state/room.reducer";
 
 export var ws = new WebSocket(wsApiUrl);
 
@@ -30,6 +35,7 @@ enum RequestEvents {
 
 enum ResponseEvents {
   UpdateScene = "updateScene",
+  UpdateUserPosition = "updateUser",
   BroadcastMessage = "broadcastMessage",
   SetUserId = "setUserId",
 }
@@ -144,7 +150,6 @@ export const updateTyping = (
     },
   };
 
-  console.log("sentttt", payload);
   ws.send(JSON.stringify(payload));
 };
 
@@ -183,6 +188,10 @@ export const WsHandler = () => {
       switch (event) {
         case ResponseEvents.UpdateScene:
           dispatch(setRoomInfo(data));
+
+          break;
+        case ResponseEvents.UpdateUserPosition:
+          dispatch(setUserPosition(data));
 
           break;
         case ResponseEvents.BroadcastMessage:

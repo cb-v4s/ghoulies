@@ -14,6 +14,11 @@ type UpdateScene struct {
 	Users  []User `json:"users"`
 }
 
+type UpdateUserPosition struct {
+	UserId   string   `json:"userId"`
+	Position Position `json:"position"`
+}
+
 // Constants for FacingDirection
 const (
 	FrontRight FacingDirection = -1

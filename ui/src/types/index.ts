@@ -5,10 +5,15 @@ export type MessageT = {
 
 export type Todo = {};
 
-// TODO: rm this
-export interface ApiError {
-  error: string;
-}
+export type MapOffset = {
+  x: number;
+  y: number;
+};
+
+export type CanvasDimensions = {
+  width: number;
+  height: number;
+};
 
 export interface PopularRoomsResponse {
   rooms: RoomInfo[];
@@ -31,7 +36,7 @@ export interface RoomInfo {
   totalConns: number;
 }
 
-type Position = {
+export type Position = {
   Row: number;
   Col: number;
 };
@@ -59,7 +64,7 @@ export type Message = {
   Position: Position;
 };
 
-interface Room {
+export interface Room {
   RoomId: string | null;
   Users: User[];
   Messages: Message[];
@@ -71,4 +76,6 @@ export interface RoomState {
   userId: string | null;
   username: string | null;
   isTyping: boolean | null;
+  updateQueue: any[];
+  isUpdating: boolean;
 }

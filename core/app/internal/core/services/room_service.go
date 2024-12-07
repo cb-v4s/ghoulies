@@ -218,7 +218,7 @@ func UpdateUserPosition(roomId types.RoomId, userId types.UserID, dest string) {
 
 	const speedUserMov int = 180
 
-	for _, newPosition := range path {
+	for _, newPosition := range path[1:] {
 		room.UsersPositions = deleteFromSlice(room.UsersPositions, posKey)
 
 		room.Users[userIdx].Position = newPosition
@@ -228,12 +228,12 @@ func UpdateUserPosition(roomId types.RoomId, userId types.UserID, dest string) {
 		room.UsersPositions = append(room.UsersPositions, newPosKey)
 		memory.UpdateRoom(roomId, room)
 
-		updateSceneData := types.UpdateScene{
-			RoomId: string(roomId),
-			Users:  room.Users,
+		updateSceneData := types.UpdateUserPosition{
+			UserId:   string(room.Users[userIdx].UserID),
+			Position: newPosition,
 		}
 
-		memory.BroadcastRoom(roomId, "updateScene", updateSceneData)
+		memory.BroadcastRoom(roomId, "updateUser", updateSceneData)
 
 		// Simulate movement delay
 		time.Sleep(time.Duration(speedUserMov) * time.Millisecond)
