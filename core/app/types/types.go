@@ -15,8 +15,7 @@ type UpdateScene struct {
 }
 
 type UpdateUserPosition struct {
-	UserId   string   `json:"userId"`
-	Position Position `json:"position"`
+	User User `json:"user"`
 }
 
 // Constants for FacingDirection

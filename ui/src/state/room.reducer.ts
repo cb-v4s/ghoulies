@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "@/store";
-import { Position, RoomState, User } from "../types";
+import { RoomState, User } from "../types";
 import { isExpired } from "@lib/misc";
 
 const processUpdateQueue = (state: RoomState) => {
@@ -8,11 +8,15 @@ const processUpdateQueue = (state: RoomState) => {
     const nextUpdate = state.updateQueue.shift(); // Get the next update from the queue
     if (!nextUpdate) continue; // Safety check
 
-    const { roomId, users } = nextUpdate;
+    const { userId, user } = nextUpdate;
 
     // Update the room info
-    state.roomInfo = { ...state.roomInfo, RoomId: roomId, Users: users };
-    console.log("state.roomInfo =>", state.roomInfo.Users);
+    const userIdx = state.roomInfo.Users.findIndex(
+      (user: User) => user.UserID === userId
+    );
+    if (userIdx === undefined) return;
+
+    state.roomInfo.Users[userIdx] = user;
   }
 
   // Reset the updating flag
@@ -43,32 +47,26 @@ export const roomSlice = createSlice({
     setIsTyping: (state, action: PayloadAction<boolean>) => {
       state.isTyping = action.payload;
     },
-    setUserPosition: (
-      state,
-      action: PayloadAction<{ userId: string; position: Position }>
-    ) => {
-      const { userId, position } = action.payload;
-      const userIdx = state.roomInfo.Users.findIndex(
-        (user: User) => user.UserID === userId
-      );
-      if (userIdx === undefined) return;
+    setUserPosition: (state, action: PayloadAction<{ user: User }>) => {
+      const { user } = action.payload;
 
-      state.roomInfo.Users[userIdx].Position = position;
-    },
-    setRoomInfo: (
-      state,
-      action: PayloadAction<{ roomId: string; users: User[] }>
-    ) => {
-      const { roomId, users } = action.payload;
+      const userId = user.UserID;
 
       // Add the update to the queue
-      state.updateQueue.push({ roomId, users });
+      state.updateQueue.push({ userId, user });
 
       // Process the queue if not already updating
       if (!state.isUpdating) {
         state.isUpdating = true; // Set the updating flag
         processUpdateQueue(state);
       }
+    },
+    setRoomInfo: (
+      state,
+      action: PayloadAction<{ roomId: string; users: User[] }>
+    ) => {
+      const { roomId, users } = action.payload;
+      state.roomInfo = { ...state.roomInfo, RoomId: roomId, Users: users };
     },
     setUserId: (state, action: PayloadAction<{ userId: string }>) => {
       const { userId } = action.payload;

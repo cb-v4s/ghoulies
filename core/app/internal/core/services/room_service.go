@@ -229,8 +229,7 @@ func UpdateUserPosition(roomId types.RoomId, userId types.UserID, dest string) {
 		memory.UpdateRoom(roomId, room)
 
 		updateSceneData := types.UpdateUserPosition{
-			UserId:   string(room.Users[userIdx].UserID),
-			Position: newPosition,
+			User: room.Users[userIdx],
 		}
 
 		memory.BroadcastRoom(roomId, "updateUser", updateSceneData)
