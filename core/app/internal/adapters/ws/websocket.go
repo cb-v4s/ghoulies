@@ -2,7 +2,7 @@ package ws
 
 import (
 	"core/config"
-	"core/internal/adapters/memory"
+	"core/internal/adapters/memory_storage"
 	"core/internal/core"
 	"core/internal/core/services"
 	util "core/internal/utils"
@@ -79,12 +79,12 @@ func HandleWebSocket(c *gin.Context) {
 
 	// * Register the new client to Redis
 	activeConnections.Store(userId, client)
-	memory.AddClient(client)
+	memory_storage.AddClient(client)
 	log.Println("A user connected:", userConn.RemoteAddr())
 
 	// ! this rans when main loop breaks
 	defer func() {
-		user, err := memory.GetClient(userId)
+		user, err := memory_storage.GetClient(userId)
 		if err != nil {
 			return
 		}
@@ -99,7 +99,7 @@ func HandleWebSocket(c *gin.Context) {
 		activeConnections.Delete(userId)
 
 		// 4. delete the client from redis
-		memory.DeleteClient(userId)
+		memory_storage.DeleteClient(userId)
 
 	}()
 

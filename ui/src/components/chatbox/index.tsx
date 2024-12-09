@@ -33,7 +33,7 @@ export const Chatbox = ({ messages }: { messages: Message[] }) => {
                   className="w-[85%] flex rounded-lg bg-transparent select-none absolute bottom-0"
                   style={chatBubbleStyle}
                 >
-                  <div className="w-[6%] bg-sky-300 bg-no-repeat bg-center bg-[url('/chatbox.svg')] h-full text-white flex justify-center items-center rounded-l-lg">
+                  <div className="w-[6%] bg-primary bg-no-repeat bg-center bg-[url('/chatbox.svg')] h-full text-white flex justify-center items-center rounded-l-lg">
                     a
                   </div>
                   <div className="w-auto max-w-[94%] h-100 bg-white text-black pl-2 pr-4 rounded-r-lg text-sm flex items-center justify-center">

@@ -41,7 +41,7 @@ export const Accordeon = ({ sections }: { sections: Section[] }) => {
               <h2 id="accordion-collapse-heading-1">
                 <button
                   type="button"
-                  className="flex items-center justify-between w-full py-1 font-medium rtl:text-right text-sky-700 hover:text-slate-300 focus:ring-none outline-none focus:outline-none gap-3 border-b-2 border-sky-900"
+                  className="flex items-center justify-between w-full py-1 font-medium rtl:text-right text-primary hover:text-slate-300 focus:ring-none outline-none focus:outline-none gap-3 border-b-2 border-primary"
                   data-accordion-target={`#accordion-collapse-body-${idx}`}
                   aria-expanded={idx === expandedIndex}
                   aria-controls={`accordion-collapse-body-${idx}`}

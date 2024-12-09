@@ -76,13 +76,13 @@ export const Account = () => {
                   name="username"
                   value={updateUser.username}
                   onChange={hdlUpdateUserValues}
-                  className="w-full rounded-sm border-2 border-sky-900 outline-none focus:outline-none bg-transparent text-slate-200 px-4 py-1 mt-1"
+                  className="w-full rounded-sm border-2 border-primary outline-none focus:outline-none bg-transparent text-slate-200 px-4 py-1 mt-1"
                   type="text"
                   placeholder="Change your username"
                 />
 
                 <button
-                  className="text-slate-200 px-4 py-1 outline-none focus:outline-none border-2 border-sky-800 flex items-center justify-center mt-3"
+                  className="text-slate-200 px-4 py-1 outline-none focus:outline-none border-2 border-primary flex items-center justify-center mt-3"
                   type="submit"
                 >
                   <span className="mr-2">Update</span>

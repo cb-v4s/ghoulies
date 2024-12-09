@@ -13,7 +13,7 @@ export const RoomData = ({
 
   if (roomInfo?.RoomId)
     return (
-      <div className="text-left bottom-40 left-10 absolute text-white select-none font-light text-sm z-[-1]">
+      <div className="text-left bottom-40 left-10 absolute text-primary select-none font-light text-sm z-[-1]">
         {roomInfo ? (
           <p>
             {roomInfo.Users.length}/50 {roomInfo.RoomId}

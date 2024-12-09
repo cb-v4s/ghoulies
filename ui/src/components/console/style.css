@@ -1,7 +1,7 @@
 :root {
-  --pixel-bg: theme("colors.console.100"); /* Inner background color */
+  --pixel-bg: theme("colors.background"); /* Inner background color */
   --pixel-border: black; /* Inner border color: */
-  --pixel-border-2: theme(colors.console.300); /* Middle border color: */
+  --pixel-border-2: theme(colors.primary); /* Middle border color: */
   --pixel-border-3: var(--pixel-border); /* Outer border color */
   --pixel: 0.125rem; /* Pixel size */
 }
@@ -64,7 +64,6 @@
     0 calc(var(--pixel) * 15) 0 calc(var(--pixel) * -6) var(--pixel-border-3);
 }
 
-
 .console-scrollbar::-webkit-scrollbar-track {
   -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
   background-color: #000000;
@@ -108,4 +107,3 @@
       center / var(--dot-space) var(--dot-space),
     var(--dot-color);
 }
-

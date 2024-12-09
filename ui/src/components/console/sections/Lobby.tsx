@@ -69,7 +69,10 @@ export const Lobby = () => {
       <table className="table-auto w-full border-separate border-spacing-y-2">
         <tbody>
           {rooms.map(({ roomId, roomName, totalConns }, idx: number) => (
-            <tr className="text-slate-200 odd:bg-sky-900" key={idx}>
+            <tr
+              className="text-primary odd:bg-primary odd:text-background"
+              key={idx}
+            >
               <td className="select-none">
                 {roomName.length < 34 ? (
                   <span>{roomName}</span>
@@ -78,7 +81,7 @@ export const Lobby = () => {
                 )}
               </td>
               <td className="text-right flex items-center justify-center">
-                <UsersIcon className="w-4 h-4 text-slate-300 mr-1" />
+                <UsersIcon className="w-4 h-4 text-inherit mr-1" />
                 <span>{totalConns}/50</span>
               </td>
               <td className="text-right">

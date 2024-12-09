@@ -6,7 +6,7 @@ import (
 	routes "core/internal/adapters/http"
 	"core/internal/adapters/http/controllers"
 	"core/internal/adapters/http/middleware"
-	"core/internal/adapters/memory"
+	"core/internal/adapters/memory_storage"
 	"core/internal/core"
 	"core/internal/core/services"
 	ports "core/internal/ports"
@@ -33,7 +33,7 @@ func main() {
 	}
 
 	// * initialize redis
-	if err := memory.New(); err != nil {
+	if err := memory_storage.New(); err != nil {
 		log.Fatalf("Failed to initialize redis: %v\n", err)
 		return
 	}

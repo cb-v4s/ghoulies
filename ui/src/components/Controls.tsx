@@ -11,7 +11,7 @@ export const Controls = () => {
   };
 
   return (
-    <div className="w-full h-16 bg-transparent flex justify-center py-2 px-4">
+    <div className="w-full h-16 bg-transparent flex justify-center items-center py-2 px-4">
       {roomInfo?.RoomId && <Chat />}
       <button
         onClick={hdlSwitchConsole}

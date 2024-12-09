@@ -7,6 +7,7 @@ import { ArrowRight, Eye, EyeOff } from "@lib/icons";
 import { LoadingSpinner } from "@/components/icons/LoadingSpinner";
 import { apiRoutes } from "@/siteConfig";
 import { useApiRequest } from "@/lib/query";
+import { capitalize } from "@/lib/misc";
 
 export const SignIn = () => {
   const formDefaultValues = {
@@ -46,28 +47,22 @@ export const SignIn = () => {
     }
   }, [doSigninError]);
 
-  useEffect(() => {
-    if (Object.keys(form.formState.errors).length) {
-      console.log("signin form errors:", form.formState.errors);
-    }
-  }, [form.formState.errors]);
-
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-md rounded-3xl bg-white px-6 py-8 shadow-md dark:bg-secondary">
-        <h2 className="mb-6 text-center text-2xl font-semibold">
+      <div id="console" className="w-full max-w-md px-6 py-8 relative">
+        <h2 className="mb-6 text-center text-2xl font-semibold text-primary">
           Welcome back.
         </h2>
 
         {isError && (
-          <div className="my-4 rounded-md border border-red-300 bg-red-100 px-4 py-2 text-red-600">
-            {error}
+          <div className="my-4 py-2 text-red-500">
+            {capitalize(error ?? "")}
           </div>
         )}
 
         <form onSubmit={onSubmit}>
           <input
-            className="mt-2 flex w-full items-center justify-center rounded-xl border-2 border-gray-100 bg-secondary px-4 py-2 text-muted-foreground outline-none focus-within:border-gray-200 focus-within:bg-white hover:border-gray-200 dark:border-secondary dark:focus-within:bg-secondary"
+            className="mt-2 flex w-full items-center justify-center border-2 border-primary bg-background px-4 py-2 text-primary placeholder-primary outline-none hover:border-gray-200"
             type="text"
             title="Email"
             placeholder="Email"
@@ -81,11 +76,11 @@ export const SignIn = () => {
             </div>
           )}
 
-          <div className="mt-2 flex w-full items-center justify-center rounded-xl border-2 border-gray-100 bg-secondary px-4 py-2 text-muted-foreground outline-none focus-within:border-gray-200 focus-within:bg-white hover:border-gray-200 dark:border-secondary dark:focus-within:bg-secondary">
+          <div className="mt-2 flex w-full items-center justify-center border-2 border-gray-100 bg-background px-4 py-2 text-primary placeholder-primary outline-none hover:border-gray-200">
             <input
               type={displayInputValue ? "text" : "password"}
               spellCheck={false}
-              className="w-full border-none bg-transparent outline-none"
+              className="w-full border-none bg-transparent outline-none "
               title="Password"
               placeholder="Your password"
               id="password"
@@ -115,16 +110,16 @@ export const SignIn = () => {
           <button
             type="submit"
             disabled={isPending}
-            className="bg-sky-400 hover:bg-sky-500 flex w-full items-center justify-center rounded-xl px-4 py-2 font-semibold text-white dark:text-primary dark:hover:bg-card mt-4"
+            className="flex w-full items-center justify-center px-4 py-2 font-semibold text-primary mt-4 bg-background border-2 border-primary"
           >
             <span className="mr-2 text-lg font-semibold">Continue</span>
             {isPending ? <LoadingSpinner size={3} /> : <ArrowRight size={20} />}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm">
+        <p className="mt-6 text-center text-sm text-primary">
           Don&apos;t have an account yet?
-          <span className="ml-1 text-sky-400 underline">
+          <span className="ml-1 underline font-semibold">
             <a></a>
             <Link to="/signup">Sign up</Link>
           </span>

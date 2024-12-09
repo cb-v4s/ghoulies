@@ -65,16 +65,16 @@ export const Console = () => {
           id="dotted-grid"
           className="w-[100%] h-10 top-[-16px] rounded-t-xl cursor-move handle"
         ></div>
-        <div className="bg-console-100 px-1 py-0 absolute left-40 mt-[-28px]">
+        <div className="bg-background px-3 py-0 absolute left-40 mt-[-28px]">
           <span className="text-console-300 font-light text-sm">
             {capitalize(appName)} Console
           </span>
         </div>
         <button
-          className="absolute top-1 right-0 pl-[1px] outline-none focus:outline-none bg-console-200 border-[.3px] border-slate-400"
+          className="absolute top-1 right-0 pl-[1px] outline-none focus:outline-none bg-background border-[.3px] border-slate-400"
           onClick={hdlCloseConsole}
         >
-          <X className="w-5 h-5 text-slate-300 hover:text-slate-100 transition duration-150 font-bold" />
+          <X className="w-5 h-5 text-primary transition duration-150 font-bold" />
         </button>
       </div>
     );
@@ -83,7 +83,7 @@ export const Console = () => {
   const Body = () => {
     return (
       <div className="h-[76%] w-full">
-        <div className="overflow-y-scroll console-scrollbar relative text-left bg-sky-950 h-full border-8 border-slate-800 text-md">
+        <div className="overflow-y-scroll console-scrollbar relative text-left bg-background h-full border-8 border-primary text-md">
           {opts[optKeys[selectedBtn]]()}
         </div>
       </div>

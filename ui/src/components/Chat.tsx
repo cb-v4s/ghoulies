@@ -63,8 +63,8 @@ export const Chat: React.FC<any> = () => {
   return (
     <div className="w-4/5 bg-transparent text-md">
       <form onSubmit={sendMessage}>
-        <div className="relative flex focus:outline-none focus:placeholder-gray-400 bg-[#1f283b] rounded-full py-2 px-2 w-full">
-          <span className="text-bold text-slate-200 ml-3 flex justify-center items-center select-none">
+        <div className="relative flex focus:outline-none bg-background border-2 border-primary rounded-full py-2 px-2 w-full">
+          <span className="text-bold text-primary ml-3 flex justify-center items-center select-none">
             {targetUserId !== null ? targetUserId : "Everyone"}
           </span>
           <input
@@ -75,7 +75,7 @@ export const Chat: React.FC<any> = () => {
             placeholder="Type your message..."
             value={message}
             maxLength={maxMsgLen}
-            className="text-slate-100 placeholder-slate-300 w-full outline-none bg-transparent mx-2"
+            className="text-primary placeholder-primary w-full outline-none bg-transparent mx-2"
             onChange={(event) => setMessage(event.target.value)}
             onKeyDown={(e) => hdlKeyDown(e.key)}
           />
@@ -84,7 +84,7 @@ export const Chat: React.FC<any> = () => {
             data-testid="chat-submit-btn"
             className="flex items-center justify-center bg-transparent py-1 mr-2 outline-none focus:outline-none"
           >
-            <SendHorizontal className="text-slate-300 w-6 h-6" />
+            <SendHorizontal className="text-primary w-6 h-6" />
           </button>
         </div>
       </form>

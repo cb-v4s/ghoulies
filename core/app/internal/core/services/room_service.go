@@ -1,7 +1,7 @@
 package services
 
 import (
-	"core/internal/adapters/memory"
+	"core/internal/adapters/memory_storage"
 	"core/internal/core"
 	util "core/internal/utils"
 	types "core/types"
@@ -66,7 +66,7 @@ func IsRoomFull(room types.RoomData) bool {
 }
 
 func RemoveUser(userId types.UserID, roomId types.RoomId) {
-	room, exists := memory.GetRoom(roomId)
+	room, exists := memory_storage.GetRoom(roomId)
 	if !exists {
 		return
 	}
@@ -97,10 +97,10 @@ func RemoveUser(userId types.UserID, roomId types.RoomId) {
 
 	// Check if the room is empty
 	if len(room.Users) == 0 {
-		memory.DeleteRoom(roomId)
+		memory_storage.DeleteRoom(roomId)
 	}
 
-	memory.UpdateRoom(roomId, room)
+	memory_storage.UpdateRoom(roomId, room)
 }
 
 type NewRoomResponse struct {
@@ -109,7 +109,7 @@ type NewRoomResponse struct {
 }
 
 func UpdateUserTyping(roomId types.RoomId, userId types.UserID, isTyping bool) {
-	room, exists := memory.GetRoom(roomId)
+	room, exists := memory_storage.GetRoom(roomId)
 
 	if !exists {
 		fmt.Printf("room not found")
@@ -124,14 +124,14 @@ func UpdateUserTyping(roomId types.RoomId, userId types.UserID, isTyping bool) {
 
 	if room.Users[userIdx].IsTyping != isTyping {
 		room.Users[userIdx].IsTyping = isTyping
-		memory.UpdateRoom(roomId, room)
+		memory_storage.UpdateRoom(roomId, room)
 
 		updateSceneData := types.UpdateScene{
 			RoomId: string(roomId),
 			Users:  room.Users,
 		}
 
-		memory.BroadcastRoom(roomId, "updateScene", updateSceneData)
+		memory_storage.BroadcastRoom(roomId, "updateScene", updateSceneData)
 	}
 }
 
@@ -183,7 +183,7 @@ func getUserFacingDir(origin types.Position, target types.Position) types.Facing
 }
 
 func UpdateUserPosition(roomId types.RoomId, userId types.UserID, dest string) {
-	room, exists := memory.GetRoom(roomId)
+	room, exists := memory_storage.GetRoom(roomId)
 
 	if !exists {
 		fmt.Printf("room not found")
@@ -226,13 +226,13 @@ func UpdateUserPosition(roomId types.RoomId, userId types.UserID, dest string) {
 		newPosKey := fmt.Sprintf("%d,%d", newPosition.Row, newPosition.Col)
 
 		room.UsersPositions = append(room.UsersPositions, newPosKey)
-		memory.UpdateRoom(roomId, room)
+		memory_storage.UpdateRoom(roomId, room)
 
 		updateSceneData := types.UpdateUserPosition{
 			User: room.Users[userIdx],
 		}
 
-		memory.BroadcastRoom(roomId, "updateUser", updateSceneData)
+		memory_storage.BroadcastRoom(roomId, "updateUser", updateSceneData)
 
 		// Simulate movement delay
 		time.Sleep(time.Duration(speedUserMov) * time.Millisecond)
@@ -263,13 +263,13 @@ func getRandomEmptyPosition(occupiedPositions []string, max int) (string, types.
 
 func JoinRoom(reqData types.JoinRoom, messageClient *types.MessageClient, userId types.UserID) error {
 	// ! TODO: remove a user from a room if connected
-	user, _ := memory.GetClient(types.UserID(userId))
+	user, _ := memory_storage.GetClient(types.UserID(userId))
 	if len(user.RoomId) > 0 {
 		RemoveUser(user.ID, user.RoomId)
 	}
 
 	// Check if the room already exists
-	roomData, exists := memory.GetRoom(reqData.RoomId)
+	roomData, exists := memory_storage.GetRoom(reqData.RoomId)
 	if !exists {
 		return ErrorRoomNotExists
 	}
@@ -305,26 +305,26 @@ func JoinRoom(reqData types.JoinRoom, messageClient *types.MessageClient, userId
 
 	fmt.Printf("roomData: %v\n", roomData)
 
-	memory.UpdateRoom(reqData.RoomId, roomData)
+	memory_storage.UpdateRoom(reqData.RoomId, roomData)
 
 	data := &types.UpdateUser{
 		RoomId:   (*string)(&reqData.RoomId),
 		UserName: &reqData.UserName,
 	}
 
-	if err := memory.UpdateUser(userId, data); err != nil {
+	if err := memory_storage.UpdateUser(userId, data); err != nil {
 		fmt.Printf("failed to update client room: %v", err)
 	}
 
 	// ! Subscribe to the Redis channel for RoomId
-	go memory.UserSubscribe(messageClient, reqData.RoomId)
+	go memory_storage.UserSubscribe(messageClient, reqData.RoomId)
 
 	updateSceneData := types.UpdateScene{
 		RoomId: string(reqData.RoomId),
 		Users:  roomData.Users,
 	}
 
-	memory.BroadcastRoom(reqData.RoomId, "updateScene", updateSceneData)
+	memory_storage.BroadcastRoom(reqData.RoomId, "updateScene", updateSceneData)
 
 	type SetUser struct {
 		UserId string `json:"userId"`
@@ -348,7 +348,7 @@ func JoinRoom(reqData types.JoinRoom, messageClient *types.MessageClient, userId
 }
 
 func BroadcastMessage(reqData types.Msg, messageClient *types.MessageClient, userId types.UserID) {
-	user, err := memory.GetClient(reqData.From)
+	user, err := memory_storage.GetClient(reqData.From)
 	if err != nil {
 		fmt.Printf("client is not connected")
 	}
@@ -377,12 +377,12 @@ func BroadcastMessage(reqData types.Msg, messageClient *types.MessageClient, use
 	// cleanMsg := filter.CleanText(payload.Msg)
 	// payload.Msg = cleanMsg
 
-	memory.BroadcastRoom(reqData.RoomId, "broadcastMessage", payload)
+	memory_storage.BroadcastRoom(reqData.RoomId, "broadcastMessage", payload)
 }
 
 func NewRoom(reqData types.NewRoom, messageClient *types.MessageClient, userId types.UserID) {
 	// ! remove a user from a room if connected
-	user, _ := memory.GetClient(types.UserID(userId))
+	user, _ := memory_storage.GetClient(types.UserID(userId))
 	if len(user.RoomId) > 0 {
 		RemoveUser(user.ID, user.RoomId)
 	}
@@ -419,33 +419,33 @@ func NewRoom(reqData types.NewRoom, messageClient *types.MessageClient, userId t
 		return
 	}
 
-	_, exists := memory.GetRoom(*roomId)
+	_, exists := memory_storage.GetRoom(*roomId)
 	if exists {
 		fmt.Printf("Room already exists")
 		return
 	}
 
-	memory.CreateRoom(reqData.RoomName, *roomId, roomData)
+	memory_storage.CreateRoom(reqData.RoomName, *roomId, roomData)
 
 	data := &types.UpdateUser{
 		RoomId:   (*string)(roomId),
 		UserName: &reqData.UserName,
 	}
 
-	if err := memory.UpdateUser(userId, data); err != nil {
+	if err := memory_storage.UpdateUser(userId, data); err != nil {
 		fmt.Printf("failed to update client room: %v", err)
 		return
 	}
 
 	// ! Subscribe to the Redis channel for RoomId
-	go memory.UserSubscribe(messageClient, *roomId)
+	go memory_storage.UserSubscribe(messageClient, *roomId)
 
 	updateSceneData := types.UpdateScene{
 		RoomId: string(*roomId),
 		Users:  roomData.Users,
 	}
 
-	memory.BroadcastRoom(types.RoomId(*roomId), "updateScene", updateSceneData)
+	memory_storage.BroadcastRoom(types.RoomId(*roomId), "updateScene", updateSceneData)
 
 	type SetUser struct {
 		UserId string `json:"userId"`
@@ -469,7 +469,7 @@ func NewRoom(reqData types.NewRoom, messageClient *types.MessageClient, userId t
 func LeaveRoom(reqData types.UserLeave, userId types.UserID, activeConnections *sync.Map) {
 	fmt.Printf("From \"leaveRoom\". User is leaving: %v", reqData.UserId)
 
-	user, err := memory.GetClient(types.UserID(reqData.UserId))
+	user, err := memory_storage.GetClient(types.UserID(reqData.UserId))
 	if err != nil {
 		fmt.Printf("client is not connected")
 	}
@@ -479,7 +479,7 @@ func LeaveRoom(reqData types.UserLeave, userId types.UserID, activeConnections *
 		RoomId: &emptyRoomId,
 	}
 
-	if err := memory.UpdateUser(types.UserID(reqData.UserId), updateData); err != nil {
+	if err := memory_storage.UpdateUser(types.UserID(reqData.UserId), updateData); err != nil {
 		fmt.Printf("couldn't update user's room id")
 	}
 

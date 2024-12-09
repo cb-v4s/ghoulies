@@ -345,7 +345,7 @@ export const Room = () => {
   ) => {
     ctx.font = "600 15px arial";
     ctx.textAlign = "center";
-    ctx.fillStyle = "#DCDCE4";
+    ctx.fillStyle = "#ffffff";
 
     const textX = destX + blockWidth / 2;
     const textY = destY + blockHeight;

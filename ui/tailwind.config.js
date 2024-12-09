@@ -36,11 +36,12 @@ export default {
       },
       colors: {
         console: {
-          100: "#AC97F3",
+          100: "#abb1bf",
           200: "#B096F9",
-          300: "#7d5edb"
+          300: "#dad7dd"
         },
-        "background": "#769ec1"
+        "background": "#1F222A",
+        "primary": "#abb1bf",
       },
     },
   },
