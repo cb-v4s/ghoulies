@@ -1,6 +1,6 @@
 :root {
   --pixel-bg: theme("colors.background"); /* Inner background color */
-  --pixel-border: black; /* Inner border color: */
+  --pixel-border: theme("colors.background"); /* Inner border color: */
   --pixel-border-2: theme(colors.primary); /* Middle border color: */
   --pixel-border-3: var(--pixel-border); /* Outer border color */
   --pixel: 0.125rem; /* Pixel size */
@@ -81,8 +81,8 @@
 
 #pixel-button {
   border-radius: 10px;
-  border: 2px solid theme("colors.console.300");
-  box-shadow: 3px 3px theme("colors.console.300");
+  border: 2px solid var(--pixel-border-2);
+  box-shadow: 3px 3px var(--pixel-border-2);
 }
 
 #pixel-button:active {

@@ -66,12 +66,12 @@ export const Console = () => {
           className="w-[100%] h-10 top-[-16px] rounded-t-xl cursor-move handle"
         ></div>
         <div className="bg-background px-3 py-0 absolute left-40 mt-[-28px]">
-          <span className="text-console-300 font-light text-sm">
+          <span className="text-primary font-light text-sm">
             {capitalize(appName)} Console
           </span>
         </div>
         <button
-          className="absolute top-1 right-0 pl-[1px] outline-none focus:outline-none bg-background border-[.3px] border-slate-400"
+          className="absolute top-1 right-0 pl-[1px] outline-none focus:outline-none bg-background border-[.3px] border-primary"
           onClick={hdlCloseConsole}
         >
           <X className="w-5 h-5 text-primary transition duration-150 font-bold" />
@@ -92,7 +92,7 @@ export const Console = () => {
 
   const Footer = () => {
     return (
-      <div className="h-[16%] w-full mx-auto text-slate-200 font-bold space-x-2 flex flex-row justify-center items-center">
+      <div className="h-[16%] w-full mx-auto text-primary font-bold space-x-2 flex flex-row justify-center items-center">
         {optKeys.map((title: string, idx: number) => (
           <div className="flex flex-col w-[30%]" key={idx}>
             <button
