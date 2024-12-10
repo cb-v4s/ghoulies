@@ -12,6 +12,8 @@ import (
 
 const (
 	minPasswordLen = 6
+	minUsernameLen = 2
+	maxUsernameLen = 16
 )
 
 var (
@@ -21,10 +23,13 @@ var (
 	ErrorEmailAlreadyRegistered    = errors.New("email already exists")
 	ErrorUsernameAlreadyRegistered = errors.New("username already exists")
 	ErrorFailedToHashPassword      = errors.New("failed to hash password")
-	ErrorPasswordLenExceeded       = errors.New("password must be no longer than 72 characters")
-	ErrorInvalidPasswordLen        = fmt.Errorf("password must be at least %d characters long", minPasswordLen)
 	ErrorSaveFailed                = errors.New("failed to save")
 	ErrorUserNotFound              = errors.New("user not found")
+
+	ErrorPasswordLenExceeded = fmt.Errorf("password must be no longer than %d characters", core.BcryptCharacterLimit)
+	ErrorUsernameLenExceeded = fmt.Errorf("username must be no longer than %d characters", maxUsernameLen)
+	ErrorInvalidPasswordLen  = fmt.Errorf("password must be at least %d characters long", minPasswordLen)
+	ErrorInvalidUsernameLen  = fmt.Errorf("username must be at least %d characters long", minUsernameLen)
 )
 
 type UserService struct {
@@ -75,6 +80,14 @@ func (ctx *UserService) Signup(email string, username string, password string) e
 		return ErrorPasswordLenExceeded
 	}
 
+	if len(username) < 2 {
+		return ErrorInvalidUsernameLen
+	}
+
+	if len(username) > maxUsernameLen {
+		return ErrorUsernameLenExceeded
+	}
+
 	if len(password) < minPasswordLen {
 		return ErrorInvalidPasswordLen
 	}
@@ -123,6 +136,14 @@ func (ctx *UserService) RefreshToken(user models.User) (*RefreshTokenResponse, e
 func (ctx *UserService) Update(userId uint, updateUser types.UpdateUser) (*core.AuthTokensResponse, error) {
 	if updateUser.Password != nil && len(*updateUser.Password) < minPasswordLen {
 		return nil, ErrorInvalidPasswordLen
+	}
+
+	if len(*updateUser.UserName) < 2 {
+		return nil, ErrorInvalidUsernameLen
+	}
+
+	if len(*updateUser.UserName) > maxUsernameLen {
+		return nil, ErrorUsernameLenExceeded
 	}
 
 	if updateUser.UserName != nil && ctx.userRepo.ExistsUsername(*updateUser.UserName) {

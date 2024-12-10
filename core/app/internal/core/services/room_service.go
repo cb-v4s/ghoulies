@@ -278,7 +278,7 @@ func JoinRoom(reqData types.JoinRoom, messageClient *types.MessageClient, userId
 		return ErrorRoomIsFull
 	}
 
-	if roomData.Password != reqData.Password {
+	if roomData.IsProtected && *roomData.Password != *reqData.Password {
 		return ErrorInvalidPassword
 	}
 
@@ -326,11 +326,11 @@ func JoinRoom(reqData types.JoinRoom, messageClient *types.MessageClient, userId
 
 	memory_storage.BroadcastRoom(reqData.RoomId, "updateScene", updateSceneData)
 
-	type SetUser struct {
+	type JoinRoomSuccess struct {
 		UserId string `json:"userId"`
 	}
 
-	setUserData := SetUser{
+	joinSuccessData := JoinRoomSuccess{
 		UserId: string(userId),
 	}
 
@@ -340,8 +340,8 @@ func JoinRoom(reqData types.JoinRoom, messageClient *types.MessageClient, userId
 	})
 
 	SendPayload(messageClient, types.WsPayload{
-		Event: "setUserId",
-		Data:  setUserData,
+		Event: "joinRoomSuccess",
+		Data:  joinSuccessData,
 	})
 
 	return nil
@@ -400,9 +400,17 @@ func NewRoom(reqData types.NewRoom, messageClient *types.MessageClient, userId t
 		IsTyping:  false,
 	}
 
+	var isProtected bool = false
+	if len(*reqData.Password) > 0 {
+		isProtected = true
+	}
+
+	fmt.Println("isProtected:", isProtected)
+
 	roomData := types.RoomData{
 		Name:           reqData.RoomName,
 		Password:       reqData.Password,
+		IsProtected:    isProtected,
 		Users:          []types.User{},
 		UsersPositions: []string{},
 		UserIdxMap:     make(map[types.UserID]types.UserIdx),

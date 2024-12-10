@@ -6,4 +6,5 @@ export {
   SquareArrowOutUpRight,
   SendHorizontal,
   Users,
+  KeyRound,
 } from "lucide-react";

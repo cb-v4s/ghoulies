@@ -34,6 +34,7 @@ export interface RoomInfo {
   roomId: string;
   roomName: string;
   totalConns: number;
+  isProtected: boolean;
 }
 
 export type Position = {

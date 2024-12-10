@@ -30,14 +30,12 @@ export const Chatbox = ({ messages }: { messages: Message[] }) => {
                 <div
                   key={idx}
                   // id="message"
-                  className="w-[85%] flex rounded-lg bg-transparent select-none absolute bottom-0"
+                  className="w-[85%] flex rounded-lg bg-background select-none absolute bottom-0"
                   style={chatBubbleStyle}
                 >
-                  <div className="w-[6%] bg-primary bg-no-repeat bg-center bg-[url('/chatbox.svg')] h-full text-white flex justify-center items-center rounded-l-lg">
-                    a
-                  </div>
-                  <div className="w-auto max-w-[94%] h-100 bg-white text-black pl-2 pr-4 rounded-r-lg text-sm flex items-center justify-center">
-                    <span className="mr-2 font-bold text-slate-800 mt-1">
+                  <div className="w-[10%] bg-background bg-no-repeat bg-center bg-[url('/bubbleCharacter.webp')] h-full text-primary flex justify-center items-center rounded-l-lg border-y border-l border-primary"></div>
+                  <div className="w-auto max-w-[94%] h-100 bg-background text-primary pl-2 pr-4 rounded-r-lg text-sm flex items-center justify-center border-y border-r border-primary">
+                    <span className="mr-2 font-bold text-primary mt-1">
                       {From}:
                     </span>
                     <span className="mt-1">

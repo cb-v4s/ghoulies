@@ -60,12 +60,12 @@ export const Console = () => {
 
   const Header = () => {
     return (
-      <div className="h-[8%] w-full relative top-[-10px]">
+      <div className="h-[8%] w-full relative top-[-10px] flex items-center justify-center">
         <div
           id="dotted-grid"
           className="w-[100%] h-10 top-[-16px] rounded-t-xl cursor-move handle"
         ></div>
-        <div className="bg-background px-3 py-0 absolute left-40 mt-[-28px]">
+        <div className="bg-background px-3 py-0 absolute bottom-[-6px]">
           <span className="text-primary font-light text-sm">
             {capitalize(appName)} Console
           </span>

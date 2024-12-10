@@ -149,7 +149,13 @@ func HandleWebSocket(c *gin.Context) {
 				reqData.UserName = username
 			}
 
-			services.JoinRoom(reqData, messageClient, userId)
+			err = services.JoinRoom(reqData, messageClient, userId)
+			if err != nil {
+				services.SendPayload(messageClient, types.WsPayload{
+					Event: "error",
+					Data:  types.ApiError(err),
+				})
+			}
 
 		case "broadcastMessage":
 			var reqData types.Msg

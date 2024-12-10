@@ -2,10 +2,12 @@ import { useEffect } from "react";
 import { wsApiUrl } from "@/siteConfig";
 import { useDispatch } from "react-redux";
 import {
+  setEmptyChatbox,
   setRoomInfo,
   setRoomMessage,
   setUserId,
   setUserPosition,
+  switchConsoleState,
 } from "@state/room.reducer";
 
 export var ws = new WebSocket(wsApiUrl);
@@ -37,12 +39,13 @@ enum ResponseEvents {
   UpdateScene = "updateScene",
   UpdateUserPosition = "updateUser",
   BroadcastMessage = "broadcastMessage",
-  SetUserId = "setUserId",
+  JoinRoomSuccess = "joinRoomSuccess",
 }
 
-interface JoinRoomData {
+export interface JoinRoomData {
   roomId: string;
   userName: string;
+  password?: string;
 }
 
 interface BroadcastMessageData {
@@ -82,17 +85,6 @@ export const newRoom = async (data: NewRoomData) => {
 };
 
 export const joinRoom = async (data: JoinRoomData) => {
-  if (ws.readyState === ws.CLOSING || ws.readyState === ws.CLOSED) {
-    console.log("reopening ws connection");
-
-    try {
-      ws = await NewWsConn();
-    } catch (err) {
-      console.error("couldn't establish ws connection", err);
-      return;
-    }
-  }
-
   const payload = {
     Event: RequestEvents.JoinRoom,
     Data: data,
@@ -198,7 +190,9 @@ export const WsHandler = () => {
           dispatch(setRoomMessage(data));
 
           break;
-        case ResponseEvents.SetUserId:
+        case ResponseEvents.JoinRoomSuccess:
+          dispatch(setEmptyChatbox());
+          dispatch(switchConsoleState());
           dispatch(setUserId(data));
 
           break;

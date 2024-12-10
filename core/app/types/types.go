@@ -83,10 +83,11 @@ type Middlewares struct {
 
 type RoomData struct {
 	Name           string
-	Password       *string
 	Users          []User
 	UsersPositions []string // * e.g. "Row, Col" => "1,2", "3,4", ...
 	UserIdxMap     map[UserID]UserIdx
+	Password       *string
+	IsProtected    bool
 }
 
 type UpdateUser struct {
@@ -141,9 +142,10 @@ type DirectMsg struct {
 }
 
 type PopularRoomList struct {
-	RoomId     RoomId `json:"roomId"`
-	RoomName   string `json:"roomName"`
-	TotalConns int    `json:"totalConns"`
+	RoomId      RoomId `json:"roomId"`
+	RoomName    string `json:"roomName"`
+	TotalConns  int    `json:"totalConns"`
+	IsProtected bool   `json:"isProtected"`
 }
 
 type ApiResponse map[string]any

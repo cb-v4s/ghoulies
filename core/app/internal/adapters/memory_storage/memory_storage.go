@@ -43,11 +43,15 @@ func New() error {
 	// 	return fmt.Errorf("failed to delete all rooms")
 	// }
 
+	password := "12345"
+
 	welcomeRoom := types.RoomData{
 		Name:           config.WelcomeRoomName,
 		Users:          []types.User{},
 		UsersPositions: []string{},
 		UserIdxMap:     make(map[types.UserID]types.UserIdx),
+		Password:       &password,
+		IsProtected:    true,
 	}
 
 	welcomeRoomJSON, err := json.Marshal(welcomeRoom)
@@ -291,9 +295,10 @@ func GetPopularRooms() ([]types.PopularRoomList, error) {
 		}
 
 		rooms = append(rooms, types.PopularRoomList{
-			RoomId:     types.RoomId(roomId),
-			RoomName:   roomData.Name,
-			TotalConns: len(roomData.Users),
+			RoomId:      types.RoomId(roomId),
+			RoomName:    roomData.Name,
+			TotalConns:  len(roomData.Users),
+			IsProtected: roomData.IsProtected,
 		})
 	}
 

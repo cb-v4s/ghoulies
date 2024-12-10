@@ -4,16 +4,9 @@ import { useSelector } from "react-redux";
 import { getRoomInfo, getUserId } from "@state/room.reducer";
 import { updatePosition } from "@components/wsHandler";
 import { RoomData } from "./roomData";
-import { debounce, getImageResource, sleep } from "@lib/misc";
+import { debounce, getImageResource } from "@lib/misc";
 import { Canvas } from "./Canvas";
-import {
-  CanvasDimensions,
-  MapOffset,
-  Room as RoomType,
-  RoomInfo,
-  FacingDirection,
-} from "@/types";
-import useInterval from "@/hooks/useInterval";
+import { CanvasDimensions, MapOffset } from "@/types";
 
 export const Room = () => {
   const [canvasSize, setCanvasSize] = useState<CanvasDimensions>({
@@ -24,89 +17,6 @@ export const Room = () => {
   const [currentCol, setCurrentCol] = useState<number>(0);
 
   const roomInfo = useSelector(getRoomInfo);
-  // const [roomInfo, setRoomInfo] = useState<RoomType>({
-  //   RoomId: null,
-  //   Users: [
-  //     {
-  //       Position: { Row: 0, Col: 0 },
-  //       Direction: FacingDirection.frontLeft,
-  //       RoomID: "keep the block hot",
-  //       UserID: "206617",
-  //       UserName: "alice",
-  //       IsTyping: false,
-  //     },
-  //     {
-  //       Position: { Row: 0, Col: 9 },
-  //       Direction: FacingDirection.frontLeft,
-  //       RoomID: "keep the block hot",
-  //       UserID: "206612",
-  //       UserName: "owl",
-  //       IsTyping: false,
-  //     },
-  //   ],
-  //   Messages: [],
-  // });
-
-  // async function animate() {
-  //   for (;;) {
-  //     const path0 = [
-  //       { Row: 0, Col: 0 },
-  //       { Row: 1, Col: 1 },
-  //       { Row: 2, Col: 2 },
-  //       { Row: 3, Col: 3 },
-  //       { Row: 4, Col: 4 },
-  //       { Row: 5, Col: 5 },
-  //       { Row: 6, Col: 6 },
-  //       { Row: 7, Col: 7 },
-  //       { Row: 8, Col: 8 },
-  //       { Row: 9, Col: 9 },
-  //     ];
-
-  //     const path1 = [
-  //       { Row: 0, Col: 9 },
-  //       { Row: 1, Col: 8 },
-  //       { Row: 2, Col: 7 },
-  //       { Row: 3, Col: 6 },
-  //       { Row: 4, Col: 5 },
-  //       { Row: 5, Col: 4 },
-  //       { Row: 6, Col: 3 },
-  //       { Row: 7, Col: 2 },
-  //       { Row: 8, Col: 1 },
-  //       { Row: 9, Col: 0 },
-  //     ];
-
-  //     for (let i = 0; i < path1.length; i++) {
-  //       const usersCopy = roomInfo.Users;
-
-  //       usersCopy[1] = {
-  //         ...usersCopy[1],
-  //         Position: path1[i],
-  //       };
-
-  //       setRoomInfo({
-  //         ...roomInfo,
-  //         Users: usersCopy,
-  //       });
-
-  //       usersCopy[0] = {
-  //         ...usersCopy[0],
-  //         Position: path0[i],
-  //       };
-
-  //       setRoomInfo({
-  //         ...roomInfo,
-  //         Users: usersCopy,
-  //       });
-
-  //       await sleep(200);
-  //     }
-  //   }
-  // }
-
-  // useEffect(() => {
-  //   animate();
-  // }, []);
-
   const userId = useSelector(getUserId);
 
   let mapOffsetX = 0;
@@ -345,7 +255,7 @@ export const Room = () => {
   ) => {
     ctx.font = "600 15px arial";
     ctx.textAlign = "center";
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = "#abb1bf";
 
     const textX = destX + blockWidth / 2;
     const textY = destY + blockHeight;
@@ -392,22 +302,19 @@ export const Room = () => {
 
   const updateCanvasSize = () => {
     const width = window.innerWidth;
-    let newWidth, newHeight;
+    let newWidth = 0,
+      newHeight = 0;
 
     if (width >= 1024) {
       setMapOffset({ x: 320, y: 180 });
       // Large screens
       newWidth = 740;
       newHeight = 710;
-    } else if (width >= 500) {
-      setMapOffset({ x: 210, y: 80 });
+    } else if (width <= 450) {
+      setMapOffset({ x: 130, y: 80 });
       // Medium screens
-      newWidth = 560;
-      newHeight = 960;
-    } else {
-      setMapOffset({ x: 140, y: 0 });
-      newWidth = 360;
-      newHeight = 440;
+      newWidth = 380;
+      newHeight = 500;
     }
 
     setCanvasSize({ width: newWidth, height: newHeight });

@@ -177,6 +177,7 @@ func (services *UserController) Refresh(c *gin.Context) {
 
 	token, err := middleware.GetCSRFToken()
 	if err != nil {
+		fmt.Printf("csrf token")
 		c.Status(http.StatusInternalServerError)
 	}
 

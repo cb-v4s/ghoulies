@@ -110,8 +110,8 @@ export const RoomStudio = () => {
             </div>
           </div>
 
-          <div className="pt-2 pb-4 flex flex-row items-center justify-center border-t-2 border-primary">
-            <div className="text-sm text-slate-300">
+          <div className="pt-2 pb-4 flex flex-row items-center justify-center border-t-2 border-primary text-primary">
+            <div className="text-sm text-inherit">
               <span>Learn about </span>
               <span className="border-b underline">
                 <a className="inline-block select-none">
@@ -121,7 +121,7 @@ export const RoomStudio = () => {
               </span>
             </div>
             <button
-              className="text-primary px-4 py-1 ml-auto outline-none focus:outline-none border-2 border-primary flex items-center justify-center"
+              className="px-4 py-1 ml-auto outline-none focus:outline-none border-2 border-primary flex items-center justify-center"
               type="submit"
             >
               <span className="mr-2">Join room</span>
