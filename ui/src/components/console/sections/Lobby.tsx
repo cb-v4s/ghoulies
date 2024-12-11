@@ -1,23 +1,19 @@
 import { useFetch } from "@/lib/query";
-import { joinRoom, leaveRoom } from "@/components/wsHandler";
+import { joinRoom } from "@/components/websocket/actions";
 import { getAccessTokenPayload } from "@lib/auth";
 import { PopularRoomsResponse } from "@/types";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  setUsername,
-  getRoomInfo,
-  setDefaultState,
-  getUserId,
-} from "@/state/room.reducer";
+import { setUsername, getRoomInfo, getUserId } from "@/state/room.reducer";
 import { getRandomUsername } from "@/lib/misc";
 import { ArrowRight, KeyRound, Users as UsersIcon } from "@/lib/icons";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { initWs } from "@/components/websocket/handler";
 
 export const Lobby = () => {
   const dispatch = useDispatch();
-  const userId = useSelector(getUserId);
   const [password, setPassword] = useState<string>("");
-  const [inputPassword, setInputPassword] = useState<number | null>();
+  const inputPasswordRef = useRef<HTMLInputElement | null>(null);
+  const [inputPassword, setInputPassword] = useState<number | null>(null);
   const roomInfo = useSelector(getRoomInfo);
   const {
     data: roomsResponse,
@@ -43,6 +39,8 @@ export const Lobby = () => {
     }
 
     try {
+      await initWs(dispatch);
+
       joinRoom({
         roomId,
         userName: username,
@@ -56,13 +54,11 @@ export const Lobby = () => {
     }
   };
 
-  const hdlCloseConnection = (e: any) => {
-    e.preventDefault();
-    if (!userId) return;
+  useEffect(() => {
+    if (inputPassword === null) return;
 
-    leaveRoom({ userId });
-    dispatch(setDefaultState());
-  };
+    inputPasswordRef?.current?.focus();
+  }, [inputPassword]);
 
   return (
     <div className="pt-4 px-4">
@@ -99,6 +95,7 @@ export const Lobby = () => {
                             className="flex items-center justify-center border-2 bg-background border-primary px-2 py-3 text-primary w-[90%] h-4 ml-auto"
                           >
                             <input
+                              ref={inputPasswordRef}
                               onChange={(e) => setPassword(e.target.value)}
                               value={password}
                               type="password"

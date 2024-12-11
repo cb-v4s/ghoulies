@@ -1,6 +1,7 @@
 export const githubName = "czdor";
 export const appName = "ghoulies";
 export const coreApiUrl = "http://localhost:8000/api/v1";
+export const googleStunServer = "stun:stun.l.google.com:19302";
 export const wsApiUrl = "http://localhost:8000/ws";
 export const SecurityHeaders = {
   CSRF: "X-Csrf-Token",
@@ -20,5 +21,5 @@ export const CONSOLE_STATE_IDENTIFIER_KEY = "_cons_state";
 
 export const links = {
   githubProfile: "//github.com/czdor",
-  sourceCode: "//github.com/czdor/ghosties", // TODO: update
+  sourceCode: "//github.com/czdor/ghoulies", // TODO: update
 };

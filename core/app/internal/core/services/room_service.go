@@ -101,6 +101,12 @@ func RemoveUser(userId types.UserID, roomId types.RoomId) {
 	}
 
 	memory_storage.UpdateRoom(roomId, room)
+	updateSceneData := types.UpdateScene{
+		RoomId: string(roomId),
+		Users:  room.Users,
+	}
+
+	memory_storage.BroadcastRoom(roomId, "updateScene", updateSceneData)
 }
 
 type NewRoomResponse struct {

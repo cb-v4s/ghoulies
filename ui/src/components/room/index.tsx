@@ -2,11 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 import { resources } from "./resources";
 import { useSelector } from "react-redux";
 import { getRoomInfo, getUserId } from "@state/room.reducer";
-import { updatePosition } from "@components/wsHandler";
+import { updatePosition } from "@components/websocket/actions";
 import { RoomData } from "./roomData";
 import { debounce, getImageResource } from "@lib/misc";
 import { Canvas } from "./Canvas";
 import { CanvasDimensions, MapOffset } from "@/types";
+import { WsHandler } from "@/components/websocket/handler";
 
 export const Room = () => {
   const [canvasSize, setCanvasSize] = useState<CanvasDimensions>({
@@ -322,6 +323,7 @@ export const Room = () => {
 
   return (
     <div className="flex items-center justify-center">
+      <WsHandler />
       <RoomData currentRow={currentRow} currentCol={currentCol} />
       {roomInfo && (
         <Canvas

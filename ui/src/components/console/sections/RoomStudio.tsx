@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { ArrowRight, SquareArrowOutUpRight } from "@lib/icons";
-import { newRoom, NewRoomData } from "@components/wsHandler";
+import { newRoom } from "@components/websocket/actions";
+
 import { getRandomUsername } from "@lib/misc";
 import { getAccessTokenPayload } from "@lib/auth";
 import { useDispatch } from "react-redux";
 import { setUsername, switchConsoleState } from "@state/room.reducer";
+import { NewRoomData } from "@/components/websocket/types";
+import { initWs } from "@/components/websocket/handler";
 
 export const RoomStudio = () => {
   const dispatch = useDispatch();
@@ -23,11 +26,13 @@ export const RoomStudio = () => {
 
   const [formData, setFormData] = useState<NewRoomData>(defaultFormData);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const { userName, roomName } = formData;
     if (!userName.length || !roomName.length) return;
+
+    await initWs(dispatch);
 
     newRoom(formData);
 

@@ -1,12 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { broadcastMessage, updateTyping } from "./wsHandler";
+import { broadcastMessage, updateTyping } from "./websocket/actions";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  getIsTyping,
-  getRoomInfo,
-  getUserId,
-  setIsTyping,
-} from "@state/room.reducer";
+import { getRoomInfo, getUserId, setIsTyping } from "@state/room.reducer";
 import { SendHorizontal } from "@lib/icons";
 import { debounce } from "@/lib/misc";
 

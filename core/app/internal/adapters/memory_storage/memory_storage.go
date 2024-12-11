@@ -21,6 +21,7 @@ const (
 	clientsKey        string        = "clients"
 	roomsKey          string        = "rooms"
 	ctxTimeout        time.Duration = 1000 * time.Second
+	pubsubCtxTimeout  time.Duration = 24 * time.Hour
 )
 
 func New() error {
@@ -74,7 +75,7 @@ func New() error {
 }
 
 func UserSubscribe(mc *types.MessageClient, roomId types.RoomId) {
-	ctx, cancelCtx := context.WithTimeout(context.Background(), ctxTimeout)
+	ctx, cancelCtx := context.WithTimeout(context.Background(), pubsubCtxTimeout)
 	defer cancelCtx()
 
 	pubsub := redisClient.Subscribe(ctx, string(roomId))
@@ -94,7 +95,7 @@ func UserSubscribe(mc *types.MessageClient, roomId types.RoomId) {
 }
 
 func BroadcastRoom(roomId types.RoomId, event string, data interface{}) {
-	ctx, cancelCtx := context.WithTimeout(context.Background(), ctxTimeout)
+	ctx, cancelCtx := context.WithTimeout(context.Background(), pubsubCtxTimeout)
 	defer cancelCtx()
 
 	payload := make(map[string]interface{})

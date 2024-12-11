@@ -76,7 +76,7 @@ export const SignIn = () => {
             </div>
           )}
 
-          <div className="mt-2 flex w-full items-center justify-center border-2 border-gray-100 bg-background px-4 py-2 text-primary placeholder-primary outline-none hover:border-gray-200">
+          <div className="mt-2 flex w-full items-center justify-center border-2 border-primary bg-background px-4 py-2 text-primary placeholder-primary outline-none hover:border-gray-200">
             <input
               type={displayInputValue ? "text" : "password"}
               spellCheck={false}
