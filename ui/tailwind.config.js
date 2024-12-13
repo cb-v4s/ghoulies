@@ -35,11 +35,6 @@ export default {
         "100v": "100vh",
       },
       colors: {
-        console: {
-          100: "#abb1bf",
-          200: "#B096F9",
-          300: "#dad7dd"
-        },
         "background": "#1F222A",
         "primary": "#abb1bf",
       },

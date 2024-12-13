@@ -3,7 +3,7 @@ import { joinRoom } from "@/components/websocket/actions";
 import { getAccessTokenPayload } from "@lib/auth";
 import { PopularRoomsResponse } from "@/types";
 import { useDispatch, useSelector } from "react-redux";
-import { setUsername, getRoomInfo, getUserId } from "@/state/room.reducer";
+import { setUsername, getRoomInfo } from "@/state/room.reducer";
 import { getRandomUsername } from "@/lib/misc";
 import { ArrowRight, KeyRound, Users as UsersIcon } from "@/lib/icons";
 import { useEffect, useRef, useState } from "react";

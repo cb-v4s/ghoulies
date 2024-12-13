@@ -1,7 +1,7 @@
 services:
-  app:
+  app1:
     ports:
-      - "8000:8000"
+      - "8001:8000"
     env_file:
       - ../../core/app/.env
     build:
@@ -15,9 +15,51 @@ services:
       db:
         condition: service_healthy
         restart: true
-      # redis:
-      #   condition: service_healthy
-      #   restart: true
+
+  app2:
+    ports:
+      - "8002:8000"
+    env_file:
+      - ../../core/app/.env
+    build:
+      context: ../../core/app
+      dockerfile: ./Dockerfile.dev
+    develop:
+      watch:
+        - action: rebuild
+          path: ../../core/app
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+
+  app3:
+    ports:
+      - "8003:8000"
+    env_file:
+      - ../../core/app/.env
+    build:
+      context: ../../core/app
+      dockerfile: ./Dockerfile.dev
+    develop:
+      watch:
+        - action: rebuild
+          path: ../../core/app
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+
+  haproxy:
+    image: haproxy:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+    depends_on:
+      - app1
+      - app2
+      - app3
 
   ui:
     ports:
