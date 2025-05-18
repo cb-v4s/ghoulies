@@ -15,6 +15,12 @@ services:
       db:
         condition: service_healthy
         restart: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]  # Check root path
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   app2:
     ports:
@@ -32,6 +38,13 @@ services:
       db:
         condition: service_healthy
         restart: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]  # Check root path
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      
 
   app3:
     ports:
@@ -49,6 +62,12 @@ services:
       db:
         condition: service_healthy
         restart: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]  # Check root path
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   haproxy:
     image: haproxy:latest
